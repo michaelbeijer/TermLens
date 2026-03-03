@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Termview</RootNamespace>
+    <AssemblyName>Termview</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>Michael Beijer</Authors>
+    <Company>Supervertaler</Company>
+    <Description>Inline terminology display panel for Trados Studio</Description>
+    <Copyright>Copyright (c) 2026 Michael Beijer</Copyright>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!-- Trados Studio SDK packages -->
+  <!-- NOTE: These require the Trados Studio SDK to be installed.
+       Install from: https://developers.rws.com/
+       You may need to add the Trados NuGet feed:
+       https://nuget.rws.com/v3/index.json -->
+  <ItemGroup>
+    <PackageReference Include="Sdl.Core.PluginFramework" Version="2.*" />
+    <PackageReference Include="Sdl.Core.PluginFramework.Build" Version="18.*" PrivateAssets="all" />
+    <PackageReference Include="Sdl.Desktop.IntegrationApi" Version="18.*" />
+    <PackageReference Include="Sdl.TranslationStudioAutomation.IntegrationApi" Version="18.*" />
+
+    <!-- SQLite for reading Supervertaler termbases -->
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
+  </ItemGroup>
+
+  <!-- Plugin package manifest -->
+  <ItemGroup>
+    <None Include="pluginpackage.manifest.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

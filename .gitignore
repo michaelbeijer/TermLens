@@ -1,0 +1,45 @@
+## .NET / Visual Studio
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+*.nupkg
+*.snupkg
+packages/
+
+## Build results
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+[Dd]ebugPublic/
+
+## NuGet
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Plugin output
+*.sdlplugin
+
+## OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+## IDE
+*.resharper
+_ReSharper*/
+*.DotSettings.user
+.idea/
