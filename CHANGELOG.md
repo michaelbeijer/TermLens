@@ -19,6 +19,26 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] — 2026-03-04
+
+### Changed
+- **Renamed project from Termview to TermLens** — all files, namespaces, class names,
+  plugin IDs, settings paths, and documentation updated consistently
+- **Migrated from System.Data.SQLite to Microsoft.Data.Sqlite** — eliminates the
+  `EntryPointNotFoundException` caused by version-fingerprint hash conflicts in Trados
+  Studio's plugin environment; uses SQLitePCLRaw with `e_sqlite3.dll` instead of
+  `SQLite.Interop.dll`
+- Settings path moved from `%LocalAppData%\Termview\` to `%LocalAppData%\TermLens\`
+- Updated README with richer description and build instructions
+
+### Technical
+- `AppInitializer` now pre-loads `e_sqlite3.dll` by full path via `LoadLibrary` and
+  registers `AssemblyResolve` for all managed DLLs we ship (Microsoft.Data.Sqlite,
+  SQLitePCLRaw, System.Memory, System.Buffers, etc.)
+- `pluginpackage.manifest.xml` Include entries updated to match new dependency set
+
+---
+
 ## [1.0.0] — 2026-03-03
 
 First public release.
