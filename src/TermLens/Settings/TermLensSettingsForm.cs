@@ -135,7 +135,7 @@ namespace TermLens.Settings
             {
                 Text = "+",
                 Width = 26,
-                Height = 22,
+                Height = 26,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(80, 80, 80),
@@ -150,7 +150,7 @@ namespace TermLens.Settings
             {
                 Text = "\u2212",
                 Width = 26,
-                Height = 22,
+                Height = 26,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(80, 80, 80),
@@ -165,7 +165,7 @@ namespace TermLens.Settings
             {
                 Text = "Import",
                 Width = 65,
-                Height = 22,
+                Height = 26,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(80, 80, 80),
@@ -180,7 +180,7 @@ namespace TermLens.Settings
             {
                 Text = "Export",
                 Width = 65,
-                Height = 22,
+                Height = 26,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(80, 80, 80),
@@ -193,7 +193,7 @@ namespace TermLens.Settings
 
             _dgvTermbases = new DataGridView
             {
-                Location = new Point(16, 140),
+                Location = new Point(16, 144),
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 AllowUserToResizeRows = false,
