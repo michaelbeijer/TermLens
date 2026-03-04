@@ -3,8 +3,6 @@
 ## [Unreleased]
 
 ### Planned
-- **Right-click to add term** — context menu action in the Trados Studio editor grid
-  to add the selected source + target text as a new term to the active termbase
 - **Import** — bulk import terms from TSV (matching Supervertaler's format exactly:
   tab-separated, pipe-delimited synonyms, `[!forbidden]` syntax, UUID tracking);
   TBX to be added in sync with Supervertaler when that is implemented
@@ -16,6 +14,28 @@
 All notable changes to TermLens will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers follow [Semantic Versioning](https://semver.org/).
+
+---
+
+## [1.2.0] — 2026-03-04
+
+### Added
+- **Add Term to TermLens** — right-click context menu action in the Trados editor to
+  add a new term from the active segment's source and target text; opens a confirmation
+  dialog where you can edit the term pair and optionally add a definition before saving
+- **Quick add Term to TermLens** — a second context menu action that bypasses the dialog
+  and saves the source/target text directly as a new term for faster workflow
+- **Keyboard shortcuts** — Add Term defaults to Ctrl+Alt+T, Quick Add to
+  Ctrl+Alt+Shift+T (both reassignable via Trados keyboard shortcut settings)
+- **Settings: Read/Write columns** — the termbase list in settings is now a grid with
+  separate Read and Write checkboxes; Read controls which termbases are searched,
+  Write selects the single termbase that receives new terms (radio-button style)
+
+### Changed
+- **ViewPart docks above the editor** — TermLens now opens above the translation grid
+  (previously docked at the side) and opens pinned/visible instead of auto-hidden
+- **Term badge sizing** — the "+N" synonym count badges on term blocks are no longer
+  truncated; width calculations now use ceiling rounding instead of integer truncation
 
 ---
 

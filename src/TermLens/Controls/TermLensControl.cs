@@ -45,9 +45,9 @@ namespace TermLens.Controls
             _headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 24,
+                Height = 28,
                 BackColor = Color.FromArgb(245, 245, 245),
-                Padding = new Padding(6, 3, 6, 3)
+                Padding = new Padding(6, 2, 2, 2)
             };
 
             _headerLabel = new Label
@@ -56,23 +56,27 @@ namespace TermLens.Controls
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(80, 80, 80)
+                ForeColor = Color.FromArgb(80, 80, 80),
+                TextAlign = ContentAlignment.MiddleLeft
             };
             _headerPanel.Controls.Add(_headerLabel);
 
             // Gear button (right side of header)
             var btnSettings = new Button
             {
-                Text = "\u2699",  // ⚙ gear character
+                Text = "\u2699\uFE0E",  // gear character + text presentation selector
                 Dock = DockStyle.Right,
-                Width = 24,
-                Height = 24,
+                Width = 28,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10f),
+                Font = new Font("Segoe UI Symbol", 11f),
                 ForeColor = Color.FromArgb(100, 100, 100),
                 BackColor = Color.Transparent,
                 Cursor = Cursors.Hand,
-                TabStop = false
+                TabStop = false,
+                UseCompatibleTextRendering = true,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Padding = Padding.Empty,
+                Margin = Padding.Empty
             };
             btnSettings.FlatAppearance.BorderSize = 0;
             btnSettings.FlatAppearance.MouseOverBackColor = Color.FromArgb(220, 220, 220);
@@ -113,9 +117,12 @@ namespace TermLens.Controls
         /// <summary>
         /// Loads a Supervertaler termbase database.
         /// </summary>
-        public bool LoadTermbase(string dbPath)
+        /// <param name="dbPath">Path to the .db file.</param>
+        /// <param name="disabledTermbaseIds">Termbase IDs to exclude (null = load all).</param>
+        /// <param name="forceReload">Force reload even if the path hasn't changed.</param>
+        public bool LoadTermbase(string dbPath, HashSet<long> disabledTermbaseIds = null, bool forceReload = false)
         {
-            if (dbPath == _currentDbPath && _reader != null)
+            if (!forceReload && dbPath == _currentDbPath && _reader != null)
                 return true;
 
             _reader?.Dispose();
@@ -128,12 +135,23 @@ namespace TermLens.Controls
             }
 
             // Build in-memory index for fast matching
-            var index = _reader.LoadAllTerms();
+            var index = _reader.LoadAllTerms(disabledTermbaseIds);
             _matcher.LoadIndex(index);
 
             var termbases = _reader.GetTermbases();
-            int totalTerms = termbases.Sum(tb => tb.TermCount);
-            _statusLabel.Text = $"{termbases.Count} termbases, {totalTerms} terms";
+            int enabledCount = 0;
+            int totalTerms = 0;
+            foreach (var tb in termbases)
+            {
+                if (disabledTermbaseIds == null || !disabledTermbaseIds.Contains(tb.Id))
+                {
+                    enabledCount++;
+                    totalTerms += tb.TermCount;
+                }
+            }
+            _statusLabel.Text = enabledCount == termbases.Count
+                ? $"{termbases.Count} termbases, {totalTerms} terms"
+                : $"{enabledCount}/{termbases.Count} termbases, {totalTerms} terms";
             _currentDbPath = dbPath;
 
             return true;

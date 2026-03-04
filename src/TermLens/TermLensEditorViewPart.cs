@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Sdl.Desktop.IntegrationApi;
 using Sdl.Desktop.IntegrationApi.Extensions;
@@ -19,11 +20,15 @@ namespace TermLens
         Description = "Inline terminology display \u2014 shows source text with translations underneath matched terms",
         Icon = "TermLensIcon"
     )]
-    [ViewPartLayout(typeof(EditorController), Dock = DockType.Bottom)]
+    [ViewPartLayout(typeof(EditorController), Dock = DockType.Top, Pinned = true)]
     public class TermLensEditorViewPart : AbstractViewPartController
     {
         private static readonly Lazy<TermLensControl> _control =
             new Lazy<TermLensControl>(() => new TermLensControl());
+
+        // Single instance — Trados creates exactly one ViewPart of each type.
+        // Used by AddTermAction to trigger a reload after inserting a term.
+        private static TermLensEditorViewPart _currentInstance;
 
         private EditorController _editorController;
         private IStudioDocument _activeDocument;
@@ -36,6 +41,8 @@ namespace TermLens
 
         protected override void Initialize()
         {
+            _currentInstance = this;
+
             // Load persisted settings
             _settings = TermLensSettings.Load();
 
@@ -66,12 +73,16 @@ namespace TermLens
             UpdateFromActiveSegment();
         }
 
-        private void LoadTermbase()
+        private void LoadTermbase(bool forceReload = false)
         {
+            var disabled = _settings.DisabledTermbaseIds != null && _settings.DisabledTermbaseIds.Count > 0
+                ? new HashSet<long>(_settings.DisabledTermbaseIds)
+                : null;
+
             // 1. Use the saved termbase path if set and the file exists
             if (!string.IsNullOrEmpty(_settings.TermbasePath) && File.Exists(_settings.TermbasePath))
             {
-                _control.Value.LoadTermbase(_settings.TermbasePath);
+                _control.Value.LoadTermbase(_settings.TermbasePath, disabled, forceReload);
                 return;
             }
 
@@ -88,7 +99,7 @@ namespace TermLens
             {
                 if (File.Exists(path))
                 {
-                    _control.Value.LoadTermbase(path);
+                    _control.Value.LoadTermbase(path, disabled, forceReload);
                     return;
                 }
             }
@@ -109,8 +120,8 @@ namespace TermLens
                     if (result == System.Windows.Forms.DialogResult.OK)
                     {
                         // Settings already saved inside the form's OK handler.
-                        // Reload the termbase with the (possibly changed) path.
-                        LoadTermbase();
+                        // Force reload — the user may have toggled glossaries.
+                        LoadTermbase(forceReload: true);
                         UpdateFromActiveSegment();
                     }
                 }
@@ -184,8 +195,26 @@ namespace TermLens
             }
         }
 
+        /// <summary>
+        /// Called by AddTermAction after a term is inserted.
+        /// Reloads settings and the term index so the new term appears immediately.
+        /// </summary>
+        public static void NotifyTermAdded()
+        {
+            var instance = _currentInstance;
+            if (instance == null) return;
+
+            // Re-read settings in case WriteTermbaseId or disabled list changed
+            instance._settings = TermLensSettings.Load();
+            instance.LoadTermbase(forceReload: true);
+            instance.UpdateFromActiveSegment();
+        }
+
         public override void Dispose()
         {
+            if (_currentInstance == this)
+                _currentInstance = null;
+
             if (_activeDocument != null)
                 _activeDocument.ActiveSegmentChanged -= OnActiveSegmentChanged;
 

@@ -154,12 +154,15 @@ namespace TermLens.Core
         /// Bulk-loads all source terms for fast in-memory matching.
         /// Returns a dictionary mapping lowercased source term to list of entries.
         /// </summary>
-        public Dictionary<string, List<TermEntry>> LoadAllTerms()
+        /// <param name="disabledTermbaseIds">
+        /// Termbase IDs to exclude. Null or empty means load all termbases.
+        /// </param>
+        public Dictionary<string, List<TermEntry>> LoadAllTerms(HashSet<long> disabledTermbaseIds = null)
         {
             var index = new Dictionary<string, List<TermEntry>>(StringComparer.OrdinalIgnoreCase);
             if (_connection == null) return index;
 
-            const string sql = @"
+            var sql = @"
                 SELECT t.id, t.source_term, t.target_term, t.termbase_id,
                        t.source_lang, t.target_lang, t.definition, t.domain,
                        t.notes, t.forbidden, t.case_sensitive,
@@ -168,29 +171,49 @@ namespace TermLens.Core
                        COALESCE(tb.ranking, 99) AS ranking
                 FROM termbase_terms t
                 LEFT JOIN termbases tb ON CAST(t.termbase_id AS INTEGER) = tb.id
-                WHERE COALESCE(t.forbidden, 0) = 0
-                ORDER BY ranking ASC";
+                WHERE COALESCE(t.forbidden, 0) = 0";
+
+            if (disabledTermbaseIds != null && disabledTermbaseIds.Count > 0)
+            {
+                // Build explicit exclusion list — parameterised via positional args
+                var placeholders = new List<string>();
+                int i = 0;
+                foreach (var _ in disabledTermbaseIds)
+                    placeholders.Add($"@ex{i++}");
+                sql += $" AND CAST(t.termbase_id AS INTEGER) NOT IN ({string.Join(",", placeholders)})";
+            }
+
+            sql += " ORDER BY ranking ASC";
 
             using (var cmd = new SqliteCommand(sql, _connection))
-            using (var reader = cmd.ExecuteReader())
             {
-                while (reader.Read())
+                if (disabledTermbaseIds != null && disabledTermbaseIds.Count > 0)
                 {
-                    var entry = ReadTermEntry(reader);
-                    var key = entry.SourceTerm.Trim().ToLowerInvariant();
+                    int i = 0;
+                    foreach (var id in disabledTermbaseIds)
+                        cmd.Parameters.AddWithValue($"@ex{i++}", id);
+                }
 
-                    // Also index with trailing punctuation stripped
-                    var stripped = key.TrimEnd('.', '!', '?', ',', ';', ':');
-
-                    if (!index.ContainsKey(key))
-                        index[key] = new List<TermEntry>();
-                    index[key].Add(entry);
-
-                    if (stripped != key && stripped.Length > 0)
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
                     {
-                        if (!index.ContainsKey(stripped))
-                            index[stripped] = new List<TermEntry>();
-                        index[stripped].Add(entry);
+                        var entry = ReadTermEntry(reader);
+                        var key = entry.SourceTerm.Trim().ToLowerInvariant();
+
+                        // Also index with trailing punctuation stripped
+                        var stripped = key.TrimEnd('.', '!', '?', ',', ';', ':');
+
+                        if (!index.ContainsKey(key))
+                            index[key] = new List<TermEntry>();
+                        index[key].Add(entry);
+
+                        if (stripped != key && stripped.Length > 0)
+                        {
+                            if (!index.ContainsKey(stripped))
+                                index[stripped] = new List<TermEntry>();
+                            index[stripped].Add(entry);
+                        }
                     }
                 }
             }
@@ -258,6 +281,92 @@ namespace TermLens.Core
                 IsProjectTermbase = !reader.IsDBNull(12) && GetBool(reader, 12),
                 Ranking = reader.IsDBNull(13) ? 99 : reader.GetInt32(13)
             };
+        }
+
+        /// <summary>
+        /// Gets a single termbase's info by ID.
+        /// </summary>
+        public TermbaseInfo GetTermbaseById(long termbaseId)
+        {
+            if (_connection == null) return null;
+
+            const string sql = @"
+                SELECT tb.id, tb.name, tb.source_lang, tb.target_lang,
+                       tb.is_project_termbase, tb.ranking,
+                       COUNT(t.id) as term_count
+                FROM termbases tb
+                LEFT JOIN termbase_terms t ON CAST(t.termbase_id AS INTEGER) = tb.id
+                WHERE tb.id = @id
+                GROUP BY tb.id";
+
+            using (var cmd = new SqliteCommand(sql, _connection))
+            {
+                cmd.Parameters.AddWithValue("@id", termbaseId);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new TermbaseInfo
+                        {
+                            Id = reader.GetInt64(0),
+                            Name = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                            SourceLang = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                            TargetLang = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                            IsProjectTermbase = !reader.IsDBNull(4) && GetBool(reader, 4),
+                            Ranking = reader.IsDBNull(5) ? 99 : reader.GetInt32(5),
+                            TermCount = reader.GetInt32(6)
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Inserts a new term using a short-lived ReadWrite connection.
+        /// Separate from the main ReadOnly connection to preserve WAL safety
+        /// and minimise lock duration.
+        /// </summary>
+        /// <returns>The ID of the newly inserted term, or -1 on failure.</returns>
+        public static long InsertTerm(string dbPath, long termbaseId,
+            string sourceTerm, string targetTerm,
+            string sourceLang, string targetLang,
+            string definition = "", string domain = "", string notes = "")
+        {
+            var connStr = new SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Mode = SqliteOpenMode.ReadWrite
+            }.ToString();
+
+            using (var conn = new SqliteConnection(connStr))
+            {
+                conn.Open();
+
+                const string sql = @"
+                    INSERT INTO termbase_terms
+                        (source_term, target_term, termbase_id, source_lang, target_lang,
+                         definition, domain, notes, forbidden, case_sensitive)
+                    VALUES
+                        (@source, @target, @tbId, @srcLang, @tgtLang,
+                         @def, @domain, @notes, 0, 0);
+                    SELECT last_insert_rowid();";
+
+                using (var cmd = new SqliteCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@source", sourceTerm.Trim());
+                    cmd.Parameters.AddWithValue("@target", targetTerm.Trim());
+                    cmd.Parameters.AddWithValue("@tbId", termbaseId);
+                    cmd.Parameters.AddWithValue("@srcLang", sourceLang);
+                    cmd.Parameters.AddWithValue("@tgtLang", targetLang);
+                    cmd.Parameters.AddWithValue("@def", definition ?? "");
+                    cmd.Parameters.AddWithValue("@domain", domain ?? "");
+                    cmd.Parameters.AddWithValue("@notes", notes ?? "");
+
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToInt64(result) : -1;
+                }
+            }
         }
 
         public void Dispose()

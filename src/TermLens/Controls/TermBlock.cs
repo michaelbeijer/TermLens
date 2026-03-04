@@ -51,6 +51,8 @@ namespace TermLens.Controls
         public bool IsProjectTermbase => _entries.Count > 0 && _entries[0].IsProjectTermbase;
         public TermEntry PrimaryEntry => _entries.Count > 0 ? _entries[0] : null;
 
+        private const int BadgeDiameter = 16;
+
         private void CalculateSize()
         {
             using (var g = Graphics.FromHwnd(IntPtr.Zero))
@@ -59,17 +61,18 @@ namespace TermLens.Controls
                 var targetText = PrimaryEntry?.TargetTerm ?? "";
                 var targetSize = g.MeasureString(targetText, TargetFont);
 
-                int badgeWidth = 0;
-                if (_shortcutIndex >= 0)
-                    badgeWidth = 18;
-
                 int extraCount = _entries.Count - 1;
                 int extraWidth = 0;
                 if (extraCount > 0)
-                    extraWidth = (int)g.MeasureString($"+{extraCount}", BadgeFont).Width + 4;
+                    extraWidth = (int)Math.Ceiling(g.MeasureString($"+{extraCount}", BadgeFont).Width) + 6;
 
-                int width = (int)Math.Max(sourceSize.Width, targetSize.Width + badgeWidth + extraWidth) + 10;
-                int height = (int)(sourceSize.Height + targetSize.Height) + 8;
+                int badgeWidth = 0;
+                if (_shortcutIndex >= 0)
+                    badgeWidth = BadgeDiameter + 4;
+
+                int targetRowWidth = (int)Math.Ceiling(targetSize.Width) + extraWidth + badgeWidth + 10;
+                int width = (int)Math.Ceiling(Math.Max(sourceSize.Width + 10, targetRowWidth));
+                int height = (int)Math.Ceiling(sourceSize.Height + targetSize.Height) + 8;
 
                 Size = new Size(width, Math.Max(height, 28));
             }
@@ -85,65 +88,79 @@ namespace TermLens.Controls
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
+            // Source text — plain, no background
+            float y = 3;
+            var sourceHeight = g.MeasureString(_sourceText, SourceFont).Height;
+            using (var brush = new SolidBrush(Color.FromArgb(40, 40, 40)))
+            {
+                g.DrawString(_sourceText, SourceFont, brush, 4, y);
+            }
+            y += sourceHeight;
+
+            // Target row — highlighted background only around translation
+            var targetText = PrimaryEntry?.TargetTerm ?? "";
+            var targetSize = g.MeasureString(targetText, TargetFont);
+
+            int extraCount = _entries.Count - 1;
+            float extraWidth = 0;
+            if (extraCount > 0)
+                extraWidth = g.MeasureString($"+{extraCount}", BadgeFont).Width + 4;
+
+            float badgeWidth = _shortcutIndex >= 0 ? BadgeDiameter + 4 : 0;
+            float targetRowWidth = targetSize.Width + extraWidth + badgeWidth + 4;
+
             var bgColor = IsProjectTermbase
                 ? (_isHovered ? ProjectHover : ProjectBg)
                 : (_isHovered ? RegularHover : RegularBg);
 
-            // Background with rounded corners
+            var targetRect = new RectangleF(2, y, targetRowWidth, targetSize.Height + 2);
             using (var brush = new SolidBrush(bgColor))
-            using (var path = RoundedRect(ClientRectangle, 3))
+            using (var path = RoundedRect(Rectangle.Round(targetRect), 3))
             {
                 g.FillPath(brush, path);
             }
 
-            // Thin separator line at top
-            using (var pen = new Pen(SeparatorColor, 1))
-            {
-                g.DrawLine(pen, 3, 1, Width - 4, 1);
-            }
-
-            // Source text
-            float y = 3;
-            using (var brush = new SolidBrush(Color.FromArgb(60, 60, 60)))
-            {
-                g.DrawString(_sourceText, SourceFont, brush, 4, y);
-                y += g.MeasureString(_sourceText, SourceFont).Height;
-            }
-
-            // Target translation
-            var targetText = PrimaryEntry?.TargetTerm ?? "";
+            // Target text
             float targetX = 4;
-
-            // Shortcut badge
-            if (_shortcutIndex >= 0)
-            {
-                var badgeText = (_shortcutIndex + 1).ToString();
-                var badgeSize = g.MeasureString(badgeText, BadgeFont);
-                var badgeRect = new RectangleF(targetX, y, badgeSize.Width + 4, badgeSize.Height);
-
-                using (var brush = new SolidBrush(Color.FromArgb(100, 100, 100)))
-                using (var bgBrush = new SolidBrush(Color.FromArgb(40, 0, 0, 0)))
-                {
-                    g.FillRectangle(bgBrush, badgeRect);
-                    g.DrawString(badgeText, BadgeFont, brush, targetX + 2, y);
-                }
-                targetX += badgeSize.Width + 6;
-            }
-
             using (var brush = new SolidBrush(Color.FromArgb(20, 20, 20)))
             {
                 g.DrawString(targetText, TargetFont, brush, targetX, y);
-                targetX += g.MeasureString(targetText, TargetFont).Width + 2;
+                targetX += targetSize.Width;
             }
 
             // "+N" indicator for multiple translations
-            int extraCount = _entries.Count - 1;
             if (extraCount > 0)
             {
                 var extraText = $"+{extraCount}";
                 using (var brush = new SolidBrush(Color.FromArgb(120, 120, 120)))
                 {
                     g.DrawString(extraText, BadgeFont, brush, targetX, y);
+                    targetX += g.MeasureString(extraText, BadgeFont).Width + 2;
+                }
+            }
+
+            // Shortcut badge — filled circle with number, after translation
+            if (_shortcutIndex >= 0)
+            {
+                var badgeText = (_shortcutIndex + 1).ToString();
+                float circleX = targetX + 2;
+                float circleY = y + (targetSize.Height - BadgeDiameter) / 2 + 1;
+
+                var badgeColor = IsProjectTermbase
+                    ? Color.FromArgb(200, 100, 150)
+                    : Color.FromArgb(90, 140, 210);
+
+                using (var circleBrush = new SolidBrush(badgeColor))
+                {
+                    g.FillEllipse(circleBrush, circleX, circleY, BadgeDiameter, BadgeDiameter);
+                }
+
+                using (var textBrush = new SolidBrush(Color.White))
+                {
+                    var badgeSize = g.MeasureString(badgeText, BadgeFont);
+                    float tx = circleX + (BadgeDiameter - badgeSize.Width) / 2 + 1;
+                    float ty = circleY + (BadgeDiameter - badgeSize.Height) / 2 + 1;
+                    g.DrawString(badgeText, BadgeFont, textBrush, tx, ty);
                 }
             }
         }

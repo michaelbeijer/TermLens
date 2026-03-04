@@ -16,7 +16,9 @@ As you navigate between segments in the Trados Studio editor, the TermLens panel
 - **Color-coded by termbase** — project termbases (pink) vs. regular termbases (blue) at a glance
 - **Multi-word term support** — correctly matches phrases like "prior art" or "machine translation" as single units
 - **Click to insert** — click any translation to insert it at the cursor position in the target segment
-- **Supervertaler-compatible** — reads Supervertaler's SQLite termbase format directly, so you can share termbases between both tools
+- **Add terms from the editor** — right-click to add a new term from the active segment's source/target text, with or without a confirmation dialog
+- **Read/Write termbase selection** — choose which termbases to search (Read) and which one receives new terms (Write) independently
+- **Supervertaler-compatible** — reads and writes Supervertaler's SQLite termbase format directly, so you can share termbases between both tools
 - **Auto-detect** — automatically finds your Supervertaler termbase if no file is configured
 
 ## Requirements
@@ -31,7 +33,7 @@ Download the `.sdlplugin` file and copy it to:
 %LocalAppData%\Trados\Trados Studio\18\Plugins\Packages\
 ```
 
-Then restart Trados Studio. TermLens will appear as a panel below the editor when you open a document.
+Then restart Trados Studio. TermLens will appear as a panel above the editor when you open a document.
 
 ## Building from source
 
