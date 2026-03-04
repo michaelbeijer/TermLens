@@ -6,6 +6,8 @@ A Trados Studio plugin that displays terminology matches in a dedicated panel ne
 
 TermLens renders the full source segment word-by-word in its own panel, with glossary translations displayed directly underneath each matched term. Translators see every term match in context.
 
+<img width="2560" height="1440" alt="1_TermLens-in-Trados-Studio-2024" src="https://github.com/user-attachments/assets/0f8af9a5-587b-43a8-b1e1-6a9d4274032f" />
+
 ## How it works
 
 As you navigate between segments in the Trados Studio editor, the TermLens panel updates automatically. It shows the source text word-by-word, scanning it against your loaded termbase. Each matched term appears as a coloured block with the target-language translation directly below it — so you can see all terminology at a glance.
