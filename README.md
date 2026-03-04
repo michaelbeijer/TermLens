@@ -2,7 +2,7 @@
 
 **Instant terminology insight for every segment**
 
-A Trados Studio plugin that displays terminology matches in a dedicated panel next to the editor — using the same approach as [Supervertaler](https://supervertaler.com).
+TermLens for Trados is a Trados Studio plugin (.sdlplugin) that displays terminology matches in a dedicated panel next to the editor — using the same approach as [Supervertaler’s](https://supervertaler.com) TermView pane.
 
 TermLens renders the full source segment word-by-word in its own panel, with glossary translations displayed directly underneath each matched term. Translators see every term match in context.
 
