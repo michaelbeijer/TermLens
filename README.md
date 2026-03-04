@@ -1,4 +1,4 @@
-# TermLens
+# TermLens for Trados
 
 **Instant terminology insight for every segment**
 
