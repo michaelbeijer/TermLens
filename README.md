@@ -1,4 +1,4 @@
-# TermLens for Trados
+# Supervertaler for Trados
 
 **Instant terminology insight for every segment**
 
