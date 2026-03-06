@@ -19,6 +19,7 @@ namespace Supervertaler.Trados.Core
         private SqliteConnection _connection;
         private readonly string _dbPath;
         private bool _disposed;
+        private bool _hasNonTranslatableColumn;
 
         public TermbaseReader(string dbPath)
         {
@@ -52,6 +53,7 @@ namespace Supervertaler.Trados.Core
 
                 _connection = new SqliteConnection(connStr);
                 _connection.Open();
+                _hasNonTranslatableColumn = HasColumn(_connection, "termbase_terms", "is_nontranslatable");
                 return true;
             }
             catch (Exception ex)
@@ -113,13 +115,15 @@ namespace Supervertaler.Trados.Core
 
             var normalised = searchTerm.Trim();
 
-            const string sql = @"
+            var ntCol = _hasNonTranslatableColumn ? ", t.is_nontranslatable" : "";
+            var sql = $@"
                 SELECT t.id, t.source_term, t.target_term, t.termbase_id,
                        t.source_lang, t.target_lang, t.definition, t.domain,
                        t.notes, t.forbidden, t.case_sensitive,
                        tb.name AS termbase_name,
                        tb.is_project_termbase,
                        COALESCE(tb.ranking, 99) AS ranking
+                       {ntCol}
                 FROM termbase_terms t
                 LEFT JOIN termbases tb ON CAST(t.termbase_id AS INTEGER) = tb.id
                 WHERE (LOWER(t.source_term) = LOWER(@term)
@@ -136,7 +140,7 @@ namespace Supervertaler.Trados.Core
                 {
                     while (reader.Read())
                     {
-                        var entry = ReadTermEntry(reader);
+                        var entry = ReadTermEntry(reader, _hasNonTranslatableColumn);
                         results.Add(entry);
                     }
                 }
@@ -163,13 +167,15 @@ namespace Supervertaler.Trados.Core
             var index = new Dictionary<string, List<TermEntry>>(StringComparer.OrdinalIgnoreCase);
             if (_connection == null) return index;
 
-            var sql = @"
+            var ntCol = _hasNonTranslatableColumn ? ", t.is_nontranslatable" : "";
+            var sql = $@"
                 SELECT t.id, t.source_term, t.target_term, t.termbase_id,
                        t.source_lang, t.target_lang, t.definition, t.domain,
                        t.notes, t.forbidden, t.case_sensitive,
                        tb.name AS termbase_name,
                        tb.is_project_termbase,
                        COALESCE(tb.ranking, 99) AS ranking
+                       {ntCol}
                 FROM termbase_terms t
                 LEFT JOIN termbases tb ON CAST(t.termbase_id AS INTEGER) = tb.id
                 WHERE COALESCE(t.forbidden, 0) = 0";
@@ -202,7 +208,7 @@ namespace Supervertaler.Trados.Core
                 {
                     while (reader.Read())
                     {
-                        allEntries.Add(ReadTermEntry(reader));
+                        allEntries.Add(ReadTermEntry(reader, _hasNonTranslatableColumn));
                     }
                 }
             }
@@ -311,7 +317,41 @@ namespace Supervertaler.Trados.Core
             return Convert.ToBoolean(val);
         }
 
-        private static TermEntry ReadTermEntry(SqliteDataReader reader)
+        /// <summary>
+        /// Checks whether a column exists in a SQLite table using PRAGMA table_info.
+        /// </summary>
+        private static bool HasColumn(SqliteConnection conn, string table, string column)
+        {
+            using (var cmd = new SqliteCommand($"PRAGMA table_info({table})", conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var name = reader.GetString(1); // column 1 = "name"
+                    if (string.Equals(name, column, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Ensures the is_nontranslatable column exists on termbase_terms.
+        /// Idempotent — safe to call multiple times.
+        /// </summary>
+        private static void MigrateSchema(SqliteConnection conn)
+        {
+            if (HasColumn(conn, "termbase_terms", "is_nontranslatable"))
+                return;
+
+            using (var cmd = new SqliteCommand(
+                "ALTER TABLE termbase_terms ADD COLUMN is_nontranslatable BOOLEAN DEFAULT 0", conn))
+            {
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private static TermEntry ReadTermEntry(SqliteDataReader reader, bool hasNonTranslatableColumn = false)
         {
             return new TermEntry
             {
@@ -328,7 +368,9 @@ namespace Supervertaler.Trados.Core
                 CaseSensitive = !reader.IsDBNull(10) && GetBool(reader, 10),
                 TermbaseName = reader.IsDBNull(11) ? "" : reader.GetString(11),
                 IsProjectTermbase = !reader.IsDBNull(12) && GetBool(reader, 12),
-                Ranking = reader.IsDBNull(13) ? 99 : reader.GetInt32(13)
+                Ranking = reader.IsDBNull(13) ? 99 : reader.GetInt32(13),
+                IsNonTranslatable = hasNonTranslatableColumn && reader.FieldCount > 14
+                    && !reader.IsDBNull(14) && GetBool(reader, 14)
             };
         }
 
@@ -380,7 +422,8 @@ namespace Supervertaler.Trados.Core
         public static long InsertTerm(string dbPath, long termbaseId,
             string sourceTerm, string targetTerm,
             string sourceLang, string targetLang,
-            string definition = "", string domain = "", string notes = "")
+            string definition = "", string domain = "", string notes = "",
+            bool isNonTranslatable = false)
         {
             var connStr = new SqliteConnectionStringBuilder
             {
@@ -391,14 +434,15 @@ namespace Supervertaler.Trados.Core
             using (var conn = new SqliteConnection(connStr))
             {
                 conn.Open();
+                MigrateSchema(conn);
 
                 const string sql = @"
                     INSERT INTO termbase_terms
                         (source_term, target_term, termbase_id, source_lang, target_lang,
-                         definition, domain, notes, forbidden, case_sensitive)
+                         definition, domain, notes, forbidden, case_sensitive, is_nontranslatable)
                     VALUES
                         (@source, @target, @tbId, @srcLang, @tgtLang,
-                         @def, @domain, @notes, 0, 0);
+                         @def, @domain, @notes, 0, 0, @nt);
                     SELECT last_insert_rowid();";
 
                 using (var cmd = new SqliteCommand(sql, conn))
@@ -411,6 +455,7 @@ namespace Supervertaler.Trados.Core
                     cmd.Parameters.AddWithValue("@def", definition ?? "");
                     cmd.Parameters.AddWithValue("@domain", domain ?? "");
                     cmd.Parameters.AddWithValue("@notes", notes ?? "");
+                    cmd.Parameters.AddWithValue("@nt", isNonTranslatable ? 1 : 0);
 
                     var result = cmd.ExecuteScalar();
                     return result != null ? Convert.ToInt64(result) : -1;
@@ -425,7 +470,8 @@ namespace Supervertaler.Trados.Core
         /// <returns>List of (termbaseId, newRowId) pairs for successful inserts.</returns>
         public static List<(long termbaseId, long newId)> InsertTermBatch(
             string dbPath, string sourceTerm, string targetTerm,
-            string definition, List<TermbaseInfo> termbases)
+            string definition, List<TermbaseInfo> termbases,
+            bool isNonTranslatable = false)
         {
             var results = new List<(long, long)>();
 
@@ -438,15 +484,17 @@ namespace Supervertaler.Trados.Core
             using (var conn = new SqliteConnection(connStr))
             {
                 conn.Open();
+                MigrateSchema(conn);
+
                 using (var txn = conn.BeginTransaction())
                 {
                     const string sql = @"
                         INSERT INTO termbase_terms
                             (source_term, target_term, termbase_id, source_lang, target_lang,
-                             definition, domain, notes, forbidden, case_sensitive)
+                             definition, domain, notes, forbidden, case_sensitive, is_nontranslatable)
                         VALUES
                             (@source, @target, @tbId, @srcLang, @tgtLang,
-                             @def, '', '', 0, 0);
+                             @def, '', '', 0, 0, @nt);
                         SELECT last_insert_rowid();";
 
                     foreach (var tb in termbases)
@@ -459,6 +507,7 @@ namespace Supervertaler.Trados.Core
                             cmd.Parameters.AddWithValue("@srcLang", tb.SourceLang);
                             cmd.Parameters.AddWithValue("@tgtLang", tb.TargetLang);
                             cmd.Parameters.AddWithValue("@def", definition ?? "");
+                            cmd.Parameters.AddWithValue("@nt", isNonTranslatable ? 1 : 0);
 
                             var result = cmd.ExecuteScalar();
                             var newId = result != null ? Convert.ToInt64(result) : -1;
@@ -480,7 +529,8 @@ namespace Supervertaler.Trados.Core
         /// <returns>True if the row was updated, false if the term ID was not found.</returns>
         public static bool UpdateTerm(string dbPath, long termId,
             string sourceTerm, string targetTerm,
-            string definition = "", string domain = "", string notes = "")
+            string definition = "", string domain = "", string notes = "",
+            bool isNonTranslatable = false)
         {
             var connStr = new SqliteConnectionStringBuilder
             {
@@ -491,6 +541,7 @@ namespace Supervertaler.Trados.Core
             using (var conn = new SqliteConnection(connStr))
             {
                 conn.Open();
+                MigrateSchema(conn);
 
                 const string sql = @"
                     UPDATE termbase_terms
@@ -498,7 +549,8 @@ namespace Supervertaler.Trados.Core
                         target_term = @target,
                         definition  = @def,
                         domain      = @domain,
-                        notes       = @notes
+                        notes       = @notes,
+                        is_nontranslatable = @nt
                     WHERE id = @id";
 
                 using (var cmd = new SqliteCommand(sql, conn))
@@ -508,6 +560,7 @@ namespace Supervertaler.Trados.Core
                     cmd.Parameters.AddWithValue("@def", definition ?? "");
                     cmd.Parameters.AddWithValue("@domain", domain ?? "");
                     cmd.Parameters.AddWithValue("@notes", notes ?? "");
+                    cmd.Parameters.AddWithValue("@nt", isNonTranslatable ? 1 : 0);
                     cmd.Parameters.AddWithValue("@id", termId);
 
                     return cmd.ExecuteNonQuery() > 0;
@@ -547,6 +600,50 @@ namespace Supervertaler.Trados.Core
         }
 
         /// <summary>
+        /// Toggles the is_nontranslatable flag on a term. When toggling on,
+        /// also sets target_term = source_term so the term copies verbatim.
+        /// </summary>
+        public static bool SetNonTranslatable(string dbPath, long termId,
+            bool isNonTranslatable, string sourceTerm = null)
+        {
+            var connStr = new SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Mode = SqliteOpenMode.ReadWrite
+            }.ToString();
+
+            using (var conn = new SqliteConnection(connStr))
+            {
+                conn.Open();
+                MigrateSchema(conn);
+
+                string sql;
+                if (isNonTranslatable && sourceTerm != null)
+                {
+                    sql = @"UPDATE termbase_terms
+                            SET is_nontranslatable = 1, target_term = @source
+                            WHERE id = @id";
+                }
+                else
+                {
+                    sql = @"UPDATE termbase_terms
+                            SET is_nontranslatable = @nt
+                            WHERE id = @id";
+                }
+
+                using (var cmd = new SqliteCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@id", termId);
+                    cmd.Parameters.AddWithValue("@nt", isNonTranslatable ? 1 : 0);
+                    if (sourceTerm != null)
+                        cmd.Parameters.AddWithValue("@source", sourceTerm);
+
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+        }
+
+        /// <summary>
         /// Loads all terms belonging to a specific glossary, for use in the
         /// Glossary Editor dialog. Uses a short-lived ReadOnly connection.
         /// </summary>
@@ -564,13 +661,16 @@ namespace Supervertaler.Trados.Core
             {
                 conn.Open();
 
-                const string sql = @"
+                var hasNtCol = HasColumn(conn, "termbase_terms", "is_nontranslatable");
+                var ntCol = hasNtCol ? ", t.is_nontranslatable" : "";
+                var sql = $@"
                     SELECT t.id, t.source_term, t.target_term, t.termbase_id,
                            t.source_lang, t.target_lang, t.definition, t.domain,
                            t.notes, t.forbidden, t.case_sensitive,
                            tb.name AS termbase_name,
                            tb.is_project_termbase,
                            COALESCE(tb.ranking, 99) AS ranking
+                           {ntCol}
                     FROM termbase_terms t
                     LEFT JOIN termbases tb ON CAST(t.termbase_id AS INTEGER) = tb.id
                     WHERE CAST(t.termbase_id AS INTEGER) = @tbId
@@ -583,7 +683,7 @@ namespace Supervertaler.Trados.Core
                     {
                         while (reader.Read())
                         {
-                            results.Add(ReadTermEntry(reader));
+                            results.Add(ReadTermEntry(reader, hasNtCol));
                         }
                     }
                 }
@@ -662,6 +762,7 @@ namespace Supervertaler.Trados.Core
                                 domain TEXT,
                                 case_sensitive BOOLEAN DEFAULT 0,
                                 forbidden BOOLEAN DEFAULT 0,
+                                is_nontranslatable BOOLEAN DEFAULT 0,
                                 tm_source_id INTEGER,
                                 created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

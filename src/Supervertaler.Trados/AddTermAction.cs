@@ -149,7 +149,8 @@ namespace Supervertaler.Trados
                                     dlg.TargetTerm,
                                     tb.SourceLang,
                                     tb.TargetLang,
-                                    dlg.Definition);
+                                    dlg.Definition,
+                                    isNonTranslatable: dlg.IsNonTranslatable);
 
                                 if (newId > 0) anyInserted = true;
                             }

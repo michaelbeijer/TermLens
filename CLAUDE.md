@@ -113,6 +113,22 @@ On app startup or settings change, `LoadTermbase(forceReload: true)` still does 
 
 ---
 
+## Non-translatable terms
+
+Terms can be marked as **non-translatable** (brand names, product codes, abbreviations that stay the same across languages). These are stored with `is_nontranslatable = 1` in the `termbase_terms` table and `TargetTerm = SourceTerm`.
+
+- **Visual**: Non-translatable chips render with a **light yellow background** (`#FFF3D0`). Color precedence: non-translatable (yellow) > project (pink) > regular (blue).
+- **Keyboard shortcut**: `Ctrl+Alt+N` — quick-adds the selected source text as non-translatable to all Write termbases (target is set to source automatically). Only requires source text selected.
+- **Right-click menu**: "Mark as Non-Translatable" / "Mark as Translatable" toggle on any term chip. Uses `TermbaseReader.SetNonTranslatable()` for a lightweight DB update.
+- **Add Term dialog**: "Non-translatable" checkbox auto-fills target = source and makes target read-only when checked. Pre-populates from `TermEntry.IsNonTranslatable` in edit mode.
+- **Alt+digit insertion**: Works unchanged — inserts `TargetTerm` which equals `SourceTerm` for non-translatables.
+- **Term Picker** (Ctrl+Shift+G): Shows yellow background for non-translatable matches.
+- **Glossary Editor**: "NT" checkbox column for toggling per-term.
+- **DB migration**: `MigrateSchema()` uses `PRAGMA table_info` to detect the column and `ALTER TABLE ADD COLUMN` if missing. Called from `Open()` (via `HasColumn`) and all static write methods. Idempotent and backward-compatible with older Supervertaler databases.
+- **Action ID**: `TermLens_QuickAddNonTranslatable` — do NOT rename (users may have custom shortcut overrides).
+
+---
+
 ## License
 
 Source-available license (not MIT). Source code viewable/forkable for personal use, but binary redistribution (.sdlplugin) restricted to copyright holder. Pre-built binaries available at supervertaler.com.

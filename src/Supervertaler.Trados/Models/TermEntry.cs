@@ -21,6 +21,7 @@ namespace Supervertaler.Trados.Models
         public string Notes { get; set; }
         public bool Forbidden { get; set; }
         public bool CaseSensitive { get; set; }
+        public bool IsNonTranslatable { get; set; }
         public List<string> TargetSynonyms { get; set; } = new List<string>();
     }
 

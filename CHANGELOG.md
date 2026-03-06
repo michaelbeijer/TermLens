@@ -16,6 +16,33 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.1.0] — 2026-03-06
+
+### Added
+- **Non-translatable terms** — mark terms as non-translatable (brand names, product
+  codes, abbreviations that stay the same across languages); the source term is copied
+  verbatim as the target
+- **Ctrl+Alt+N quick-add shortcut** — select text in the source or target column and
+  press Ctrl+Alt+N to instantly mark it as non-translatable in all Write glossaries
+- **Right-click toggle** — right-click any term block and choose "Mark as
+  Non-Translatable" or "Mark as Translatable" to toggle the flag without opening a
+  dialog
+- **Non-translatable checkbox in Add Term dialog** — when checked, the target field
+  auto-fills with the source text and becomes read-only
+- **Yellow visual distinction** — non-translatable terms appear with a light yellow
+  background (#FFF3D0) in the TermLens panel, the Term Picker popup, and the Glossary
+  Editor; color precedence: yellow (non-translatable) > pink (project) > blue (regular)
+- **NT column in Glossary Editor** — checkbox column to view and toggle
+  non-translatable status per term
+- **Select/deselect all in Settings** — click the Read, Write, or Project column
+  headers to toggle all checkboxes at once; tooltips explain the feature
+
+### Changed
+- **Database schema migration** — the `is_nontranslatable` column is automatically
+  added to existing databases on first access; fully backward-compatible
+
+---
+
 ## [2.0.1] — 2026-03-05
 
 ### Changed

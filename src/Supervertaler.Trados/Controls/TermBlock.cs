@@ -26,6 +26,8 @@ namespace Supervertaler.Trados.Controls
         private static readonly Color ProjectHover = ColorTranslator.FromHtml("#FFD0E8");
         private static readonly Color RegularBg = ColorTranslator.FromHtml("#D6EBFF");
         private static readonly Color RegularHover = ColorTranslator.FromHtml("#BBDEFB");
+        private static readonly Color NonTranslatableBg = ColorTranslator.FromHtml("#FFF3D0");
+        private static readonly Color NonTranslatableHover = ColorTranslator.FromHtml("#FFE8A0");
         private static readonly Color SeparatorColor = Color.FromArgb(180, 180, 180);
 
         private bool _isHovered;
@@ -33,17 +35,21 @@ namespace Supervertaler.Trados.Controls
         private readonly string _sourceText;
         private readonly int _shortcutIndex; // -1 = no shortcut
         private readonly bool _isProjectGlossary;
+        private readonly bool _isNonTranslatable;
 
         public event EventHandler<TermInsertEventArgs> TermInsertRequested;
         public event EventHandler<TermEditEventArgs> TermEditRequested;
         public event EventHandler<TermEditEventArgs> TermDeleteRequested;
+        public event EventHandler<TermEditEventArgs> TermNonTranslatableToggled;
 
-        public TermBlock(string sourceText, List<TermEntry> entries, int shortcutIndex = -1, bool isProjectGlossary = false)
+        public TermBlock(string sourceText, List<TermEntry> entries, int shortcutIndex = -1,
+            bool isProjectGlossary = false, bool isNonTranslatable = false)
         {
             _sourceText = sourceText;
             _entries = entries ?? new List<TermEntry>();
             _shortcutIndex = shortcutIndex;
             _isProjectGlossary = isProjectGlossary;
+            _isNonTranslatable = isNonTranslatable;
 
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
@@ -51,7 +57,7 @@ namespace Supervertaler.Trados.Controls
             Cursor = Cursors.Hand;
             CalculateSize();
 
-            // Right-click context menu for edit/delete
+            // Right-click context menu for edit/delete/non-translatable
             var contextMenu = new ContextMenuStrip();
 
             var editItem = new ToolStripMenuItem("Edit Term\u2026");
@@ -61,6 +67,15 @@ namespace Supervertaler.Trados.Controls
                     TermEditRequested?.Invoke(this, new TermEditEventArgs { Entry = PrimaryEntry });
             };
             contextMenu.Items.Add(editItem);
+
+            var toggleNtItem = new ToolStripMenuItem(
+                _isNonTranslatable ? "Mark as Translatable" : "Mark as Non-Translatable");
+            toggleNtItem.Click += (s, ev) =>
+            {
+                if (PrimaryEntry != null)
+                    TermNonTranslatableToggled?.Invoke(this, new TermEditEventArgs { Entry = PrimaryEntry });
+            };
+            contextMenu.Items.Add(toggleNtItem);
 
             var deleteItem = new ToolStripMenuItem("Delete Term");
             deleteItem.Click += (s, ev) =>
@@ -78,6 +93,7 @@ namespace Supervertaler.Trados.Controls
         /// Controls background color: pink for project glossaries, blue for others.
         /// </summary>
         public bool IsProjectGlossary => _isProjectGlossary;
+        public bool IsNonTranslatable => _isNonTranslatable;
         public TermEntry PrimaryEntry => _entries.Count > 0 ? _entries[0] : null;
         public IReadOnlyList<TermEntry> Entries => _entries;
         public int ShortcutIndex => _shortcutIndex;
@@ -164,9 +180,13 @@ namespace Supervertaler.Trados.Controls
             float badgeWidth = _shortcutIndex >= 0 ? GetBadgeWidth(g) + 4 : 0;
             float targetRowWidth = targetSize.Width + extraWidth + badgeWidth + 4;
 
-            var bgColor = IsProjectGlossary
-                ? (_isHovered ? ProjectHover : ProjectBg)
-                : (_isHovered ? RegularHover : RegularBg);
+            Color bgColor;
+            if (_isNonTranslatable)
+                bgColor = _isHovered ? NonTranslatableHover : NonTranslatableBg;
+            else if (IsProjectGlossary)
+                bgColor = _isHovered ? ProjectHover : ProjectBg;
+            else
+                bgColor = _isHovered ? RegularHover : RegularBg;
 
             var targetRect = new RectangleF(2, y, targetRowWidth, targetSize.Height + 2);
             using (var brush = new SolidBrush(bgColor))
@@ -202,9 +222,13 @@ namespace Supervertaler.Trados.Controls
                 float badgeX = targetX + 2;
                 float badgeY = y + (targetSize.Height - BadgeHeight) / 2 + 1;
 
-                var badgeColor = IsProjectGlossary
-                    ? Color.FromArgb(200, 100, 150)
-                    : Color.FromArgb(90, 140, 210);
+                Color badgeColor;
+                if (_isNonTranslatable)
+                    badgeColor = Color.FromArgb(180, 150, 50);
+                else if (IsProjectGlossary)
+                    badgeColor = Color.FromArgb(200, 100, 150);
+                else
+                    badgeColor = Color.FromArgb(90, 140, 210);
 
                 using (var circleBrush = new SolidBrush(badgeColor))
                 {
@@ -244,6 +268,8 @@ namespace Supervertaler.Trados.Controls
             if (_entries.Count > 0)
             {
                 var lines = new List<string>();
+                if (_isNonTranslatable)
+                    lines.Add("[Non-translatable]");
                 foreach (var entry in _entries)
                 {
                     var line = $"{entry.SourceTerm} \u2192 {entry.TargetTerm}";

@@ -219,6 +219,7 @@ namespace Supervertaler.Trados.Controls
                 _dataTable.Columns.Add("Definition", typeof(string));
                 _dataTable.Columns.Add("Domain", typeof(string));
                 _dataTable.Columns.Add("Notes", typeof(string));
+                _dataTable.Columns.Add("NT", typeof(bool));
 
                 foreach (var term in terms)
                 {
@@ -228,7 +229,8 @@ namespace Supervertaler.Trados.Controls
                         term.TargetTerm ?? "",
                         term.Definition ?? "",
                         term.Domain ?? "",
-                        term.Notes ?? "");
+                        term.Notes ?? "",
+                        term.IsNonTranslatable);
                 }
 
                 _bindingSource = new BindingSource { DataSource = _dataTable };
@@ -264,6 +266,14 @@ namespace Supervertaler.Trados.Controls
                 {
                     _dgvTerms.Columns["Notes"].HeaderText = "Notes";
                     _dgvTerms.Columns["Notes"].FillWeight = 15;
+                }
+                if (_dgvTerms.Columns.Contains("NT"))
+                {
+                    _dgvTerms.Columns["NT"].HeaderText = "NT";
+                    _dgvTerms.Columns["NT"].ToolTipText = "Non-translatable";
+                    _dgvTerms.Columns["NT"].Width = 36;
+                    _dgvTerms.Columns["NT"].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                    _dgvTerms.Columns["NT"].FillWeight = 1;
                 }
 
                 UpdateTermCountLabel();
@@ -340,11 +350,13 @@ namespace Supervertaler.Trados.Controls
 
             try
             {
+                var isNt = row["NT"] as bool? ?? false;
                 TermbaseReader.UpdateTerm(_dbPath, id,
                     source, target,
                     row["Definition"] as string ?? "",
                     row["Domain"] as string ?? "",
-                    row["Notes"] as string ?? "");
+                    row["Notes"] as string ?? "",
+                    isNonTranslatable: isNt);
             }
             catch (Exception ex)
             {

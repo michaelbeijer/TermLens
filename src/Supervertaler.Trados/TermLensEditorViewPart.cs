@@ -73,9 +73,10 @@ namespace Supervertaler.Trados
             // Wire up term insertion — when user clicks a translation in the panel
             _control.Value.TermInsertRequested += OnTermInsertRequested;
 
-            // Wire up right-click edit/delete on term blocks
+            // Wire up right-click edit/delete/non-translatable on term blocks
             _control.Value.TermEditRequested += OnTermEditRequested;
             _control.Value.TermDeleteRequested += OnTermDeleteRequested;
+            _control.Value.TermNonTranslatableToggled += OnTermNonTranslatableToggled;
 
             // Wire up the gear/settings button
             _control.Value.SettingsRequested += OnSettingsRequested;
@@ -270,7 +271,8 @@ namespace Supervertaler.Trados
                                 e.Entry.Id,
                                 dlg.SourceTerm,
                                 dlg.TargetTerm,
-                                dlg.Definition);
+                                dlg.Definition,
+                                isNonTranslatable: dlg.IsNonTranslatable);
 
                             if (updated)
                             {
@@ -292,6 +294,7 @@ namespace Supervertaler.Trados
                                     Notes = e.Entry.Notes,
                                     Forbidden = e.Entry.Forbidden,
                                     CaseSensitive = e.Entry.CaseSensitive,
+                                    IsNonTranslatable = dlg.IsNonTranslatable,
                                     TargetSynonyms = e.Entry.TargetSynonyms
                                 };
                                 _control.Value.AddTermToIndex(updatedEntry);
@@ -342,6 +345,57 @@ namespace Supervertaler.Trados
                         $"Failed to delete term: {ex.Message}\n\n" +
                         "The database may be locked by another application.",
                         "TermLens \u2014 Delete Term",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            });
+        }
+
+        private void OnTermNonTranslatableToggled(object sender, TermEditEventArgs e)
+        {
+            if (e.Entry == null) return;
+
+            SafeInvoke(() =>
+            {
+                bool newState = !e.Entry.IsNonTranslatable;
+
+                try
+                {
+                    bool updated = TermbaseReader.SetNonTranslatable(
+                        _settings.TermbasePath, e.Entry.Id, newState, e.Entry.SourceTerm);
+
+                    if (updated)
+                    {
+                        // Incremental update: remove old entry, add updated one
+                        _control.Value.RemoveTermFromIndex(e.Entry.Id);
+                        var updatedEntry = new TermEntry
+                        {
+                            Id = e.Entry.Id,
+                            SourceTerm = e.Entry.SourceTerm,
+                            TargetTerm = newState ? e.Entry.SourceTerm : e.Entry.TargetTerm,
+                            SourceLang = e.Entry.SourceLang,
+                            TargetLang = e.Entry.TargetLang,
+                            TermbaseId = e.Entry.TermbaseId,
+                            TermbaseName = e.Entry.TermbaseName,
+                            IsProjectTermbase = e.Entry.IsProjectTermbase,
+                            Ranking = e.Entry.Ranking,
+                            Definition = e.Entry.Definition ?? "",
+                            Domain = e.Entry.Domain,
+                            Notes = e.Entry.Notes,
+                            Forbidden = e.Entry.Forbidden,
+                            CaseSensitive = e.Entry.CaseSensitive,
+                            IsNonTranslatable = newState,
+                            TargetSynonyms = e.Entry.TargetSynonyms
+                        };
+                        _control.Value.AddTermToIndex(updatedEntry);
+                        UpdateFromActiveSegment();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Failed to toggle non-translatable: {ex.Message}\n\n" +
+                        "The database may be locked by another application.",
+                        "TermLens \u2014 Non-Translatable",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             });

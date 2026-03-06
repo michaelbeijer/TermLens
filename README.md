@@ -17,7 +17,8 @@ As you navigate between segments in the Trados Studio editor, the TermLens panel
 ### Features
 
 - **Dedicated terminology panel** — source words flow left to right with translations directly underneath matched terms
-- **Color-coded by glossary type** — mark glossaries as "Project" in settings to show their terms in pink; all others appear in blue
+- **Color-coded by glossary type** — mark glossaries as "Project" in settings to show their terms in pink; all others appear in blue; non-translatable terms appear in yellow
+- **Non-translatable terms** — mark brand names, product codes, or abbreviations that should stay the same across languages; Ctrl+Alt+N to quick-add, or right-click any term to toggle; the source term is copied verbatim as the target
 - **Multi-word term support** — correctly matches phrases like "prior art" or "machine translation" as single units
 - **Click to insert** — click any translation to insert it at the cursor position in the target segment
 - **Alt+digit shortcuts** — press Alt+1 through Alt+9 (or Alt+0 for term 10) to instantly insert a matched term; two-digit chords supported for 10+ matches

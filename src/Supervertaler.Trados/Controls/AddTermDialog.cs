@@ -14,6 +14,7 @@ namespace Supervertaler.Trados.Controls
         private TextBox _txtSource;
         private TextBox _txtTarget;
         private TextBox _txtDefinition;
+        private CheckBox _chkNonTranslatable;
         private Button _btnAdd;
         private long _termId = -1;
 
@@ -25,6 +26,9 @@ namespace Supervertaler.Trados.Controls
 
         /// <summary>Optional definition entered by the user.</summary>
         public string Definition => _txtDefinition.Text.Trim();
+
+        /// <summary>True if this term should be marked as non-translatable.</summary>
+        public bool IsNonTranslatable => _chkNonTranslatable.Checked;
 
         /// <summary>Database row ID of the term being edited, or -1 for add mode.</summary>
         public long TermId => _termId;
@@ -40,7 +44,7 @@ namespace Supervertaler.Trados.Controls
             MaximizeBox = false;
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterParent;
-            ClientSize = new Size(420, 260);
+            ClientSize = new Size(420, 288);
             BackColor = Color.White;
 
             int y = 16;
@@ -103,7 +107,38 @@ namespace Supervertaler.Trados.Controls
                 BackColor = Color.FromArgb(250, 250, 250)
             };
             Controls.Add(_txtDefinition);
-            y += 34;
+            y += 30;
+
+            _chkNonTranslatable = new CheckBox
+            {
+                Text = "Non-translatable (keep source text in target)",
+                Location = new Point(16, y),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(80, 80, 80)
+            };
+            _chkNonTranslatable.CheckedChanged += (s, ev) =>
+            {
+                if (_chkNonTranslatable.Checked)
+                {
+                    _txtTarget.Text = _txtSource.Text;
+                    _txtTarget.ReadOnly = true;
+                    _txtTarget.BackColor = Color.FromArgb(240, 240, 240);
+                }
+                else
+                {
+                    _txtTarget.ReadOnly = false;
+                    _txtTarget.BackColor = Color.FromArgb(250, 250, 250);
+                }
+            };
+            Controls.Add(_chkNonTranslatable);
+            y += 28;
+
+            // Sync target when source changes and non-translatable is checked
+            _txtSource.TextChanged += (s, ev) =>
+            {
+                if (_chkNonTranslatable.Checked)
+                    _txtTarget.Text = _txtSource.Text;
+            };
 
             // Termbase info label
             string tbText;
@@ -183,6 +218,9 @@ namespace Supervertaler.Trados.Controls
 
             // Pre-fill definition if present
             _txtDefinition.Text = existingEntry.Definition ?? "";
+
+            // Pre-fill non-translatable state
+            _chkNonTranslatable.Checked = existingEntry.IsNonTranslatable;
         }
     }
 }

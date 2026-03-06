@@ -26,6 +26,7 @@ namespace Supervertaler.Trados.Controls
         // Colors
         private static readonly Color HighPriorityBg = ColorTranslator.FromHtml("#FFE5F0");
         private static readonly Color RegularBg = ColorTranslator.FromHtml("#D6EBFF");
+        private static readonly Color NonTranslatableBg = ColorTranslator.FromHtml("#FFF3D0");
         private static readonly Color SubItemBg = Color.FromArgb(245, 245, 250);
 
         /// <summary>
@@ -160,8 +161,13 @@ namespace Supervertaler.Trados.Controls
                     TargetTerm = match.PrimaryEntry.TargetTerm
                 };
 
-                // Color: project glossary = pink, rest = blue
-                item.BackColor = match.IsProjectGlossary ? HighPriorityBg : RegularBg;
+                // Color: non-translatable = yellow, project = pink, rest = blue
+                if (match.PrimaryEntry.IsNonTranslatable)
+                    item.BackColor = NonTranslatableBg;
+                else if (match.IsProjectGlossary)
+                    item.BackColor = HighPriorityBg;
+                else
+                    item.BackColor = RegularBg;
 
                 _listView.Items.Add(item);
 

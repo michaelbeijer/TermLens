@@ -48,6 +48,11 @@ namespace Supervertaler.Trados.Controls
         public event EventHandler<TermEditEventArgs> TermDeleteRequested;
 
         /// <summary>
+        /// Fired when the user right-clicks a term and toggles non-translatable status.
+        /// </summary>
+        public event EventHandler<TermEditEventArgs> TermNonTranslatableToggled;
+
+        /// <summary>
         /// Fired when the user clicks the gear/settings button in the header.
         /// </summary>
         public event EventHandler SettingsRequested;
@@ -302,7 +307,18 @@ namespace Supervertaler.Trados.Controls
                         }
                     }
 
-                    var block = new TermBlock(token.Text, token.Matches, shortcutIndex, isProject)
+                    // Check if any entry is non-translatable
+                    bool isNonTranslatable = false;
+                    foreach (var m in token.Matches)
+                    {
+                        if (m.IsNonTranslatable)
+                        {
+                            isNonTranslatable = true;
+                            break;
+                        }
+                    }
+
+                    var block = new TermBlock(token.Text, token.Matches, shortcutIndex, isProject, isNonTranslatable)
                     {
                         Font = Font,
                         Margin = new Padding(2, 1, 2, 1)
@@ -311,6 +327,7 @@ namespace Supervertaler.Trados.Controls
                     block.TermInsertRequested += (s, args) => TermInsertRequested?.Invoke(s, args);
                     block.TermEditRequested += (s, args) => TermEditRequested?.Invoke(s, args);
                     block.TermDeleteRequested += (s, args) => TermDeleteRequested?.Invoke(s, args);
+                    block.TermNonTranslatableToggled += (s, args) => TermNonTranslatableToggled?.Invoke(s, args);
                     _flowPanel.Controls.Add(block);
 
                     matchCount++;

@@ -250,7 +250,8 @@ namespace Supervertaler.Trados.Settings
                 HeaderText = "Read",
                 Width = 54,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
-                FillWeight = 1
+                FillWeight = 1,
+                ToolTipText = "Click header to select/deselect all"
             };
             var colWrite = new DataGridViewCheckBoxColumn
             {
@@ -258,7 +259,8 @@ namespace Supervertaler.Trados.Settings
                 HeaderText = "Write",
                 Width = 54,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
-                FillWeight = 1
+                FillWeight = 1,
+                ToolTipText = "Click header to select/deselect all"
             };
             var colProject = new DataGridViewCheckBoxColumn
             {
@@ -267,7 +269,7 @@ namespace Supervertaler.Trados.Settings
                 Width = 72,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
                 FillWeight = 1,
-                ToolTipText = "Mark as project glossary (shown in pink)"
+                ToolTipText = "Mark as project glossary (shown in pink). Click header to clear."
             };
             var colName = new DataGridViewTextBoxColumn
             {
@@ -303,6 +305,9 @@ namespace Supervertaler.Trados.Settings
 
             // Enforce radio-button behaviour on the Project column (only one can be project)
             _dgvTermbases.CellContentClick += OnGridCellContentClick;
+
+            // Click column header to select/deselect all checkboxes in that column
+            _dgvTermbases.ColumnHeaderMouseClick += OnColumnHeaderMouseClick;
 
             // Double-click a glossary row to open the Glossary Editor
             _dgvTermbases.CellDoubleClick += OnGridCellDoubleClick;
@@ -417,6 +422,41 @@ namespace Supervertaler.Trados.Settings
                     }
                 }
             }
+        }
+
+        private void OnColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            var col = _dgvTermbases.Columns[e.ColumnIndex];
+            if (col.Name != "colRead" && col.Name != "colWrite" && col.Name != "colProject")
+                return;
+
+            if (_dgvTermbases.Rows.Count == 0) return;
+
+            if (col.Name == "colProject")
+            {
+                // Project is radio-button style — header click clears the selection
+                foreach (DataGridViewRow row in _dgvTermbases.Rows)
+                    row.Cells[col.Name].Value = false;
+            }
+            else
+            {
+                // Toggle: if all are checked → uncheck all, otherwise check all
+                bool allChecked = true;
+                foreach (DataGridViewRow row in _dgvTermbases.Rows)
+                {
+                    if (!(row.Cells[col.Name].Value as bool? ?? false))
+                    {
+                        allChecked = false;
+                        break;
+                    }
+                }
+
+                bool newValue = !allChecked;
+                foreach (DataGridViewRow row in _dgvTermbases.Rows)
+                    row.Cells[col.Name].Value = newValue;
+            }
+
+            _dgvTermbases.RefreshEdit();
         }
 
         private void OnGridCellDoubleClick(object sender, DataGridViewCellEventArgs e)
