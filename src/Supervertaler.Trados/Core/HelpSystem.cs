@@ -9,14 +9,14 @@ namespace Supervertaler.Trados.Core
     public static class HelpSystem
     {
         /// <summary>
-        /// Base URL for the Trados plugin section of the GitBook documentation.
+        /// Base URL for the Trados plugin GitBook documentation space.
         /// </summary>
-        private const string DocsBaseUrl = "https://supervertaler.gitbook.io/help/supervertaler-for-trados";
+        private const string DocsBaseUrl = "https://supervertaler.gitbook.io/supervertaler-for-trados";
 
         /// <summary>
-        /// Generic docs home (not the Trados section).
+        /// Desktop app docs home (separate GitBook space).
         /// </summary>
-        private const string DocsHomeUrl = "https://supervertaler.gitbook.io/help";
+        private const string DocsHomeUrl = "https://supervertaler.gitbook.io/supervertaler";
 
         /// <summary>
         /// Help topic identifiers. Each maps to a specific documentation page path
@@ -24,7 +24,7 @@ namespace Supervertaler.Trados.Core
         /// </summary>
         public static class Topics
         {
-            public const string Overview           = "overview";
+            public const string Overview           = "";  // root of the space (README.md)
             public const string Installation       = "installation";
             public const string GettingStarted     = "getting-started";
             public const string TermLensPanel      = "termlens";
