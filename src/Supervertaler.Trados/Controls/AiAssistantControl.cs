@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Sdl.Desktop.IntegrationApi.Interfaces;
 using Supervertaler.Trados.Core;
@@ -906,39 +907,123 @@ namespace Supervertaler.Trados.Controls
     }
 
     /// <summary>
-    /// TextBox subclass that intercepts Enter and Shift+Enter at the application
-    /// message-filter level — the earliest possible interception point in WinForms.
+    /// TextBox subclass that uses a WH_GETMESSAGE hook to intercept Enter and
+    /// Shift+Enter before Trados Studio's IMessageFilter chain can steal them.
     ///
-    /// WinForms key processing order:
-    ///   0. IMessageFilter.PreFilterMessage  ← we intercept HERE
-    ///   1. ProcessCmdKey — walks focused control → parent chain (Trados form)
-    ///   2. IsInputKey    — only checked if ProcessCmdKey didn't consume the key
-    ///   3. KeyDown       — only fires if IsInputKey returned true
+    /// Key processing order in WinForms:
+    ///   -1. WH_GETMESSAGE hook  ← we intercept HERE (fires inside GetMessage)
+    ///    0. IMessageFilter chain ← Trados intercepts here (FIFO — its filter runs first)
+    ///    1. ProcessCmdKey        ← walks focused control → parent chain
+    ///    2. IsInputKey           ← only if ProcessCmdKey didn't consume
+    ///    3. KeyDown event        ← only if IsInputKey returned true
     ///
-    /// Trados Studio registers its own IMessageFilter or form-level ProcessCmdKey
-    /// to intercept Enter for segment navigation. By registering our own filter
-    /// we consume the key before Trados ever sees it.
+    /// Trados registers its IMessageFilter at startup, so it runs before ours
+    /// (FIFO order). The only way to beat it is a WH_GETMESSAGE hook, which
+    /// fires when GetMessage returns — before the IMessageFilter chain starts.
+    ///
+    /// Also normalizes pasted text: Trados clipboard uses bare \n for soft
+    /// returns, but the Windows EDIT control only displays \r\n as line breaks.
     /// </summary>
-    internal class ChatInputTextBox : TextBox, IMessageFilter
+    internal class ChatInputTextBox : TextBox
     {
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetFocus();
+
+        private delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MSG
+        {
+            public IntPtr hwnd;
+            public int message;
+            public IntPtr wParam;
+            public IntPtr lParam;
+            public int time;
+            public int pt_x;
+            public int pt_y;
+        }
+
+        private const int WH_GETMESSAGE = 3;
         private const int WM_KEYDOWN = 0x0100;
+        private const int WM_NULL = 0x0000;
+        private const int WM_PASTE = 0x0302;
+        private const int VK_RETURN = 0x0D;
+        private const int HC_ACTION = 0;
+        private const int PM_REMOVE = 0x0001;
+
+        private IntPtr _hookId;
+        private HookProc _hookDelegate; // prevent GC collection of delegate
 
         public ChatInputTextBox()
         {
-            Application.AddMessageFilter(this);
+            _hookDelegate = GetMsgHookProc;
+            _hookId = SetWindowsHookEx(WH_GETMESSAGE, _hookDelegate, IntPtr.Zero, GetCurrentThreadId());
         }
 
-        public bool PreFilterMessage(ref Message m)
+        /// <summary>
+        /// WH_GETMESSAGE hook callback — fires when GetMessage returns, before
+        /// the IMessageFilter chain. If the message is WM_KEYDOWN for VK_RETURN
+        /// and our TextBox has Win32 focus, we replace the message with WM_NULL
+        /// (killing it) and handle the Enter key ourselves via BeginInvoke.
+        /// </summary>
+        private IntPtr GetMsgHookProc(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (m.Msg == WM_KEYDOWN && Focused && (Keys)m.WParam == Keys.Enter)
+            if (nCode == HC_ACTION && (int)wParam == PM_REMOVE && IsHandleCreated)
             {
-                // Consume Enter/Shift+Enter before Trados can intercept.
-                // Fire KeyDown so OnInputKeyDown handles send vs newline.
-                var modifiers = Control.ModifierKeys;
-                OnKeyDown(new KeyEventArgs(Keys.Enter | modifiers));
-                return true; // Message consumed — Trados never sees it
+                var msg = (MSG)Marshal.PtrToStructure(lParam, typeof(MSG));
+
+                if (msg.message == WM_KEYDOWN && msg.wParam == (IntPtr)VK_RETURN
+                    && GetFocus() == Handle)
+                {
+                    // Kill the message so Trados's IMessageFilter sees WM_NULL
+                    msg.message = WM_NULL;
+                    Marshal.StructureToPtr(msg, lParam, false);
+
+                    // Handle Enter key on the next message pump cycle
+                    var modifiers = Control.ModifierKeys;
+                    BeginInvoke(new Action(() =>
+                        OnKeyDown(new KeyEventArgs(Keys.Enter | modifiers))));
+                }
             }
-            return false;
+            return CallNextHookEx(_hookId, nCode, wParam, lParam);
+        }
+
+        /// <summary>
+        /// Normalize pasted text: Trados clipboard uses bare \n for soft returns
+        /// (Shift+Enter), but the Windows EDIT control only shows \r\n as newlines.
+        /// </summary>
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_PASTE && Clipboard.ContainsText())
+            {
+                var text = Clipboard.GetText();
+                if (text.Contains("\n") && !text.Contains("\r\n"))
+                {
+                    // Normalize \n → \r\n so the TextBox displays them
+                    text = text.Replace("\n", "\r\n");
+                    var selStart = SelectionStart;
+                    var selLen = SelectionLength;
+                    var before = Text.Substring(0, selStart);
+                    var after = Text.Substring(selStart + selLen);
+                    Text = before + text + after;
+                    SelectionStart = selStart + text.Length;
+                    return; // Don't call base — we handled the paste
+                }
+            }
+            base.WndProc(ref m);
         }
 
         protected override bool IsInputKey(Keys keyData)
@@ -950,8 +1035,11 @@ namespace Supervertaler.Trados.Controls
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
-                Application.RemoveMessageFilter(this);
+            if (disposing && _hookId != IntPtr.Zero)
+            {
+                UnhookWindowsHookEx(_hookId);
+                _hookId = IntPtr.Zero;
+            }
             base.Dispose(disposing);
         }
     }
