@@ -11,7 +11,7 @@ namespace Supervertaler.Trados.Core
         /// <summary>
         /// Base URL for the Trados plugin GitBook documentation space.
         /// </summary>
-        private const string DocsBaseUrl = "https://supervertaler.gitbook.io/supervertaler-for-trados";
+        private const string DocsBaseUrl = "https://supervertaler.gitbook.io/trados";
 
         /// <summary>
         /// Desktop app docs home (separate GitBook space).
