@@ -41,6 +41,10 @@ namespace Supervertaler.Trados.Controls
 
         // AI Context section
         private CheckBox _chkIncludeTmMatches;
+        private CheckBox _chkIncludeDocumentContext;
+        private Label _lblMaxSegments;
+        private NumericUpDown _nudMaxSegments;
+        private CheckBox _chkIncludeTermMetadata;
         private CheckedListBox _clbAiTermbases;
         private Label _lblAiContextHeader;
         private Label _lblAiTermbases;
@@ -378,6 +382,64 @@ namespace Supervertaler.Trados.Controls
                 "from your TM to improve consistency and accuracy.");
             Controls.Add(_chkIncludeTmMatches);
 
+            _chkIncludeDocumentContext = new CheckBox
+            {
+                Text = "Include full document content in AI context",
+                Location = new Point(16, 0), // positioned dynamically
+                AutoSize = true,
+                ForeColor = labelColor,
+                Checked = true
+            };
+            var docTip = new ToolTip { AutoPopDelay = 10000, InitialDelay = 300 };
+            docTip.SetToolTip(_chkIncludeDocumentContext,
+                "Sends all source segments to the AI so it can determine the document type\r\n" +
+                "(legal, medical, technical, etc.) and provide context-appropriate assistance.\r\n" +
+                "Uses more tokens but greatly improves response quality.");
+            _chkIncludeDocumentContext.CheckedChanged += (s, ev) =>
+            {
+                _nudMaxSegments.Enabled = _chkIncludeDocumentContext.Checked;
+                _lblMaxSegments.Enabled = _chkIncludeDocumentContext.Checked;
+            };
+            Controls.Add(_chkIncludeDocumentContext);
+
+            _lblMaxSegments = new Label
+            {
+                Text = "Max segments:",
+                Location = new Point(36, 0), // positioned dynamically
+                AutoSize = true,
+                ForeColor = labelColor
+            };
+            Controls.Add(_lblMaxSegments);
+
+            _nudMaxSegments = new NumericUpDown
+            {
+                Location = new Point(130, 0), // positioned dynamically
+                Width = 100,
+                Minimum = 100,
+                Maximum = 2000,
+                Value = 500,
+                Increment = 100
+            };
+            var maxSegTip = new ToolTip { AutoPopDelay = 10000, InitialDelay = 300 };
+            maxSegTip.SetToolTip(_nudMaxSegments,
+                "Maximum number of source segments to include in the AI prompt.\r\n" +
+                "Documents larger than this will be truncated (first 80% + last 20%).");
+            Controls.Add(_nudMaxSegments);
+
+            _chkIncludeTermMetadata = new CheckBox
+            {
+                Text = "Include term definitions and domains",
+                Location = new Point(16, 0), // positioned dynamically
+                AutoSize = true,
+                ForeColor = labelColor,
+                Checked = true
+            };
+            var metaTip = new ToolTip { AutoPopDelay = 10000, InitialDelay = 300 };
+            metaTip.SetToolTip(_chkIncludeTermMetadata,
+                "When enabled, term definitions, domains, and notes are included\r\n" +
+                "alongside matched terminology in the AI prompt.");
+            Controls.Add(_chkIncludeTermMetadata);
+
             _lblAiTermbases = new Label
             {
                 Text = "Termbases included in AI prompts:",
@@ -480,6 +542,16 @@ namespace Supervertaler.Trados.Controls
             y += 26;
 
             _chkIncludeTmMatches.Location = new Point(16, y);
+            y += 24;
+
+            _chkIncludeDocumentContext.Location = new Point(16, y);
+            y += 24;
+
+            _lblMaxSegments.Location = new Point(36, y + 3);
+            _nudMaxSegments.Location = new Point(130, y);
+            y += 30;
+
+            _chkIncludeTermMetadata.Location = new Point(16, y);
             y += 28;
 
             _lblAiTermbases.Location = new Point(16, y);
@@ -544,6 +616,12 @@ namespace Supervertaler.Trados.Controls
 
             // AI Context
             _chkIncludeTmMatches.Checked = settings.IncludeTmMatches;
+            _chkIncludeDocumentContext.Checked = settings.IncludeDocumentContext;
+            _nudMaxSegments.Value = Math.Max(_nudMaxSegments.Minimum,
+                Math.Min(_nudMaxSegments.Maximum, settings.DocumentContextMaxSegments));
+            _nudMaxSegments.Enabled = settings.IncludeDocumentContext;
+            _lblMaxSegments.Enabled = settings.IncludeDocumentContext;
+            _chkIncludeTermMetadata.Checked = settings.IncludeTermMetadata;
         }
 
         /// <summary>
@@ -622,6 +700,9 @@ namespace Supervertaler.Trados.Controls
 
             // AI Context
             settings.IncludeTmMatches = _chkIncludeTmMatches.Checked;
+            settings.IncludeDocumentContext = _chkIncludeDocumentContext.Checked;
+            settings.DocumentContextMaxSegments = (int)_nudMaxSegments.Value;
+            settings.IncludeTermMetadata = _chkIncludeTermMetadata.Checked;
 
             // Build disabled AI termbase IDs from unchecked items
             var disabledIds = new List<long>();

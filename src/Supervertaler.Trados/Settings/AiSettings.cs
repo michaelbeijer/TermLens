@@ -72,6 +72,28 @@ namespace Supervertaler.Trados.Settings
         public bool IncludeTmMatches { get; set; } = true;
 
         /// <summary>
+        /// Whether to include the full document content (all source segments) in the
+        /// AI chat prompt. Enables the AI to assess the document type and provide
+        /// context-appropriate assistance.
+        /// </summary>
+        [DataMember(Name = "includeDocumentContext")]
+        public bool IncludeDocumentContext { get; set; } = true;
+
+        /// <summary>
+        /// Maximum number of source segments to include in the AI chat prompt.
+        /// Documents larger than this are truncated (first 80% + last 20%).
+        /// </summary>
+        [DataMember(Name = "documentContextMaxSegments")]
+        public int DocumentContextMaxSegments { get; set; } = 500;
+
+        /// <summary>
+        /// Whether to include term definitions, domains, and notes alongside
+        /// matched terminology in the AI chat prompt.
+        /// </summary>
+        [DataMember(Name = "includeTermMetadata")]
+        public bool IncludeTermMetadata { get; set; } = true;
+
+        /// <summary>
         /// Returns the selected model ID for the currently active provider.
         /// </summary>
         public string GetSelectedModel()

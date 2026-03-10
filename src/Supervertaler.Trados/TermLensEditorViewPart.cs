@@ -770,6 +770,9 @@ namespace Supervertaler.Trados
 
                         // Refresh prompt library (user may have added/edited/deleted prompts)
                         _promptLibrary.Refresh();
+
+                        // Notify AI Assistant to reload settings from disk
+                        AiAssistantViewPart.NotifySettingsChanged();
                     }
                 }
             });
@@ -1094,6 +1097,18 @@ namespace Supervertaler.Trados
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             });
+        }
+
+        /// <summary>
+        /// Reloads settings from disk. Called by AiAssistantViewPart after its
+        /// settings dialog saves, so this ViewPart picks up changes made there.
+        /// </summary>
+        public static void NotifySettingsChanged()
+        {
+            var instance = _currentInstance;
+            if (instance == null) return;
+            instance._settings = TermLensSettings.Load();
+            _control.Value.SetFontSize(instance._settings.PanelFontSize);
         }
 
         /// <summary>

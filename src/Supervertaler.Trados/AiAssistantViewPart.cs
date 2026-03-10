@@ -185,6 +185,9 @@ namespace Supervertaler.Trados
                         // Refresh prompt library (user may have added/edited/deleted prompts)
                         _promptLibrary.Refresh();
                         PopulateBatchPromptDropdown();
+
+                        // Notify TermLens to reload settings from disk
+                        TermLensEditorViewPart.NotifySettingsChanged();
                     }
                 }
             });
@@ -228,9 +231,44 @@ namespace Supervertaler.Trados
             if (_settings?.AiSettings?.IncludeTmMatches != false)
                 tmMatches = GetTmMatches();
 
-            // 3. Build system prompt with live context
-            var systemPrompt = ChatPrompt.BuildSystemPrompt(
-                sourceLang, targetLang, sourceText, targetText, matchedTerms, tmMatches);
+            // Document context (all segments for document type analysis)
+            List<string> documentSegments = null;
+            int activeSegmentIndex = -1;
+            int totalSegmentCount = 0;
+            if (_settings?.AiSettings?.IncludeDocumentContext != false)
+            {
+                var docCtx = CollectDocumentContext();
+                documentSegments = docCtx.Item1;
+                activeSegmentIndex = docCtx.Item2;
+                totalSegmentCount = documentSegments?.Count ?? 0;
+            }
+
+            // Surrounding segments (2 before + 2 after)
+            var surroundingSegments = GetSurroundingSegments(2);
+
+            // Project metadata
+            var projectName = GetProjectName();
+            var fileName = GetFileName();
+
+            // 3. Build system prompt with full context
+            var chatCtx = new ChatContext
+            {
+                SourceLang = sourceLang,
+                TargetLang = targetLang,
+                SourceText = sourceText,
+                TargetText = targetText,
+                MatchedTerms = matchedTerms,
+                TmMatches = tmMatches,
+                ProjectName = projectName,
+                FileName = fileName,
+                DocumentSegments = documentSegments,
+                ActiveSegmentIndex = activeSegmentIndex,
+                TotalSegmentCount = totalSegmentCount,
+                MaxDocumentSegments = _settings?.AiSettings?.DocumentContextMaxSegments ?? 500,
+                SurroundingSegments = surroundingSegments,
+                IncludeTermMetadata = _settings?.AiSettings?.IncludeTermMetadata != false
+            };
+            var systemPrompt = ChatPrompt.BuildSystemPrompt(chatCtx);
 
             // 4. Build message window (last 10 messages for context)
             var messagesToSend = BuildMessageWindow(_chatHistory, 10);
@@ -997,6 +1035,206 @@ namespace Supervertaler.Trados
                 ctrl.BeginInvoke(action);
             else
                 action();
+        }
+
+        // ─── Document Context Helpers ─────────────────────────────
+
+        /// <summary>
+        /// Collects all source segment texts from the active document.
+        /// Also determines the 0-based index of the active segment.
+        /// Returns (segments, activeIndex) where activeIndex is -1 if not found.
+        /// </summary>
+        private Tuple<List<string>, int> CollectDocumentContext()
+        {
+            var segments = new List<string>();
+            int activeIndex = -1;
+
+            if (_activeDocument == null)
+                return Tuple.Create(segments, activeIndex);
+
+            try
+            {
+                var activePair = _activeDocument.ActiveSegmentPair;
+                string activeSegId = null;
+                string activePuId = null;
+
+                if (activePair != null)
+                {
+                    try
+                    {
+                        activeSegId = activePair.Properties.Id.Id;
+                        var parentPU = _activeDocument.GetParentParagraphUnit(activePair);
+                        activePuId = parentPU.Properties.ParagraphUnitId.Id;
+                    }
+                    catch { }
+                }
+
+                int index = 0;
+                foreach (var pair in _activeDocument.SegmentPairs)
+                {
+                    var sourceText = pair.Source?.ToString() ?? "";
+                    segments.Add(sourceText);
+
+                    // Match against active segment
+                    if (activeIndex < 0 && activePuId != null && activeSegId != null)
+                    {
+                        try
+                        {
+                            var parentPU = _activeDocument.GetParentParagraphUnit(pair);
+                            var puId = parentPU.Properties.ParagraphUnitId.Id;
+                            var segId = pair.Properties.Id.Id;
+
+                            if (puId == activePuId && segId == activeSegId)
+                                activeIndex = index;
+                        }
+                        catch { }
+                    }
+
+                    index++;
+                }
+            }
+            catch (Exception)
+            {
+                // Document may not be accessible during transitions
+            }
+
+            return Tuple.Create(segments, activeIndex);
+        }
+
+        /// <summary>
+        /// Gets surrounding segments (source + target) around the active segment.
+        /// Returns a list of [source, target] string arrays.
+        /// </summary>
+        private List<string[]> GetSurroundingSegments(int count)
+        {
+            var result = new List<string[]>();
+            if (_activeDocument == null || count <= 0)
+                return result;
+
+            try
+            {
+                var activePair = _activeDocument.ActiveSegmentPair;
+                if (activePair == null) return result;
+
+                string activeSegId = null;
+                string activePuId = null;
+                try
+                {
+                    activeSegId = activePair.Properties.Id.Id;
+                    var parentPU = _activeDocument.GetParentParagraphUnit(activePair);
+                    activePuId = parentPU.Properties.ParagraphUnitId.Id;
+                }
+                catch { return result; }
+
+                if (activePuId == null || activeSegId == null)
+                    return result;
+
+                // Collect all pairs into a list for random access
+                var allPairs = new List<Tuple<string, string>>(); // source, target
+                int activeIdx = -1;
+                int idx = 0;
+
+                foreach (var pair in _activeDocument.SegmentPairs)
+                {
+                    var src = pair.Source?.ToString() ?? "";
+                    var tgt = pair.Target?.ToString() ?? "";
+                    allPairs.Add(Tuple.Create(src, tgt));
+
+                    if (activeIdx < 0)
+                    {
+                        try
+                        {
+                            var parentPU = _activeDocument.GetParentParagraphUnit(pair);
+                            var puId = parentPU.Properties.ParagraphUnitId.Id;
+                            var segId = pair.Properties.Id.Id;
+                            if (puId == activePuId && segId == activeSegId)
+                                activeIdx = idx;
+                        }
+                        catch { }
+                    }
+
+                    idx++;
+                }
+
+                if (activeIdx < 0) return result;
+
+                // Collect 'count' segments before and after
+                int start = Math.Max(0, activeIdx - count);
+                int end = Math.Min(allPairs.Count - 1, activeIdx + count);
+
+                for (int i = start; i <= end; i++)
+                {
+                    if (i == activeIdx) continue; // skip the active segment itself
+                    result.Add(new[] { allPairs[i].Item1, allPairs[i].Item2 });
+                }
+            }
+            catch (Exception)
+            {
+                // Document may not be accessible during transitions
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the Trados project name from the active document.
+        /// </summary>
+        private string GetProjectName()
+        {
+            try
+            {
+                var file = _activeDocument?.ActiveFile;
+                if (file != null)
+                {
+                    // Try to get the project name from the source file path
+                    var sourceFile = file.SourceFile;
+                    if (sourceFile != null)
+                    {
+                        // The project name is typically available via the file's project reference
+                        // Fall back to extracting from the file path
+                        var filePath = sourceFile.LocalFilePath;
+                        if (!string.IsNullOrEmpty(filePath))
+                        {
+                            // Trados project files are typically in a folder named after the project
+                            var dir = System.IO.Path.GetDirectoryName(filePath);
+                            if (!string.IsNullOrEmpty(dir))
+                            {
+                                var projectDir = System.IO.Path.GetDirectoryName(dir);
+                                if (!string.IsNullOrEmpty(projectDir))
+                                    return System.IO.Path.GetFileName(projectDir);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception) { }
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the file name of the active document.
+        /// </summary>
+        private string GetFileName()
+        {
+            try
+            {
+                return _activeDocument?.ActiveFile?.Name;
+            }
+            catch (Exception) { }
+            return null;
+        }
+
+        /// <summary>
+        /// Reloads settings from disk. Called by TermLensEditorViewPart after its
+        /// settings dialog saves, so this ViewPart picks up changes made there.
+        /// </summary>
+        public static void NotifySettingsChanged()
+        {
+            var instance = _currentInstance;
+            if (instance == null) return;
+            instance._settings = TermLensSettings.Load();
+            instance.UpdateProviderDisplay();
+            instance.UpdateBatchProviderDisplay();
         }
 
         /// <summary>
