@@ -96,8 +96,17 @@ and displays their terms as green chips alongside Supervertaler terms.
 | `src/Supervertaler.Trados/Settings/TermLensSettings.cs` | JSON settings at `%LocalAppData%\Supervertaler.Trados\settings.json` |
 | `src/Supervertaler.Trados/Settings/TermLensSettingsForm.cs` | Settings dialog — termbase picker, termbase management, import/export |
 | `src/Supervertaler.Trados/Supervertaler.Trados.plugin.xml` | Extension manifest (UTF-16 LE — edit via Python to preserve encoding) |
+| `src/Supervertaler.Trados/Core/HelpSystem.cs` | Context-sensitive help — maps UI elements to GitBook docs pages |
 | `build.sh` | Build → package → deploy script; aborts if Trados is running |
 | `package_plugin.py` | Creates OPC-format `.sdlplugin` (NOT plain ZIP — needs `[Content_Types].xml`, `_rels/`) |
+
+### External resources
+
+| What | URL / Path |
+|------|------------|
+| Website (Trados page) | `https://supervertaler.com/trados.html` (source: `Supervertaler` repo `docs/trados.html`) |
+| Documentation (GitBook) | `https://supervertaler.gitbook.io/trados` |
+| Docs source (git-synced) | `Supervertaler` repo `docs/help/supervertaler-for-trados/` |
 
 ---
 
