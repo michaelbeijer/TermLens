@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.2.2-beta] — 2026-03-13
+
+### Fixed
+- **Licence tab help link** — the ? button on the Licence tab now opens the Licensing & Pricing page instead of incorrectly opening TermLens Settings
+- **Backup tab help link** — the ? button on the Backup tab now opens the dedicated Backup & Restore page instead of using a stale anchor link
+- **Licensing help URL** — corrected the GitBook URL slug from `licensing-and-pricing` (404) to `licensing` (the actual filename-based slug)
+
+### Changed
+- **UK English in documentation** — changed all instances of "license" (US) to "licence" (UK) in the online help pages
+
+### Added
+- **Help link reference** — new `HELP-LINKS.md` in the repo root documents every help link in the plugin with its online URL and which UI element triggers it
+
+---
+
 ## [4.2.1-beta] — 2026-03-12
 
 ### Improved
