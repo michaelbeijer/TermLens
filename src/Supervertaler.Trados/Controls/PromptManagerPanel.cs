@@ -150,7 +150,7 @@ namespace Supervertaler.Trados.Controls
             _btnRestore = new Button
             {
                 Text = "Restore",
-                Width = 60,
+                Width = 65,
                 Height = 25,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8f),
@@ -232,13 +232,42 @@ namespace Supervertaler.Trados.Controls
             var gridPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(10, 0, 4, 10),
+                Padding = new Padding(10, 0, 4, 0),
                 BackColor = Color.White
             };
             gridPanel.Controls.Add(_dgvPrompts);
 
+            // Bottom: link to prompts folder
+            var folderPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 24,
+                BackColor = Color.White
+            };
+            var lnkFolder = new LinkLabel
+            {
+                Text = "Open prompts folder",
+                Location = new Point(10, 4),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8f),
+                LinkColor = Color.FromArgb(0, 102, 204)
+            };
+            lnkFolder.LinkClicked += (s, ev) =>
+            {
+                try
+                {
+                    var dir = PromptLibrary.PromptsFolderPath;
+                    if (!System.IO.Directory.Exists(dir))
+                        System.IO.Directory.CreateDirectory(dir);
+                    System.Diagnostics.Process.Start("explorer.exe", dir);
+                }
+                catch { }
+            };
+            folderPanel.Controls.Add(lnkFolder);
+
             // Add in reverse order for correct Dock layout
             panel.Controls.Add(gridPanel);   // Fill
+            panel.Controls.Add(folderPanel); // Bottom
             panel.Controls.Add(topPanel);    // Top
         }
 

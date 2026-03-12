@@ -44,8 +44,6 @@ namespace Supervertaler.Trados.Settings
         // Form buttons (outside tabs)
         private Button _btnOK;
         private Button _btnCancel;
-        private Button _btnExportSettings;
-        private Button _btnImportSettings;
 
         /// <summary>
         /// True if the user imported settings from a file.
@@ -122,27 +120,6 @@ namespace Supervertaler.Trados.Settings
             AcceptButton = _btnOK;
             CancelButton = _btnCancel;
 
-            // === Export / Import Settings — anchored to bottom-left ===
-            _btnExportSettings = new Button
-            {
-                Text = "Export Settings...",
-                Location = new Point(8, ClientSize.Height - 40),
-                Width = 110,
-                FlatStyle = FlatStyle.System,
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
-            };
-            _btnExportSettings.Click += OnExportSettingsClick;
-
-            _btnImportSettings = new Button
-            {
-                Text = "Import Settings...",
-                Location = new Point(124, ClientSize.Height - 40),
-                Width = 110,
-                FlatStyle = FlatStyle.System,
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
-            };
-            _btnImportSettings.Click += OnImportSettingsClick;
-
             // === Tab Control ===
             _tabControl = new TabControl
             {
@@ -182,7 +159,12 @@ namespace Supervertaler.Trados.Settings
             licensePage.Controls.Add(licensePanel);
             _tabControl.TabPages.Add(licensePage);
 
-            Controls.AddRange(new Control[] { _tabControl, _btnExportSettings, _btnImportSettings, _btnOK, _btnCancel });
+            // --- Backup tab ---
+            var backupPage = new TabPage("Backup") { BackColor = Color.White };
+            BuildBackupTab(backupPage);
+            _tabControl.TabPages.Add(backupPage);
+
+            Controls.AddRange(new Control[] { _tabControl, _btnOK, _btnCancel });
         }
 
         /// <summary>
@@ -579,6 +561,108 @@ namespace Supervertaler.Trados.Settings
             page.Controls.Add(gridPanel);     // Fill — docks last, fills remaining space
             page.Controls.Add(bottomPanel);   // Bottom
             page.Controls.Add(topPanel);      // Top
+        }
+
+        private void BuildBackupTab(TabPage page)
+        {
+            var lblHeader = new Label
+            {
+                Text = "Back up and restore your Supervertaler settings",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(50, 50, 50),
+                Location = new Point(16, 16),
+                AutoSize = true
+            };
+
+            var lblDesc = new Label
+            {
+                Text = "Export your settings to a file so you can restore them later — for example " +
+                       "before upgrading the plugin, or to transfer your setup to another machine.\n\n" +
+                       "The settings file contains all your plugin configuration: termbase paths, " +
+                       "toggle states, font size, shortcut preferences, AI provider keys, model " +
+                       "selections, and prompt configuration.",
+                Location = new Point(16, 44),
+                Size = new Size(500, 72),
+                ForeColor = Color.FromArgb(80, 80, 80),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            var btnExport = new Button
+            {
+                Text = "Export Settings...",
+                Location = new Point(16, 130),
+                Width = 140,
+                Height = 30,
+                FlatStyle = FlatStyle.System
+            };
+            btnExport.Click += OnExportSettingsClick;
+
+            var lblExport = new Label
+            {
+                Text = "Save a copy of your current settings to a JSON file.",
+                Location = new Point(164, 136),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(100, 100, 100)
+            };
+
+            var btnImport = new Button
+            {
+                Text = "Import Settings...",
+                Location = new Point(16, 172),
+                Width = 140,
+                Height = 30,
+                FlatStyle = FlatStyle.System
+            };
+            btnImport.Click += OnImportSettingsClick;
+
+            var lblImport = new Label
+            {
+                Text = "Restore settings from a previously exported file.",
+                Location = new Point(164, 178),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(100, 100, 100)
+            };
+
+            var lblLocation = new Label
+            {
+                Text = "Settings file location:",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(80, 80, 80),
+                Location = new Point(16, 224),
+                AutoSize = true
+            };
+
+            var txtPath = new TextBox
+            {
+                Text = TermLensSettings.SettingsFilePath,
+                Location = new Point(16, 244),
+                Width = 500,
+                ReadOnly = true,
+                BackColor = Color.FromArgb(245, 245, 245),
+                ForeColor = Color.FromArgb(60, 60, 60),
+                Font = new Font("Consolas", 8.5f),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            var lnkOpenFolder = new LinkLabel
+            {
+                Text = "Open settings folder",
+                Location = new Point(16, 274),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5f)
+            };
+            lnkOpenFolder.LinkClicked += (s, e) =>
+            {
+                var folder = Path.GetDirectoryName(TermLensSettings.SettingsFilePath);
+                if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+                    System.Diagnostics.Process.Start("explorer.exe", folder);
+            };
+
+            page.Controls.AddRange(new Control[]
+            {
+                lblHeader, lblDesc, btnExport, lblExport, btnImport, lblImport,
+                lblLocation, txtPath, lnkOpenFolder
+            });
         }
 
         private void OnGridCellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -1261,6 +1345,7 @@ namespace Supervertaler.Trados.Settings
                 case 0:  return HelpSystem.Topics.SettingsTermLens;
                 case 1:  return HelpSystem.Topics.SettingsAi;
                 case 2:  return HelpSystem.Topics.SettingsPrompts;
+                case 4:  return HelpSystem.Topics.SettingsBackup;
                 default: return HelpSystem.Topics.SettingsTermLens;
             }
         }

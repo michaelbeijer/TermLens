@@ -61,7 +61,7 @@ See [Keyboard Shortcuts](../keyboard-shortcuts.md) for the full reference.
 
 ## Export and import settings
 
-Use the **Export Settings** and **Import Settings** buttons at the bottom of the Settings dialog to back up and restore your Supervertaler configuration.
+Use the **Export Settings** and **Import Settings** buttons in the **Backup** tab of the Settings dialog to back up and restore your Supervertaler configuration.
 
 ### Export
 

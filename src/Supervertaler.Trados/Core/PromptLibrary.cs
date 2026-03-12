@@ -18,6 +18,11 @@ namespace Supervertaler.Trados.Core
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Supervertaler.Trados", "prompts");
 
+        /// <summary>
+        /// Full path to the prompts folder on disk.
+        /// </summary>
+        public static string PromptsFolderPath => PromptsDir;
+
         private List<PromptTemplate> _cache;
 
         /// <summary>
