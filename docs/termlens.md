@@ -19,12 +19,12 @@ This gives you an at-a-glance overview of every term in the segment that has a t
 
 TermLens uses four background colours to distinguish term types:
 
-| Colour     | Hex       | Meaning                                  |
-| ---------- | --------- | ---------------------------------------- |
-| **Blue**   | `#C8E6F5` | Regular Supervertaler termbase match     |
-| **Pink**   | `#E6D7D8` | Project termbase match (higher priority) |
-| **Yellow** | `#FFF3D0` | Non-translatable term (source = target)  |
-| **Green**  | `#D4EDDA` | MultiTerm termbase match (`.sdltb`)      |
+| Colour     | Meaning                                  |
+| ---------- | ---------------------------------------- |
+| **Blue**   | Regular Supervertaler termbase match     |
+| **Pink**   | Project termbase match (higher priority) |
+| **Yellow** | Non-translatable term (source = target)  |
+| **Green**  | MultiTerm termbase match (`.sdltb`)      |
 
 {% hint style="info" %}
 Designate one termbase as the **Project termbase** in settings to make its terms appear in pink. Project terms take visual priority over regular terms, making it easy to spot client-specific terminology.
