@@ -1398,7 +1398,7 @@ namespace Supervertaler.Trados
         private static void StartChordTimer()
         {
             StopChordTimer();
-            _chordTimer = new System.Windows.Forms.Timer { Interval = 400 };
+            _chordTimer = new System.Windows.Forms.Timer { Interval = 1000 };
             _chordTimer.Tick += OnChordTimerTick;
             _chordTimer.Start();
         }

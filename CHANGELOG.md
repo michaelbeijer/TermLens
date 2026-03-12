@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.0.2-beta] — 2026-03-12
+
+### Added
+- **Dual-mode Alt+digit term shortcuts** — two configurable shortcut styles for inserting terms 10+ (choose in Settings > TermLens > Term shortcuts):
+  - **Sequential** (default) — type the term number digit by digit: Alt+4, Alt+5 inserts term 45. Clean sequential badge numbers (10, 11, 12, ...). 1-second timer between digits.
+  - **Repeated digit** — press the same digit key multiple times: Alt+5, Alt+5 inserts term 14. Supports up to 5 tiers (45 terms). No timer ambiguity.
+- **Term Picker wrap-around navigation** — pressing Down on the last term jumps to the first, and Up on the first jumps to the last
+
+### Changed
+- **Term Picker numbering** — the Term Picker now always uses plain sequential numbers (1, 2, 3, ...) regardless of the shortcut style setting, since navigation is done with arrow keys and Enter
+
+---
+
 ## [4.0.1-beta] — 2026-03-12
 
 ### Fixed
