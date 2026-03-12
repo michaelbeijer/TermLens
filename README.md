@@ -15,13 +15,13 @@ Supervertaler for Trados is a Trados Studio plugin (.sdlplugin) that brings key 
 | **TermLens** | €10/month | Terminology management, termbases, MultiTerm support, Term Picker, quick-add shortcuts |
 | **TermLens + Supervertaler Assistant** | €15/month | All TermLens features plus AI Assistant, Batch Translate, Prompt Library, multimodal support |
 
-Purchase a license at [supervertaler.com/trados](https://supervertaler.com/trados/).
+Purchase a licence at [supervertaler.com/trados](https://supervertaler.com/trados/).
 
 ## Privacy & Security
 
 This plugin makes **no network calls** except to:
 1. **Your chosen AI provider** (OpenAI, Anthropic, Google Gemini, or local Ollama) — only when you use AI features
-2. **Lemon Squeezy license API** — for license activation and periodic validation (sends only your license key and a hashed machine fingerprint)
+2. **Lemon Squeezy licence API** — for licence activation and periodic validation (sends only your licence key and a hashed machine fingerprint)
 
 No telemetry, no tracking, no analytics, no data collection. Your API keys are stored locally in `%LocalAppData%\Supervertaler.Trados\settings.json` and are never transmitted anywhere except to your chosen AI provider. The full source code is available here for security audit.
 
@@ -130,7 +130,7 @@ bash build.sh
 
 This runs `dotnet build`, packages the output into an OPC-format `.sdlplugin`, and deploys it to your local Trados Studio installation. Trados Studio must be closed before running the script.
 
-## License
+## Licence
 
 Source available — see [LICENSE](LICENSE) for details. Pre-built binaries are available at [supervertaler.com](https://supervertaler.com).
 
