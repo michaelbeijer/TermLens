@@ -268,32 +268,32 @@ namespace Supervertaler.Trados.Settings
             // Termbase management buttons (right-aligned on the Termbases row)
             _btnAddTermbase = new Button
             {
-                Text = "+",
-                Width = 26,
+                Text = "+ Add",
+                Width = 50,
                 Height = 26,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(80, 80, 80),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             _btnAddTermbase.FlatAppearance.BorderSize = 0;
             _btnAddTermbase.FlatAppearance.MouseOverBackColor = Color.FromArgb(220, 220, 220);
-            _btnAddTermbase.Location = new Point(w - 10 - 26, 110);
+            _btnAddTermbase.Location = new Point(w - 10 - 50, 110);
             _btnAddTermbase.Click += OnAddTermbaseClick;
 
             _btnRemoveTermbase = new Button
             {
-                Text = "\u2212",
-                Width = 26,
+                Text = "\u2212 Remove",
+                Width = 68,
                 Height = 26,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(80, 80, 80),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             _btnRemoveTermbase.FlatAppearance.BorderSize = 0;
             _btnRemoveTermbase.FlatAppearance.MouseOverBackColor = Color.FromArgb(220, 220, 220);
-            _btnRemoveTermbase.Location = new Point(_btnAddTermbase.Left - 28, 110);
+            _btnRemoveTermbase.Location = new Point(_btnAddTermbase.Left - _btnRemoveTermbase.Width - 2, 110);
             _btnRemoveTermbase.Click += OnRemoveTermbaseClick;
 
             _btnImport = new Button
@@ -532,6 +532,16 @@ namespace Supervertaler.Trados.Settings
             };
 
             var tips = new ToolTip();
+            tips.SetToolTip(_btnOpenTermbase,
+                "Open the selected termbase in the built-in termbase editor.");
+            tips.SetToolTip(_btnExport,
+                "Export all terms from the selected termbase to a CSV file.");
+            tips.SetToolTip(_btnImport,
+                "Import terms from a CSV file into the selected termbase.");
+            tips.SetToolTip(_btnRemoveTermbase,
+                "Remove the selected termbase from the database.\nThe termbase and its terms will be permanently deleted.");
+            tips.SetToolTip(_btnAddTermbase,
+                "Add a new termbase to the database.");
             tips.SetToolTip(_cboShortcutStyle,
                 "Sequential: type the term number digit by digit (short delay).\n" +
                 "Repeated digit: press the same key multiple times (no delay).");

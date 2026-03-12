@@ -413,8 +413,8 @@ namespace Supervertaler.Trados.Controls
 
             _nudMaxSegments = new NumericUpDown
             {
-                Location = new Point(130, 0), // positioned dynamically
-                Width = 100,
+                Location = new Point(160, 0), // positioned dynamically
+                Width = 80,
                 Minimum = 100,
                 Maximum = 2000,
                 Value = 500,
@@ -548,7 +548,7 @@ namespace Supervertaler.Trados.Controls
             y += 24;
 
             _lblMaxSegments.Location = new Point(36, y + 3);
-            _nudMaxSegments.Location = new Point(130, y);
+            _nudMaxSegments.Location = new Point(160, y);
             y += 30;
 
             _chkIncludeTermMetadata.Location = new Point(16, y);

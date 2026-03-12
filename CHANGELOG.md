@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.2.1-beta] — 2026-03-12
+
+### Improved
+- **Settings toolbar buttons** — the TermLens tab toolbar buttons now use descriptive labels ("+ Add", "− Remove") instead of cryptic symbols; all five buttons (Open, Export, Import, + Add, − Remove) have tooltips explaining their function
+
+### Fixed
+- **"Max segments" label overlap** — the "Max segments:" label in AI Settings no longer runs into the number input box
+
+---
+
 ## [4.2.0-beta] — 2026-03-12
 
 ### Added
