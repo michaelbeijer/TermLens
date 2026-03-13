@@ -72,7 +72,7 @@ namespace Supervertaler.Trados.Licensing
         // ─── Trial ──────────────────────────────────────────────────
 
         /// <summary>
-        /// When the 14-day trial started (UTC). Set on first-ever plugin launch.
+        /// When the 90-day trial started (UTC). Set on first-ever plugin launch.
         /// DateTime.MinValue means the trial hasn't started yet (shouldn't happen in practice).
         /// </summary>
         [DataMember(Name = "trialStartedAt")]
