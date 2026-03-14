@@ -1,28 +1,22 @@
 # Changelog
 
-## [4.3.1-beta] — 2026-03-13
-
-### Fixed
-- **"Add & Edit" crash in Similar Term Found dialog** — pressing "Add & Edit" when merging a term caused an `ArgumentOutOfRangeException` (ordinal 10) because `GetTermById()` had an off-by-one error in its column indexing for optional fields (domain, notes, is_nontranslatable); each field was read one position past its actual column index, and the last field fell off the end of the result set
-
----
-
-## [4.3.0-beta] — 2026-03-13
+## [4.3.0] — 2026-03-14
 
 ### Added
 - **Per-project settings** — switching between Trados projects now automatically saves and restores the Supervertaler database path, enabled/disabled termbases, write targets, project termbase, and AI context termbase filters; settings are stored per-project in `%LocalAppData%\Supervertaler.Trados\projects\` and applied automatically when the active document changes
 - **Per-project settings documentation** — new help page documenting how per-project settings work, what's saved per-project vs globally, and how the automatic switching behaves
+- **Privacy policy** — [supervertaler.com/privacy](https://supervertaler.com/privacy/)
 
 ### Fixed
+- **"Add & Edit" crash in Similar Term Found dialog** — pressing "Add & Edit" when merging a term caused an `ArgumentOutOfRangeException` (ordinal 10) because `GetTermById()` had an off-by-one error in its column indexing for optional fields (domain, notes, is_nontranslatable); each field was read one position past its actual column index, and the last field fell off the end of the result set
 - **Licence null-status crash** — when the Lemon Squeezy API returned a null or empty `status` field during activation, the licence was treated as invalid even though the key was activated; now treats null status as active when the licence has a valid instance ID
 - **Trial period mismatch** — `LicenseInfo.cs` used a hardcoded 14-day trial window while `LicenseManager.cs` used 90 days; unified both to the 90-day constant
 - **AI Settings termbase list stale after database switch** — switching Supervertaler databases in the TermLens settings tab didn't update the AI Settings tab's termbase checklist until the dialog was closed and reopened; the AI context panel now refreshes immediately when the termbase list changes
-- **"Add & Edit" crash in Similar Term Found dialog** � pressing "Add & Edit" when merging a term caused an `ArgumentOutOfRangeException` (ordinal 10) because `GetTermById()` had an off-by-one error in its column indexing for optional fields (domain, notes, is_nontranslatable); each field was read one position past its actual column index, and the last field fell off the end of the result set
 - **Term Picker shortcut documented incorrectly** — the About dialog and help docs showed `Ctrl+Shift+G` but the actual shortcut is `Ctrl+Alt+G`; corrected all references
 
 ### Improved
 - **Keyboard shortcuts documentation** — added Mac/Parallels equivalents (Ctrl → Control, Alt → Option) to all shortcut tables for users running Trados in Parallels
-
+- **Support email** — updated to support@supervertaler.com
 ---
 
 ## [4.2.2-beta] — 2026-03-13
@@ -144,7 +138,7 @@
 - **Shift+Enter in AI Assistant** — Shift+Enter now correctly inserts a newline in the chat input instead of being intercepted by Trados Studio; uses a thread-local `WH_GETMESSAGE` hook to intercept the key press before Trados's message filters can consume it
 - **Paste newlines in AI Assistant** — pasting text with bare `\n` line endings (e.g. copied from Trados segments) now displays correctly; the chat input normalises `\n` to `\r\n` on paste
 - **Smart selection expansion** — partial word selections now expand to the shortest matching word at the boundary instead of the longest, preventing over-expansion when selecting near short words (e.g. selecting "o" no longer expands to "output" when "of" is adjacent)
-- **Merge dialog cutoff** — the "Similar Term Found" dialog is now wider (520×310) to prevent text truncation on longer term pairs
+- **Merge dialog cutoff** — the "Similar Term Found" dialog is now wider (520Ã—310) to prevent text truncation on longer term pairs
 
 ---
 
