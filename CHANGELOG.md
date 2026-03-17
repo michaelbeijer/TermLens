@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.10.0] — 2026-03-17
+
+### Added
+- **QuickLauncher** — new editor right-click menu entry listing all prompts marked as QuickLauncher; selecting a prompt fills in the current segment's source text, target text, selection, and language pair as variables and submits the expanded prompt directly to the Supervertaler Assistant chat, enabling one-click AI actions without switching panels
+- **QuickLauncher prompt support** — prompts are marked as QuickLauncher by adding `sv_quickmenu: true` to their YAML frontmatter (compatible with the same flag used in Supervertaler Workbench), or by setting `category: QuickLauncher`; an optional `quickmenu_label:` field sets a short display name in the menu
+- **Segment-level prompt variables** — `{{SOURCE_TEXT}}`, `{{TARGET_TEXT}}`, and `{{SELECTION}}` variables are now substituted in prompts at runtime using the current segment context (compatible with Supervertaler Workbench variable names)
+- **Legacy category normalisation** — the old internal category name `quickmenu_prompts` is automatically normalised to `QuickLauncher` when loading prompt files, ensuring forward compatibility
+
+---
+
 ## [4.9.0] — 2026-03-17 ([#4](https://github.com/Supervertaler/Supervertaler-for-Trados/issues/4))
 
 ### Added

@@ -831,7 +831,7 @@ namespace Supervertaler.Trados.Controls
 
         // ─── Send ──────────────────────────────────────────────
 
-        private void DoSend()
+        internal void DoSend()
         {
             if (_isThinking) return;
             var text = _txtInput.Text?.Trim();
@@ -942,6 +942,23 @@ namespace Supervertaler.Trados.Controls
         public void FocusInput()
         {
             _txtInput?.Focus();
+        }
+
+        /// <summary>
+        /// Programmatically sets the input text and submits it, as if the user typed it and
+        /// pressed Enter. Used by QuickLauncherAction to inject fully-expanded prompt content.
+        /// Does nothing if a request is already in progress.
+        /// </summary>
+        public void SubmitMessage(string text)
+        {
+            if (_isThinking) return;
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            // Switch to the Chat tab so the response is visible
+            _tabControl.SelectedIndex = 0;
+
+            _txtInput.Text = text;
+            DoSend();
         }
 
         /// <summary>

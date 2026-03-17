@@ -69,18 +69,46 @@ namespace Supervertaler.Trados.Core
         /// </summary>
         public static string ApplyVariables(string content, string sourceLang, string targetLang)
         {
+            return ApplyVariables(content, sourceLang, targetLang, null, null, null);
+        }
+
+        /// <summary>
+        /// Applies variable substitution to prompt content, including segment-level variables.
+        /// Supports both {{UPPERCASE}} and {lowercase} placeholder formats.
+        /// </summary>
+        public static string ApplyVariables(string content, string sourceLang, string targetLang,
+            string sourceText, string targetText, string selection)
+        {
             if (string.IsNullOrEmpty(content))
                 return content;
 
-            // {{UPPERCASE}} format (Python Supervertaler standard)
+            // {{UPPERCASE}} format (Python Supervertaler / Workbench standard)
             content = content.Replace("{{SOURCE_LANGUAGE}}", sourceLang ?? "");
             content = content.Replace("{{TARGET_LANGUAGE}}", targetLang ?? "");
+            content = content.Replace("{{SOURCE_TEXT}}", sourceText ?? "");
+            content = content.Replace("{{TARGET_TEXT}}", targetText ?? "");
+            content = content.Replace("{{SELECTION}}", selection ?? "");
 
             // {lowercase} format (legacy compatibility with Python domain prompts)
             content = content.Replace("{source_lang}", sourceLang ?? "");
             content = content.Replace("{target_lang}", targetLang ?? "");
 
             return content;
+        }
+
+        /// <summary>
+        /// Returns all prompts that should appear in the QuickLauncher right-click menu.
+        /// </summary>
+        public List<PromptTemplate> GetQuickLauncherPrompts()
+        {
+            var all = GetAllPrompts();
+            var result = new List<PromptTemplate>();
+            foreach (var p in all)
+            {
+                if (p.IsQuickLauncher)
+                    result.Add(p);
+            }
+            return result;
         }
 
         /// <summary>
@@ -357,10 +385,24 @@ namespace Supervertaler.Trados.Core
                         break;
                     case "category":
                     case "domain": // backward compatibility
+                        // Normalise legacy category name to canonical "QuickLauncher"
+                        if (value.Equals("quickmenu_prompts", StringComparison.OrdinalIgnoreCase))
+                            value = "QuickLauncher";
                         prompt.Domain = value;
+                        // Mark as QuickLauncher when the category says so
+                        if (value.Equals("QuickLauncher", StringComparison.OrdinalIgnoreCase))
+                            prompt.IsQuickLauncher = true;
                         break;
                     case "built_in":
                         prompt.IsBuiltIn = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                        break;
+                    case "sv_quickmenu":
+                        // Workbench-compatible flag: sv_quickmenu: true
+                        if (value.Equals("true", StringComparison.OrdinalIgnoreCase))
+                            prompt.IsQuickLauncher = true;
+                        break;
+                    case "quickmenu_label":
+                        prompt.QuickLauncherLabel = value;
                         break;
                 }
             }

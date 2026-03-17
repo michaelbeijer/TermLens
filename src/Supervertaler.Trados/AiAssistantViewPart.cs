@@ -1211,6 +1211,26 @@ namespace Supervertaler.Trados
             });
         }
 
+        // ─── QuickLauncher entry point ────────────────────────────────────
+
+        /// <summary>
+        /// Called by QuickLauncherAction when the user selects a QuickLauncher prompt from the
+        /// editor right-click menu. The prompt content must already have all variables substituted
+        /// before this is called. Submits the message to the AI Assistant chat.
+        /// </summary>
+        public static void RunQuickLauncherPrompt(string expandedPrompt)
+        {
+            if (string.IsNullOrWhiteSpace(expandedPrompt)) return;
+
+            var instance = _currentInstance;
+            if (instance == null) return;
+
+            instance.SafeInvoke(() =>
+            {
+                _control.Value.SubmitMessage(expandedPrompt);
+            });
+        }
+
         // ─── Legacy entry point (AiTranslateSegmentAction compatibility) ──
 
         /// <summary>
