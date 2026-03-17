@@ -422,7 +422,8 @@ namespace Supervertaler.Trados.Core
                     case "built_in":
                         prompt.IsBuiltIn = value.Equals("true", StringComparison.OrdinalIgnoreCase);
                         break;
-                    case "quickmenu_label":
+                    case "quicklauncher_label":
+                    case "quickmenu_label": // backward compatibility
                         prompt.QuickLauncherLabel = value;
                         break;
                 }

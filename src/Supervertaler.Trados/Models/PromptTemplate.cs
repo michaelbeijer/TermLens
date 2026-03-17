@@ -44,7 +44,7 @@ namespace Supervertaler.Trados.Models
         public bool IsQuickLauncher { get; set; }
 
         /// <summary>
-        /// Optional short label shown in the QuickLauncher menu (from YAML 'quickmenu_label:').
+        /// Optional short label shown in the QuickLauncher menu (from YAML 'quicklauncher_label:').
         /// Falls back to Name if empty.
         /// </summary>
         public string QuickLauncherLabel { get; set; } = "";

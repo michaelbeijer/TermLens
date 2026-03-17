@@ -152,7 +152,7 @@ To make a custom prompt appear in the QuickLauncher right-click menu (`Ctrl+Q`),
 name: Explain selected term
 description: Explains the selected term in translation context
 category: QuickLauncher
-quickmenu_label: Explain term
+quicklauncher_label: Explain term
 ---
 
 Your prompt content here...
@@ -161,7 +161,7 @@ Your prompt content here...
 | Field | Description |
 |-------|-------------|
 | `category: QuickLauncher` | Marks this prompt as a QuickLauncher item |
-| `quickmenu_label` | Optional short label shown in the menu — falls back to `name` if omitted |
+| `quicklauncher_label` | Optional short label shown in the menu — falls back to `name` if omitted |
 
 You can also organise QuickLauncher prompts by placing them in a folder called `QuickLauncher` inside your `prompt_library` folder. Any prompt in that folder is automatically treated as a QuickLauncher prompt.
 
@@ -191,7 +191,7 @@ You are a professional medical translator...
 | `name` | Display name shown in the prompt selector |
 | `description` | Optional summary |
 | `category` | `Translate`, `Proofread`, or `QuickLauncher` — controls where the prompt appears |
-| `quickmenu_label` | Short label for the QuickLauncher menu (optional, falls back to `name`) |
+| `quicklauncher_label` | Short label for the QuickLauncher menu (optional, falls back to `name`) |
 | `built_in` | `true` for shipped prompts (managed by the plugin) |
 
 {% hint style="info" %}
