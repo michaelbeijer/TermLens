@@ -3,21 +3,20 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using Supervertaler.Trados.Settings;
 
 namespace Supervertaler.Trados.Licensing
 {
     /// <summary>
-    /// Persisted license state, stored at %LocalAppData%\Supervertaler.Trados\license.json.
+    /// Persisted license state, stored in the shared Supervertaler data folder
+    /// under trados/license.json (resolved via UserDataPath).
     /// Separate from settings.json — license state has a different lifecycle than user preferences.
     /// </summary>
     [DataContract]
     public class LicenseInfo
     {
-        private static readonly string StorageDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Supervertaler.Trados");
-
-        private static readonly string LicenseFile = Path.Combine(StorageDir, "license.json");
+        private static string StorageDir  => UserDataPath.TradosDir;
+        private static string LicenseFile => UserDataPath.LicenseFilePath;
 
         // ─── License key fields ─────────────────────────────────────
 

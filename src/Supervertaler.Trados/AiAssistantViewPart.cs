@@ -448,6 +448,7 @@ namespace Supervertaler.Trados
         {
             SafeInvoke(() =>
             {
+                _promptLibrary?.Refresh();
                 var prompts = _promptLibrary?.GetAllPrompts();
                 var selectedPath = _settings?.AiSettings?.SelectedPromptPath ?? "";
                 var mode = _control.Value.BatchTranslateControl.CurrentMode;

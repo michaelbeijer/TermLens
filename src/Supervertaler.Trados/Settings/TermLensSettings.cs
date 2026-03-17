@@ -14,16 +14,11 @@ namespace Supervertaler.Trados.Settings
     [DataContract]
     public class TermLensSettings
     {
-        private static readonly string SettingsDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Supervertaler.Trados");
-
-        private static readonly string SettingsFile = Path.Combine(SettingsDir, "settings.json");
-
         /// <summary>
         /// Full path to the settings JSON file on disk.
+        /// Resolved through UserDataPath so it moves with the shared data folder.
         /// </summary>
-        public static string SettingsFilePath => SettingsFile;
+        public static string SettingsFilePath => UserDataPath.SettingsFilePath;
 
         // Old settings path for auto-migration from TermLens
         private static readonly string OldSettingsFile = Path.Combine(
@@ -156,17 +151,20 @@ namespace Supervertaler.Trados.Settings
         {
             try
             {
+                var settingsFile = SettingsFilePath;
+                var settingsDir  = Path.GetDirectoryName(settingsFile);
+
                 // Auto-migrate from old TermLens settings location
-                if (!File.Exists(SettingsFile) && File.Exists(OldSettingsFile))
+                if (!File.Exists(settingsFile) && File.Exists(OldSettingsFile))
                 {
-                    Directory.CreateDirectory(SettingsDir);
-                    File.Copy(OldSettingsFile, SettingsFile);
+                    Directory.CreateDirectory(settingsDir);
+                    File.Copy(OldSettingsFile, settingsFile);
                 }
 
-                if (!File.Exists(SettingsFile))
+                if (!File.Exists(settingsFile))
                     return new TermLensSettings();
 
-                var json = File.ReadAllText(SettingsFile, Encoding.UTF8);
+                var json = File.ReadAllText(settingsFile, Encoding.UTF8);
                 using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     var serializer = new DataContractJsonSerializer(typeof(TermLensSettings));
@@ -266,7 +264,9 @@ namespace Supervertaler.Trados.Settings
         {
             try
             {
-                Directory.CreateDirectory(SettingsDir);
+                var settingsFile = SettingsFilePath;
+                var settingsDir  = Path.GetDirectoryName(settingsFile);
+                Directory.CreateDirectory(settingsDir);
 
                 using (var stream = new MemoryStream())
                 {
@@ -279,7 +279,7 @@ namespace Supervertaler.Trados.Settings
 
                     // Pretty-print by re-parsing (DataContractJsonSerializer writes compact JSON)
                     var json = Encoding.UTF8.GetString(stream.ToArray());
-                    File.WriteAllText(SettingsFile, json, Encoding.UTF8);
+                    File.WriteAllText(settingsFile, json, Encoding.UTF8);
                 }
             }
             catch

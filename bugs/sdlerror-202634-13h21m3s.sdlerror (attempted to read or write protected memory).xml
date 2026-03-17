@@ -1,0 +1,79 @@
+﻿<SDLErrorDetails time="2026-03-04 13:21:35">
+  <ErrorMessage>Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</ErrorMessage>
+  <Exception>
+    <Type>System.AccessViolationException, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Type>
+    <ExceptionMessage>Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</ExceptionMessage>
+    <HelpLink />
+    <Source>Sdl.DesktopEditor.Control</Source>
+    <HResult>-2147467261</HResult>
+    <StackTrace><![CDATA[   at CT_CriticalSection.v_Enter(CT_CriticalSection* )
+   at LayoutThread.Resume(LayoutThread* )
+   at std._Ref_count_obj2<LayoutLock>._Destroy(_Ref_count_obj2<LayoutLock>* )
+   at std._Ref_count_base._Decref(_Ref_count_base* )
+   at FrameworkDocumentControl.{dtor}(FrameworkDocumentControl* )
+   at FrameworkDocumentControl.__vecDelDtor(FrameworkDocumentControl* , UInt32 A_0)
+   at AbstractFrameworkEditControl.~AbstractFrameworkEditControl()
+   at AbstractFrameworkEditControl.Dispose(Boolean A_0)
+   at FrameworkEditControl.Dispose(Boolean A_0)
+   at System.ComponentModel.Component.Dispose()
+   at SideBySideEditor.DestroyEditControls()
+   at SideBySideEditor.~SideBySideEditor()
+   at SideBySideEditor.Dispose(Boolean A_0)
+   at Sdl.TranslationStudio.Editor.TranslationEditor.SideBySideDocumentEditingViewControl.Dispose(Boolean disposing)
+   at System.ComponentModel.Component.Dispose()
+   at Sdl.TranslationStudio.Editor.TranslationEditor.SideBySideDocumentEditingView.Dispose(Boolean disposing)
+   at Sdl.TranslationStudio.Editor.TranslationEditor.SideBySideDocumentEditingView.Dispose()
+   at Sdl.TranslationStudio.Editor.TranslationEditor.TranslatableDocumentViewPart.OnRemoved()
+   at Sdl.TranslationStudio.Editor.EditorView.OnViewPartRemoved(IViewPart viewPart)
+   at Sdl.Desktop.Platform.AbstractDockingView.Control_ViewPartRemoved(IViewWithParts view, IViewPart viewPart)
+   at Sdl.Platform.UI.ViewControlBase.OnViewPartRemoved(IViewPart viewPart)
+   at Sdl.Platform.UI.TabbedViewControl.RemoveViewPartTab(IViewPart viewPart)
+   at Sdl.Platform.UI.TabbedViewControl.RemoveViewPart(IViewPart viewPart)
+   at Sdl.Platform.UI.ViewControlBase.NotifyViewPartRemoved(IViewPart viewPart)
+   at Sdl.Desktop.Platform.AbstractDockingView.RemoveViewPart(IViewPart viewPart)
+   at Sdl.TranslationStudio.Editor.EditorView.OnDocumentViewPartOperation(DocumentViewPartOperationEvent e)
+   at System.Reactive.AnonymousSafeObserver`1.OnNext(T value)
+   at System.Reactive.Sink`1.ForwardOnNext(TTarget value)
+   at System.Reactive.IdentitySink`1.OnNext(T value)
+   at System.Reactive.Sink`1.ForwardOnNext(TTarget value)
+   at System.Reactive.Linq.ObservableImpl.OfType`2._.OnNext(TSource value)
+   at System.Reactive.Subjects.Subject`1.OnNext(T value)
+   at Sdl.Desktop.Platform.Implementation.Services.EventAggregator.Publish[TEvent](TEvent sampleEvent)
+   at Sdl.TranslationStudio.Editor.EditorService.RemoveTranslatableDocumentViewPart(String id)
+   at Sdl.TranslationStudio.Editor.EditorService.document_Closed(IDocument document)
+   at Sdl.TranslationStudio.Api.Editor.DocumentEventHandler.Invoke(IDocument document)
+   at Sdl.TranslationStudio.Api.Editor.AbstractInternalDocument.OnClosed()
+   at Sdl.TranslationStudio.Editor.TranslationEditor.TranslatableDocument.OnClosed()
+   at Sdl.TranslationStudio.Api.Editor.AbstractInternalDocument.CloseImpl()
+   at Sdl.TranslationStudio.Api.Editor.AbstractInternalDocument.Close(Boolean uploadFilesToLanguageCloud)
+   at Sdl.TranslationStudio.Editor.TranslationEditor.TranslatableDocument.Close(Boolean uploadFilesToLanguageCloud)
+   at Sdl.TranslationStudio.Editor.EditorService.<>c.<CloseAllDocuments>b__59_0(IDocument t)
+   at System.Linq.Enumerable.All[TSource](IEnumerable`1 source, Func`2 predicate)
+   at Sdl.TranslationStudio.Editor.EditorService.CloseAllDocuments()
+   at Sdl.TranslationStudio.Editor.EditorService.Window_Closing(IStudioWindow window, CancelEventArgs e)
+   at Sdl.Desktop.Platform.StudioWindowCancelEventHandler.Invoke(IStudioWindow window, CancelEventArgs cancel)
+   at Sdl.Desktop.Platform.Implementation.StudioWindow.OnClosing()
+   at Sdl.Desktop.Platform.Implementation.StudioWindow._form_Closing(Object sender, CancelEventArgs e)
+   at System.Windows.Forms.Form.OnClosing(CancelEventArgs e)
+   at System.Windows.Forms.Form.WmClose(Message& m)
+   at System.Windows.Forms.Form.WndProc(Message& m)
+   at Sdl.Platform.UI.StudioWindowForm.WndProc(Message& message)
+   at System.Windows.Forms.Control.ControlNativeWindow.OnMessage(Message& m)
+   at System.Windows.Forms.Control.ControlNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)]]></StackTrace>
+  </Exception>
+  <Environment>
+    <ProductName>Trados Studio</ProductName>
+    <ProductVersion>Studio18</ProductVersion>
+    <EntryAssemblyFileVersion>18.1.3.6657</EntryAssemblyFileVersion>
+    <OperatingSystem>Microsoft Windows 11 Pro</OperatingSystem>
+    <ServicePack>NULL</ServicePack>
+    <OperatingSystemLanguage>2057</OperatingSystemLanguage>
+    <CodePage>1252</CodePage>
+    <LoggedOnUser>PRECISION7740\mbeijer</LoggedOnUser>
+    <DotNetFrameWork>4.0.30319.42000</DotNetFrameWork>
+    <ComputerName>PRECISION7740</ComputerName>
+    <ConnectedToNetwork>True</ConnectedToNetwork>
+    <PhysicalMemory>66852484 MB</PhysicalMemory>
+  </Environment>
+</SDLErrorDetails>

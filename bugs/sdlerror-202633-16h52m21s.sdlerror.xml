@@ -1,0 +1,52 @@
+﻿<SDLErrorDetails time="2026-03-03 16:52:32">
+  <ErrorMessage>Failed to initialize view 'EditorView'.</ErrorMessage>
+  <Exception>
+    <Type>Sdl.Desktop.Platform.StudioException, Sdl.Desktop.Platform, Version=18.0.0.0, Culture=neutral, PublicKeyToken=c28cdb26c445c888</Type>
+    <ExceptionMessage>Failed to initialize view 'EditorView'.</ExceptionMessage>
+    <HelpLink />
+    <Source>Sdl.Desktop.Platform</Source>
+    <HResult>-2146233088</HResult>
+    <StackTrace><![CDATA[   at Sdl.Desktop.Platform.Implementation.StudioWindow.EnsureViewSite(IView view)
+   at Sdl.Desktop.Platform.Implementation.StudioWindow.set_ActiveView(IView value)
+   at Sdl.TranslationStudio.Common.Helpers.ViewSwitcher.SwitchToEditorView()
+   at Sdl.TranslationStudio.Editor.EditorView.OnDocumentViewPartOperation(DocumentViewPartOperationEvent e)
+   at System.Reactive.AnonymousSafeObserver`1.OnNext(T value)
+   at System.Reactive.Sink`1.ForwardOnNext(TTarget value)
+   at System.Reactive.IdentitySink`1.OnNext(T value)
+   at System.Reactive.Sink`1.ForwardOnNext(TTarget value)
+   at System.Reactive.Linq.ObservableImpl.OfType`2._.OnNext(TSource value)
+   at System.Reactive.Subjects.Subject`1.OnNext(T value)
+   at Sdl.Desktop.Platform.Implementation.Services.EventAggregator.Publish[TEvent](TEvent sampleEvent)
+   at Sdl.TranslationStudio.Editor.EditorService.document_Loaded(IDocument document)
+   at Sdl.TranslationStudio.Api.Editor.AbstractInternalDocument.OnLoaded()
+   at Sdl.TranslationStudio.Editor.TranslationEditor.TranslatableDocument.OnLoaded()
+   at Sdl.TranslationStudio.Api.Editor.AbstractInternalDocument.AfterLoad(IJob job)]]></StackTrace>
+    <InnerException>
+      <Type>Sdl.Core.PluginFramework.PluginFrameworkException, Sdl.Core.PluginFramework, Version=1.8.0.0, Culture=neutral, PublicKeyToken=c28cdb26c445c888</Type>
+      <ExceptionMessage>Cannot load Third Party plug-in: Termview.TermviewEditorViewPart, Termview, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null : C:\Users\mbeijer\AppData\Local\Trados\Trados Studio\18\Plugins\Unpacked\Termview\Termview.dll</ExceptionMessage>
+      <HelpLink />
+      <Source>Sdl.Core.PluginFramework</Source>
+      <HResult>-2146233088</HResult>
+      <StackTrace><![CDATA[   at Sdl.Core.PluginFramework.DefaultPluginTypeLoader.LoadType(IPlugin plugin, String typeName)
+   at Sdl.Core.PluginFramework.Implementation.Extension.get_ExtensionType()
+   at Sdl.Desktop.Platform.Implementation.Integration.IntegrationViewPartDescriptor.InitFromViewPartExtension(ViewPartAttribute integrationViewPartAttribute, IExtension extension)
+   at Sdl.Desktop.Platform.Implementation.Integration.IntegrationViewPartDescriptor..ctor(IExtension extension)
+   at Sdl.Desktop.Platform.Implementation.ViewPartRegistryOperator.GetViewPartsFor(String viewId)
+   at Sdl.Desktop.Platform.Implementation.StudioWindow.EnsureViewSite(IView view)]]></StackTrace>
+    </InnerException>
+  </Exception>
+  <Environment>
+    <ProductName>Trados Studio</ProductName>
+    <ProductVersion>Studio18</ProductVersion>
+    <EntryAssemblyFileVersion>18.1.3.6657</EntryAssemblyFileVersion>
+    <OperatingSystem>Microsoft Windows 11 Pro</OperatingSystem>
+    <ServicePack>NULL</ServicePack>
+    <OperatingSystemLanguage>2057</OperatingSystemLanguage>
+    <CodePage>1252</CodePage>
+    <LoggedOnUser>PRECISION7740\mbeijer</LoggedOnUser>
+    <DotNetFrameWork>4.0.30319.42000</DotNetFrameWork>
+    <ComputerName>PRECISION7740</ComputerName>
+    <ConnectedToNetwork>True</ConnectedToNetwork>
+    <PhysicalMemory>66852484 MB</PhysicalMemory>
+  </Environment>
+</SDLErrorDetails>

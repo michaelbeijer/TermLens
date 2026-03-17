@@ -3,25 +3,24 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Supervertaler.Trados.Models;
+using Supervertaler.Trados.Settings;
 
 namespace Supervertaler.Trados.Core
 {
     /// <summary>
     /// Manages the prompt template library: loading, saving, and built-in prompt seeding.
-    /// Prompts are stored as Markdown files with YAML frontmatter in
-    /// %LocalAppData%\Supervertaler.Trados\prompts\.
-    /// Compatible with Supervertaler desktop's prompt format.
+    /// Prompts are stored as .svprompt files in the shared UserDataPath.PromptLibraryDir,
+    /// which is the same folder Supervertaler Workbench uses — so prompts are automatically
+    /// shared between both products.
     /// </summary>
     public class PromptLibrary
     {
-        private static readonly string PromptsDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Supervertaler.Trados", "prompts");
+        private static string PromptsDir => UserDataPath.PromptLibraryDir;
 
         /// <summary>
         /// Full path to the prompts folder on disk.
         /// </summary>
-        public static string PromptsFolderPath => PromptsDir;
+        public static string PromptsFolderPath => UserDataPath.PromptLibraryDir;
 
         private List<PromptTemplate> _cache;
 
@@ -36,22 +35,16 @@ namespace Supervertaler.Trados.Core
         }
 
         /// <summary>
-        /// Reloads all prompts from disk.
+        /// Reloads all prompts from the shared prompt_library folder.
+        /// Both Workbench and this plugin read from the same location, so there is
+        /// no longer a separate "desktop prompts" scan.
         /// </summary>
         public void Refresh()
         {
             _cache = new List<PromptTemplate>();
 
-            // Scan plugin-local prompts directory
             if (Directory.Exists(PromptsDir))
                 ScanDirectory(PromptsDir, PromptsDir, isReadOnly: false);
-
-            // Scan Supervertaler desktop app prompts (read-only)
-            foreach (var desktopDir in FindDesktopPromptDirs())
-            {
-                if (Directory.Exists(desktopDir))
-                    ScanDirectory(desktopDir, desktopDir, isReadOnly: true);
-            }
         }
 
         /// <summary>
@@ -404,56 +397,6 @@ namespace Supervertaler.Trados.Core
         private static string EscapeYamlString(string s)
         {
             return (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"");
-        }
-
-        private List<string> FindDesktopPromptDirs()
-        {
-            var dirs = new List<string>();
-
-            // Standard Supervertaler desktop locations
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-            // ~/Supervertaler_Data/resources/prompt_library
-            var dir1 = Path.Combine(home, "Supervertaler_Data", "resources", "prompt_library");
-            if (Directory.Exists(dir1))
-                dirs.Add(dir1);
-
-            // %APPDATA%\Supervertaler\prompt_library
-            var dir2 = Path.Combine(appData, "Supervertaler", "prompt_library");
-            if (Directory.Exists(dir2))
-                dirs.Add(dir2);
-
-            // Also check via config pointer
-            try
-            {
-                var configFile = Path.Combine(appData, "Supervertaler", "config.json");
-                if (File.Exists(configFile))
-                {
-                    var json = File.ReadAllText(configFile, Encoding.UTF8);
-                    // Simple extraction of user_data_path from JSON
-                    var key = "\"user_data_path\"";
-                    var idx = json.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-                    if (idx >= 0)
-                    {
-                        var valStart = json.IndexOf('"', idx + key.Length + 1);
-                        var valEnd = json.IndexOf('"', valStart + 1);
-                        if (valStart >= 0 && valEnd > valStart)
-                        {
-                            var userDataPath = json.Substring(valStart + 1, valEnd - valStart - 1);
-                            var promptDir = Path.Combine(userDataPath, "prompt_library");
-                            if (Directory.Exists(promptDir) && !dirs.Contains(promptDir))
-                                dirs.Add(promptDir);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore config parsing errors
-            }
-
-            return dirs;
         }
 
         // ─── Built-in Prompt Definitions ──────────────────────────────

@@ -1,0 +1,42 @@
+﻿<SDLErrorDetails time="2026-03-04 13:04:05">
+  <ErrorMessage>Object reference not set to an instance of an object.</ErrorMessage>
+  <Exception>
+    <Type>System.NullReferenceException, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Type>
+    <ExceptionMessage>Object reference not set to an instance of an object.</ExceptionMessage>
+    <HelpLink />
+    <Source>Sdl.TranslationStudio.Editor</Source>
+    <HResult>-2147467261</HResult>
+    <StackTrace><![CDATA[   at Sdl.TranslationStudio.Editor.TranslationEditor.Ribbons.QuickTagsRibbon.OnActiveViewChanged()
+   at Sdl.TranslationStudio.Editor.TranslationEditor.Ribbons.QuickTagsRibbon.EditorServiceActiveDocumentChanged(IDocument document)
+   at Sdl.TranslationStudio.Api.Editor.DocumentEventHandler.Invoke(IDocument document)
+   at Sdl.TranslationStudio.Editor.EditorService.set_ActiveDocument(IDocument value)
+   at Sdl.TranslationStudio.Editor.EditorView.OnActiveViewPartChanged(IViewPart viewPart)
+   at Sdl.Desktop.Platform.AbstractDockingView.Control_ActiveViewPartChanged(IViewWithParts view, IViewPart viewPart)
+   at Sdl.Platform.UI.ViewControlBase.OnActiveViewPartChanged(IViewPart viewPart)
+   at Sdl.Platform.UI.ViewControlBase.InternalActivateViewPart(IViewPart viewPartToActivate)
+   at Sdl.Platform.UI.TabbedViewControl.tracker_Activated(Object sender, EventArgs e)
+   at Sdl.Platform.UI.ActiveControlTracker.control_GotFocus(Object sender, EventArgs e)
+   at System.EventHandler.Invoke(Object sender, EventArgs e)
+   at System.Windows.Forms.Control.OnGotFocus(EventArgs e)
+   at System.Windows.Forms.Control.InvokeGotFocus(Control toInvoke, EventArgs e)
+   at System.Windows.Forms.Control.WmSetFocus(Message& m)
+   at System.Windows.Forms.Control.WndProc(Message& m)
+   at System.Windows.Forms.Control.ControlNativeWindow.OnMessage(Message& m)
+   at System.Windows.Forms.Control.ControlNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)]]></StackTrace>
+  </Exception>
+  <Environment>
+    <ProductName>Trados Studio</ProductName>
+    <ProductVersion>Studio18</ProductVersion>
+    <EntryAssemblyFileVersion>18.1.3.6657</EntryAssemblyFileVersion>
+    <OperatingSystem>Microsoft Windows 11 Pro</OperatingSystem>
+    <ServicePack>NULL</ServicePack>
+    <OperatingSystemLanguage>2057</OperatingSystemLanguage>
+    <CodePage>1252</CodePage>
+    <LoggedOnUser>PRECISION7740\mbeijer</LoggedOnUser>
+    <DotNetFrameWork>4.0.30319.42000</DotNetFrameWork>
+    <ComputerName>PRECISION7740</ComputerName>
+    <ConnectedToNetwork>True</ConnectedToNetwork>
+    <PhysicalMemory>66852484 MB</PhysicalMemory>
+  </Environment>
+</SDLErrorDetails>

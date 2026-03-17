@@ -10,7 +10,7 @@ namespace Supervertaler.Trados.Settings
 {
     /// <summary>
     /// Per-project settings overlay. Stored in a separate JSON file per Trados project
-    /// at %LocalAppData%\Supervertaler.Trados\projects\{key}.json.
+    /// at {SharedRoot}/trados/projects/{key}.json (resolved via UserDataPath).
     /// Only contains settings that vary between projects (termbase path, enabled/disabled
     /// termbases, write targets, etc.). Global settings (API keys, UI prefs) stay in
     /// the main settings.json.
@@ -18,9 +18,7 @@ namespace Supervertaler.Trados.Settings
     [DataContract]
     public class ProjectSettings
     {
-        private static readonly string ProjectsDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Supervertaler.Trados", "projects");
+        private static string ProjectsDir => UserDataPath.ProjectsDir;
 
         // ─── Human-readable metadata ────────────────────────────────
 

@@ -5,7 +5,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Sdl.Desktop.IntegrationApi;
 using Sdl.Desktop.IntegrationApi.Extensions;
+using Supervertaler.Trados.Controls;
 using Supervertaler.Trados.Licensing;
+using Supervertaler.Trados.Settings;
 
 namespace Supervertaler.Trados
 {
@@ -58,6 +60,18 @@ namespace Supervertaler.Trados
                 // If it also fails, the user gets a descriptive error
                 // when they first try to use a database.
             }
+
+            // First-run setup: show folder-selection dialog when no config.json exists yet
+            if (UserDataPath.NeedsFirstRunSetup)
+            {
+                using (var dlg = new SetupDialog())
+                    dlg.ShowDialog();
+                // If the user cancelled, SetRoot was never called; Root falls back to
+                // ~/Supervertaler/ which is the correct default anyway.
+            }
+
+            // One-time migration from %LocalAppData%\Supervertaler.Trados\ → new location
+            UserDataPath.MigrateIfNeeded();
 
             // Initialize licensing — loads cached state, triggers background validation
             LicenseManager.Instance.InitializeAsync();
