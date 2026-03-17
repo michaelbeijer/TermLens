@@ -267,7 +267,7 @@ namespace Supervertaler.Trados.Core
                 else
                     entry.CaseSensitive = globalCaseSensitive;
 
-                var key = entry.SourceTerm.Trim().ToLowerInvariant();
+                var key = TermMatcher.NormalizeScriptChars(entry.SourceTerm.Trim().ToLowerInvariant());
 
                 // Also index with trailing punctuation stripped
                 var stripped = key.TrimEnd('.', '!', '?', ',', ';', ':');
@@ -288,7 +288,7 @@ namespace Supervertaler.Trados.Core
                 {
                     foreach (var synText in srcSyns)
                     {
-                        var synKey = synText.Trim().ToLowerInvariant();
+                        var synKey = TermMatcher.NormalizeScriptChars(synText.Trim().ToLowerInvariant());
                         if (string.IsNullOrEmpty(synKey) || synKey == key) continue;
 
                         if (!index.ContainsKey(synKey))
@@ -308,7 +308,7 @@ namespace Supervertaler.Trados.Core
                 // Index source abbreviation variant(s) as additional keys
                 foreach (var abbrVariant in entry.GetSourceAbbreviationVariants())
                 {
-                    var abbrKey = abbrVariant.Trim().ToLowerInvariant();
+                    var abbrKey = TermMatcher.NormalizeScriptChars(abbrVariant.Trim().ToLowerInvariant());
                     if (string.IsNullOrEmpty(abbrKey) || abbrKey == key) continue;
 
                     if (!index.ContainsKey(abbrKey))

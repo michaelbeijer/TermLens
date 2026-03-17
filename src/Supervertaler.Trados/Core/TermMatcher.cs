@@ -14,9 +14,12 @@ namespace Supervertaler.Trados.Core
     {
         private static readonly char[] PunctChars = ".!?,;:\"'\u201C\u201D\u201E\u00AB\u00BB\u2018\u2019\u201A\u2039\u203A()[]".ToCharArray();
 
-        // Pattern for splitting words: captures words, decimals, percentages, units
+        // Pattern for splitting words: captures words, decimals, percentages, units.
+        // Includes subscript digits (₀-₉, U+2080-U+2089) and superscript digits
+        // (⁰¹²³⁴⁵⁶⁷⁸⁹) so that chemical/scientific tokens like H₂O or CO₂ are
+        // captured as a single word rather than split at the subscript character.
         private static readonly Regex WordPattern = new Regex(
-            @"(?<!\w)[\w.,%-/]+(?!\w)",
+            @"(?<!\w)[\w.,%-/\u2080-\u2089\u2070\u00B9\u00B2\u00B3\u2074-\u2079]+(?!\w)",
             RegexOptions.Compiled);
 
         // Tags from various CAT tools to strip before display
@@ -85,7 +88,7 @@ namespace Supervertaler.Trados.Core
             if (_termIndex == null || entry == null || string.IsNullOrWhiteSpace(entry.SourceTerm))
                 return;
 
-            var key = entry.SourceTerm.Trim().ToLowerInvariant();
+            var key = NormalizeScriptChars(entry.SourceTerm.Trim().ToLowerInvariant());
             var stripped = key.TrimEnd('.', '!', '?', ',', ';', ':');
 
             if (!_termIndex.TryGetValue(key, out var list))
@@ -108,7 +111,7 @@ namespace Supervertaler.Trados.Core
             // Index source abbreviation variant(s) as additional lookup keys
             foreach (var abbrVariant in entry.GetSourceAbbreviationVariants())
             {
-                var abbrKey = abbrVariant.Trim().ToLowerInvariant();
+                var abbrKey = NormalizeScriptChars(abbrVariant.Trim().ToLowerInvariant());
                 if (string.IsNullOrEmpty(abbrKey) || abbrKey == key) continue;
 
                 if (!_termIndex.TryGetValue(abbrKey, out var abbrList))
@@ -170,6 +173,47 @@ namespace Supervertaler.Trados.Core
                 }
             }
             return result;
+        }
+
+        /// <summary>
+        /// Normalises subscript and superscript digit characters to their ASCII base equivalents
+        /// so that terms like H₂O or mm² can be matched regardless of whether the stored term
+        /// or the segment text uses Unicode script variants.
+        /// Subscript digits  ₀-₉  (U+2080–U+2089) → 0-9
+        /// Superscript digits ⁰¹²³⁴⁵⁶⁷⁸⁹ (U+2070, U+00B9, U+00B2, U+00B3, U+2074–U+2079) → 0-9
+        /// All other characters are left unchanged.  The method is length-preserving
+        /// (each script char maps to exactly one ASCII char), so character positions remain valid.
+        /// </summary>
+        internal static string NormalizeScriptChars(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            // Fast path: skip allocation if no script chars are present
+            bool hasScript = false;
+            foreach (char c in text)
+            {
+                if ((c >= '\u2080' && c <= '\u2089') || c == '\u2070' ||
+                    c == '\u00B9' || c == '\u00B2' || c == '\u00B3' ||
+                    (c >= '\u2074' && c <= '\u2079'))
+                {
+                    hasScript = true;
+                    break;
+                }
+            }
+            if (!hasScript) return text;
+
+            var sb = new System.Text.StringBuilder(text.Length);
+            foreach (char c in text)
+            {
+                if      (c >= '\u2080' && c <= '\u2089') sb.Append((char)('0' + (c - '\u2080'))); // ₀-₉
+                else if (c == '\u2070')                  sb.Append('0');  // ⁰
+                else if (c == '\u00B9')                  sb.Append('1');  // ¹
+                else if (c == '\u00B2')                  sb.Append('2');  // ²
+                else if (c == '\u00B3')                  sb.Append('3');  // ³
+                else if (c >= '\u2074' && c <= '\u2079') sb.Append((char)('0' + (c - '\u2070'))); // ⁴-⁹
+                else                                     sb.Append(c);
+            }
+            return sb.ToString();
         }
 
         /// <summary>
@@ -295,7 +339,8 @@ namespace Supervertaler.Trados.Core
                 .OrderByDescending(k => k.Length)
                 .ToList();
 
-            var lineLower = line.ToLowerInvariant();
+            // Normalise subscript/superscript so "H₂O solution" matches a key of "h2o solution"
+            var lineLower = NormalizeScriptChars(line.ToLowerInvariant());
 
             foreach (var term in multiWordTerms)
             {
@@ -383,7 +428,8 @@ namespace Supervertaler.Trados.Core
             if (_termIndex == null || string.IsNullOrWhiteSpace(word))
                 return emptyResult;
 
-            var normalised = word.Trim();
+            // Normalise subscript/superscript digits so "H₂O" → "H2O" before index lookup
+            var normalised = NormalizeScriptChars(word.Trim());
             var stripped = normalised.TrimEnd(PunctChars).TrimStart(PunctChars);
 
             List<TermEntry> entries = null;
