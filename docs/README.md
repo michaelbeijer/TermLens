@@ -1,3 +1,7 @@
+{% hint style="info" %}
+You are viewing help for **Supervertaler for Trados** — the Trados Studio plugin. Looking for help with the standalone app? Visit [Supervertaler Workbench help](https://help.supervertaler.com).
+{% endhint %}
+
 # Supervertaler for Trados
 
 Supervertaler for Trados is a plugin for **Trados Studio 2024+** that brings Supervertaler’s terminology and AI features directly into the Trados editor. It runs natively inside Trados Studio as a set of dockable panels, so you never have to leave the editor.
