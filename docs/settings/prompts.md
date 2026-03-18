@@ -1,77 +1,79 @@
+# Prompts
+
 {% hint style="info" %}
 You are viewing help for **Supervertaler for Trados** — the Trados Studio plugin. Looking for help with the standalone app? Visit [Supervertaler Workbench help](https://help.supervertaler.com).
 {% endhint %}
 
-# Prompts
+## Prompts
 
 Prompts tell the AI how to behave. The Prompt Manager lets you browse built-in domain prompts, create your own, and mark prompts as QuickLauncher shortcuts.
 
-## Accessing the Prompt Manager
+### Accessing the Prompt Manager
 
 Open the plugin **Settings** dialog and switch to the **Prompts** tab.
 
----
+***
 
-## Built-in prompts
+### Built-in prompts
 
 The plugin ships with built-in prompts organised into two categories:
 
-| Category | Prompts | Used in |
-|----------|---------|---------|
+| Category      | Prompts                                                                                                                                               | Used in              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | **Translate** | Medical, Legal, Patent, Financial, Technical, Marketing, IT, Dutch/English/French/German/Spanish Style Guides, Professional Tone, Preserve Formatting | Batch Translate mode |
-| **Proofread** | Default Proofreading Prompt | Batch Proofread mode |
+| **Proofread** | Default Proofreading Prompt                                                                                                                           | Batch Proofread mode |
 
 {% hint style="info" %}
 Built-in prompts are **read-only**. To customise one, create a new prompt and paste the built-in content as a starting point.
 {% endhint %}
 
----
+***
 
-## Prompt variables
+### Prompt variables
 
 Variables are placeholders in your prompt text that are automatically filled in at runtime. Use them to make prompts context-aware without rewriting them for every project or language pair.
 
-### Language variables — all contexts
+#### Language variables — all contexts
 
 These work in Batch Translate, Batch Proofread, and QuickLauncher prompts:
 
-| Variable | Replaced with | Example |
-|----------|---------------|---------|
-| `{{SOURCE_LANGUAGE}}` | Full name of the source language, including locale | `Dutch (Belgium)` |
+| Variable              | Replaced with                                      | Example                   |
+| --------------------- | -------------------------------------------------- | ------------------------- |
+| `{{SOURCE_LANGUAGE}}` | Full name of the source language, including locale | `Dutch (Belgium)`         |
 | `{{TARGET_LANGUAGE}}` | Full name of the target language, including locale | `English (United States)` |
 
-### Segment variables — QuickLauncher only
+#### Segment variables — QuickLauncher only
 
 These are only available in QuickLauncher prompts, because they refer to the specific segment active at the moment you trigger the menu:
 
-| Variable | Replaced with | Example |
-|----------|---------------|---------|
-| `{{SOURCE_SEGMENT}}` | Full source text of the **active segment** | `De stand der techniek op het gebied van vloerlijmen...` |
-| `{{TARGET_SEGMENT}}` | Full target text of the **active segment** (your translation so far — may be empty or partial) | `The prior art in the field of floor adhesives...` |
-| `{{SELECTION}}` | Text currently **selected** in the editor (source side preferred; falls back to target side) | `vloerbekledingen` |
+| Variable             | Replaced with                                                                                  | Example                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `{{SOURCE_SEGMENT}}` | Full source text of the **active segment**                                                     | `De stand der techniek op het gebied van vloerlijmen...` |
+| `{{TARGET_SEGMENT}}` | Full target text of the **active segment** (your translation so far — may be empty or partial) | `The prior art in the field of floor adhesives...`       |
+| `{{SELECTION}}`      | Text currently **selected** in the editor (source side preferred; falls back to target side)   | `vloerbekledingen`                                       |
 
 {% hint style="info" %}
 **Segment vs selection:** `{{SOURCE_SEGMENT}}` and `{{TARGET_SEGMENT}}` always give you the **entire active segment**. `{{SELECTION}}` gives you only the **highlighted portion** — useful for looking up or explaining a specific word or phrase within the segment. If nothing is selected, `{{SELECTION}}` is replaced with an empty string.
 {% endhint %}
 
-### Project variables — QuickLauncher only
+#### Project variables — QuickLauncher only
 
-| Variable | Replaced with |
-|----------|---------------|
-| `{{PROJECT_NAME}}` | Trados project name (e.g. `EP3456789_NL_EN`) |
-| `{{DOCUMENT_NAME}}` | Active file name (e.g. `EP3456789A1.docx`) |
+| Variable                   | Replaced with                                                                                                                                                                                                   |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{{PROJECT_NAME}}`         | Trados project name (e.g. `EP3456789_NL_EN`)                                                                                                                                                                    |
+| `{{DOCUMENT_NAME}}`        | Active file name (e.g. `EP3456789A1.docx`)                                                                                                                                                                      |
 | `{{SURROUNDING_SEGMENTS}}` | N source segments before and after the active segment, with actual Trados segment numbers and the active segment marked `← ACTIVE`. N is set in **Settings → AI Settings → Surrounding segments** (default: 5). |
-| `{{PROJECT}}` | All source segments in the document, numbered with their actual Trados segment numbers. In multi-file projects a `=== File N ===` header separates each file (Trados restarts segment numbering per file). |
+| `{{PROJECT}}`              | All source segments in the document, numbered with their actual Trados segment numbers. In multi-file projects a `=== File N ===` header separates each file (Trados restarts segment numbering per file).      |
 
 {% hint style="warning" %}
-`{{PROJECT}}` sends the entire document to the AI and uses significantly more tokens than other variables. For a 10,000-word patent this costs roughly 4–5 cents per call with a Sonnet-class model. Reserve it for prompts where full document context genuinely matters.
+`{{PROJECT}}` sends the entire document to the AI and uses significantly more tokens than other variables. For a 10,000-word document, this costs roughly 4–5 cents per call with a Sonnet-class model. Reserve it for prompts where full document context genuinely matters.
 {% endhint %}
 
----
+***
 
-## Writing a custom prompt
+### Writing a custom prompt
 
-### Anatomy of a prompt
+#### Anatomy of a prompt
 
 A good prompt has three parts:
 
@@ -92,7 +94,7 @@ Preserve numbers, units, and chemical formulas without conversion.
 Use formal, technical register throughout.
 ```
 
-### Example QuickLauncher prompt — explain a selected term
+#### Example QuickLauncher prompt — explain a selected term
 
 This prompt uses `{{SELECTION}}` to ask the AI to explain a selected term in context:
 
@@ -116,7 +118,7 @@ The selected term is: vloerbekledingen
 Please explain what this term means...
 ```
 
-### Example QuickLauncher prompt — assess the current translation
+#### Example QuickLauncher prompt — assess the current translation
 
 This prompt uses `{{SOURCE_SEGMENT}}` and `{{TARGET_SEGMENT}}` to ask the AI to review the translation of the active segment:
 
@@ -131,7 +133,7 @@ Assess how I translated the current segment. Point out any inaccuracies,
 awkward phrasing, or terminology issues, and suggest improvements.
 ```
 
-### Example QuickLauncher prompt — translate a selected term in context
+#### Example QuickLauncher prompt — translate a selected term in context
 
 ```
 Source segment ({{SOURCE_LANGUAGE}}):
@@ -146,7 +148,7 @@ Suggest the best {{TARGET_LANGUAGE}} translation for "{{SELECTION}}"
 given the full segment context above. Give a short explanation of your reasoning.
 ```
 
-### Example QuickLauncher prompt — translate a term using surrounding passage
+#### Example QuickLauncher prompt — translate a term using surrounding passage
 
 Uses `{{SURROUNDING_SEGMENTS}}` for a wider context window than just the active segment:
 
@@ -163,11 +165,9 @@ Suggest the best {{TARGET_LANGUAGE}} translation for "{{SELECTION}}" given the
 surrounding context. Briefly explain your reasoning.
 ```
 
-### Example QuickLauncher prompt — full-document term consistency check
+#### Example QuickLauncher prompt — full-document term consistency check
 
-Uses `{{PROJECT}}` to give the AI the entire source document. Useful for checking
-whether a key term is used consistently, or for understanding a term's meaning across
-all its occurrences. Reserve this for important queries — see the token cost note above.
+Uses `{{PROJECT}}` to give the AI the entire source document. Useful for checking whether a key term is used consistently, or for understanding a term's meaning across all its occurrences. Reserve this for important queries — see the token cost note above.
 
 ```
 I am translating a {{SOURCE_LANGUAGE}} patent ({{DOCUMENT_NAME}}) into {{TARGET_LANGUAGE}}.
@@ -184,11 +184,9 @@ What is the most accurate and consistent {{TARGET_LANGUAGE}} translation for
 occurrences and recommend which translation to use where.
 ```
 
-### Example QuickLauncher prompt — check a segment against the full document
+#### Example QuickLauncher prompt — check a segment against the full document
 
-After sending `{{PROJECT}}`, the AI knows the segment numbers shown in Trados, so you
-can ask about specific segments by number in follow-up messages — or ask in the prompt
-itself:
+After sending `{{PROJECT}}`, the AI knows the segment numbers shown in Trados, so you can ask about specific segments by number in follow-up messages — or ask in the prompt itself:
 
 ```
 I am translating a {{SOURCE_LANGUAGE}} patent into {{TARGET_LANGUAGE}}.
@@ -206,20 +204,20 @@ Does this translation accurately reflect the source and maintain consistency wit
 terminology used elsewhere in the document? Point out any issues.
 ```
 
-### Tips for effective prompts
+#### Tips for effective prompts
 
-- **Be explicit about output format.** If you only want the translation, say "Return only the translated text." If you want an explanation, describe the expected structure.
-- **Use language variables.** Hardcoding "Dutch to English" breaks the prompt when you switch projects. Always use `{{SOURCE_LANGUAGE}}` and `{{TARGET_LANGUAGE}}`.
-- **Keep QuickLauncher prompts focused.** A narrow, specific task works better than a broad one — except when you deliberately need the full document context via `{{PROJECT}}`.
-- **Use `{{SURROUNDING_SEGMENTS}}` instead of `{{SOURCE_SEGMENT}}` when context matters.** The surrounding passage often gives the AI enough context for a better answer at a fraction of the cost of `{{PROJECT}}`.
-- **Use `{{PROJECT}}` sparingly.** It is best suited for high-stakes queries on short-to-medium documents — terminology consistency checks, key term decisions, or reviewing a handful of specific segments. Avoid it in prompts you run on every segment.
-- **Segment numbers in `{{PROJECT}}` match the Trados editor.** After sending `{{PROJECT}}`, you can ask the AI about "segment 4" or "segment 12" and it will know exactly which segment you mean — the same number shown in the Trados grid.
-- **Batch Translate prompts receive one segment at a time.** You do not need to handle lists of segments or loop logic.
-- **Proofread prompts receive multiple segment pairs.** The built-in proofreading prompt shows the expected input/output format — follow that structure if you write a custom one.
+* **Be explicit about output format.** If you only want the translation, say "Return only the translated text." If you want an explanation, describe the expected structure.
+* **Use language variables.** Hardcoding "Dutch to English" breaks the prompt when you switch projects. Always use `{{SOURCE_LANGUAGE}}` and `{{TARGET_LANGUAGE}}`.
+* **Keep QuickLauncher prompts focused.** A narrow, specific task works better than a broad one — except when you deliberately need the full document context via `{{PROJECT}}`.
+* **Use `{{SURROUNDING_SEGMENTS}}` instead of `{{SOURCE_SEGMENT}}` when context matters.** The surrounding passage often gives the AI enough context for a better answer at a fraction of the cost of `{{PROJECT}}`.
+* **Use `{{PROJECT}}` sparingly.** It is best suited for high-stakes queries on short-to-medium documents — terminology consistency checks, key term decisions, or reviewing a handful of specific segments. Avoid it in prompts you run on every segment.
+* **Segment numbers in `{{PROJECT}}` match the Trados editor.** After sending `{{PROJECT}}`, you can ask the AI about "segment 4" or "segment 12" and it will know exactly which segment you mean — the same number shown in the Trados grid.
+* **Batch Translate prompts receive one segment at a time.** You do not need to handle lists of segments or loop logic.
+* **Proofread prompts receive multiple segment pairs.** The built-in proofreading prompt shows the expected input/output format — follow that structure if you write a custom one.
 
----
+***
 
-## Marking a prompt as a QuickLauncher shortcut
+### Marking a prompt as a QuickLauncher shortcut
 
 To make a custom prompt appear in the QuickLauncher right-click menu (`Ctrl+Q`), set `category: QuickLauncher` in the YAML frontmatter:
 
@@ -234,10 +232,10 @@ quicklauncher_label: Explain term
 Your prompt content here...
 ```
 
-| Field | Description |
-|-------|-------------|
-| `category: QuickLauncher` | Marks this prompt as a QuickLauncher item |
-| `quicklauncher_label` | Optional short label shown in the menu — falls back to `name` if omitted |
+| Field                     | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `category: QuickLauncher` | Marks this prompt as a QuickLauncher item                                |
+| `quicklauncher_label`     | Optional short label shown in the menu — falls back to `name` if omitted |
 
 You can also organise QuickLauncher prompts by placing them in a folder called `QuickLauncher` inside your `prompt_library` folder. Any prompt in that folder is automatically treated as a QuickLauncher prompt.
 
@@ -245,9 +243,9 @@ You can also organise QuickLauncher prompts by placing them in a folder called `
 QuickLauncher prompts are shared with Supervertaler Workbench via the shared prompt library folder.
 {% endhint %}
 
----
+***
 
-## Prompt file format
+### Prompt file format
 
 Prompts are stored as `.svprompt` files (Markdown with YAML frontmatter). This is the same format used by Supervertaler Workbench, so prompts are automatically shared between both applications via the shared `prompt_library` folder.
 
@@ -262,47 +260,47 @@ built_in: true
 You are a professional medical translator...
 ```
 
-| YAML field | Description |
-|------------|-------------|
-| `name` | Display name shown in the prompt selector |
-| `description` | Optional summary |
-| `category` | `Translate`, `Proofread`, or `QuickLauncher` — controls where the prompt appears |
-| `quicklauncher_label` | Short label for the QuickLauncher menu (optional, falls back to `name`) |
-| `built_in` | `true` for shipped prompts (managed by the plugin) |
+| YAML field            | Description                                                                      |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `name`                | Display name shown in the prompt selector                                        |
+| `description`         | Optional summary                                                                 |
+| `category`            | `Translate`, `Proofread`, or `QuickLauncher` — controls where the prompt appears |
+| `quicklauncher_label` | Short label for the QuickLauncher menu (optional, falls back to `name`)          |
+| `built_in`            | `true` for shipped prompts (managed by the plugin)                               |
 
 {% hint style="info" %}
 Older prompts using the `domain` key instead of `category` are still supported for backward compatibility.
 {% endhint %}
 
----
+***
 
-## Creating and editing prompts
+### Creating and editing prompts
 
-### New prompt
+#### New prompt
 
 1. Click **New** in the Prompts tab
 2. Fill in Name, Description, Category, and Content
 3. Click **Save**
 
-### Edit a prompt
+#### Edit a prompt
 
 1. Select a prompt in the list
 2. Click **Edit**
 3. Modify as needed and click **Save**
 
-### Delete a prompt
+#### Delete a prompt
 
 1. Select a custom prompt
 2. Click **Delete** and confirm
 
 Built-in prompts cannot be deleted. Click **Restore** to recreate any built-in prompts you have deleted.
 
----
+***
 
-## See Also
+### See Also
 
-- [QuickLauncher](../quicklauncher.md)
-- [AI Settings](ai-settings.md)
-- [Batch Translate](../batch-translate.md)
-- [AI Proofreader](../ai-proofreader.md)
-- [Keyboard Shortcuts](../keyboard-shortcuts.md)
+* [QuickLauncher](../quicklauncher.md)
+* [AI Settings](ai-settings.md)
+* [Batch Translate](../batch-translate.md)
+* [AI Proofreader](../ai-proofreader.md)
+* [Keyboard Shortcuts](../keyboard-shortcuts.md)
