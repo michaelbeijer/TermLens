@@ -92,8 +92,28 @@ namespace Supervertaler.Trados.Settings
         /// AI Assistant chat system prompt.
         /// Default: 5 (five segments on each side).
         /// </summary>
+        /// <remarks>
+        /// Uses a backing field so that <see cref="OnDeserializing"/> can pre-seed the
+        /// default before DataContractSerializer fills in the value. Without this,
+        /// DataContractSerializer bypasses constructors and property initializers, leaving
+        /// the field at 0 when the key is absent from an older settings.json.
+        /// </remarks>
+        private int _quickLauncherSurroundingSegments = 5;
+
         [DataMember(Name = "quickLauncherSurroundingSegments")]
-        public int QuickLauncherSurroundingSegments { get; set; } = 5;
+        public int QuickLauncherSurroundingSegments
+        {
+            get => _quickLauncherSurroundingSegments;
+            set => _quickLauncherSurroundingSegments = value;
+        }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext context)
+        {
+            // Pre-seed defaults that DataContractSerializer would otherwise leave at 0
+            // when the key is absent from an older settings.json.
+            _quickLauncherSurroundingSegments = 5;
+        }
 
         /// <summary>
         /// Whether to include term definitions, domains, and notes alongside
