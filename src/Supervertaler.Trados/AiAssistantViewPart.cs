@@ -258,6 +258,7 @@ namespace Supervertaler.Trados
             {
                 Role = ChatRole.User,
                 Content = messageText ?? "",
+                DisplayContent = args.DisplayText,  // null = show full Content; set for {{PROJECT}} prompts
                 Images = images
             };
             _chatHistory.Add(userMsg);
@@ -1219,7 +1220,12 @@ namespace Supervertaler.Trados
         /// editor right-click menu. The prompt content must already have all variables substituted
         /// before this is called. Submits the message to the AI Assistant chat.
         /// </summary>
-        public static void RunQuickLauncherPrompt(string expandedPrompt)
+        /// <param name="expandedPrompt">Full prompt text sent to the AI.</param>
+        /// <param name="displayPrompt">
+        /// Optional shorter version shown in the chat bubble. Pass null to show the full prompt.
+        /// Use this when the prompt contains a large {{PROJECT}} expansion.
+        /// </param>
+        public static void RunQuickLauncherPrompt(string expandedPrompt, string displayPrompt = null)
         {
             if (string.IsNullOrWhiteSpace(expandedPrompt)) return;
 
@@ -1228,7 +1234,7 @@ namespace Supervertaler.Trados
 
             instance.SafeInvoke(() =>
             {
-                _control.Value.SubmitMessage(expandedPrompt);
+                _control.Value.SubmitMessage(expandedPrompt, displayPrompt);
             });
         }
 

@@ -51,6 +51,11 @@ namespace Supervertaler.Trados.Controls
         // Pending image attachments for the next message
         private readonly List<ImageAttachment> _pendingImages = new List<ImageAttachment>();
 
+        // Optional display-only override for the next programmatically submitted message.
+        // When set, the chat bubble shows this text instead of the full prompt content.
+        // Used by SubmitMessage(text, displayText) for {{PROJECT}} prompts.
+        private string _pendingDisplayText;
+
         private const int MaxImages = 5;
         private const int MaxImageBytes = 10 * 1024 * 1024; // 10 MB
 
@@ -852,10 +857,14 @@ namespace Supervertaler.Trados.Controls
                 ClearAttachments();
             }
 
+            var displayText = _pendingDisplayText;
+            _pendingDisplayText = null;
+
             SendRequested?.Invoke(this, new ChatSendEventArgs
             {
                 Text = text ?? "",
-                Images = images
+                Images = images,
+                DisplayText = displayText
             });
         }
 
@@ -951,12 +960,24 @@ namespace Supervertaler.Trados.Controls
         /// </summary>
         public void SubmitMessage(string text)
         {
+            SubmitMessage(text, null);
+        }
+
+        /// <summary>
+        /// Like <see cref="SubmitMessage(string)"/> but shows <paramref name="displayText"/> in
+        /// the chat bubble instead of the full <paramref name="text"/>. The full text is still
+        /// sent to the AI. Use this when <paramref name="text"/> contains a large {{PROJECT}}
+        /// expansion that would clutter the chat history.
+        /// </summary>
+        public void SubmitMessage(string text, string displayText)
+        {
             if (_isThinking) return;
             if (string.IsNullOrWhiteSpace(text)) return;
 
             // Switch to the Chat tab so the response is visible
             _tabControl.SelectedIndex = 0;
 
+            _pendingDisplayText = displayText;
             _txtInput.Text = text;
             DoSend();
         }

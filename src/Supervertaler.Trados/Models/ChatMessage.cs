@@ -16,6 +16,14 @@ namespace Supervertaler.Trados.Models
         public string Content { get; set; }
 
         /// <summary>
+        /// Optional display-only override. When set, the chat bubble shows this text instead of
+        /// <see cref="Content"/>. <see cref="Content"/> is always sent to the AI unchanged.
+        /// Used to show a short summary (e.g. "[source document — 47 segments]") in place of a
+        /// large {{PROJECT}} expansion so the chat history stays readable.
+        /// </summary>
+        public string DisplayContent { get; set; }
+
+        /// <summary>
         /// Optional image attachments. Null means text-only (most messages).
         /// </summary>
         public List<ImageAttachment> Images { get; set; }
@@ -54,5 +62,11 @@ namespace Supervertaler.Trados.Models
     {
         public string Text { get; set; }
         public List<ImageAttachment> Images { get; set; }
+
+        /// <summary>
+        /// Optional display-only text for the user bubble. When set, the bubble shows this
+        /// instead of <see cref="Text"/>. <see cref="Text"/> is always sent to the AI.
+        /// </summary>
+        public string DisplayText { get; set; }
     }
 }

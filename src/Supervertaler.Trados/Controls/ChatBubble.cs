@@ -67,9 +67,16 @@ namespace Supervertaler.Trados.Controls
             BackColor = Color.White;
             Cursor = Cursors.Default;
 
+            // Prepare display text for user bubbles.
+            // DisplayContent, when set, shows a short summary (e.g. for {{PROJECT}} prompts)
+            // while Content (the full text) is still sent to the AI.
+            var userDisplayText = _isUser
+                ? (message.DisplayContent ?? message.Content ?? "")
+                : null;
+
             // Prepare plain content (for copy/apply)
             _plainContent = _isUser
-                ? (message.Content ?? "")
+                ? userDisplayText
                 : MarkdownToRtf.StripMarkdown(message.Content ?? "");
 
             // Create image thumbnails if present
@@ -118,10 +125,10 @@ namespace Supervertaler.Trados.Controls
                 TabStop = false,
             };
 
-            // Set content: plain text for user, RTF for assistant
+            // Set content: plain text for user (using display text), RTF for assistant
             if (_isUser)
             {
-                _rtb.Text = message.Content ?? "";
+                _rtb.Text = userDisplayText;
             }
             else
             {

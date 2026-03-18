@@ -148,7 +148,25 @@ namespace Supervertaler.Trados
                         capturedProjectName, capturedDocumentName,
                         surroundingSegments, projectText);
 
-                    AiAssistantViewPart.RunQuickLauncherPrompt(expanded);
+                    // Build a compact display version for the chat bubble when {{PROJECT}} is used.
+                    // The full expanded text is still sent to the AI — only the bubble is shortened.
+                    string displayExpanded = null;
+                    if (projectText != null)
+                    {
+                        var segCount = 0;
+                        foreach (var line in projectText.Split('\n'))
+                            if (line.TrimStart().StartsWith("[")) segCount++;
+
+                        var placeholder = $"[source document \u2014 {segCount} segment{(segCount == 1 ? "" : "s")}]";
+                        displayExpanded = PromptLibrary.ApplyVariables(
+                            content,
+                            capturedSourceLang, capturedTargetLang,
+                            capturedSourceText, capturedTargetText, capturedSelection,
+                            capturedProjectName, capturedDocumentName,
+                            surroundingSegments, placeholder);
+                    }
+
+                    AiAssistantViewPart.RunQuickLauncherPrompt(expanded, displayExpanded);
                 };
 
                 menu.Items.Add(item);
