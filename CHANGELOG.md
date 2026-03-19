@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.12.2] — 2026-03-19
+
+### Added
+- **Parallels / Mac warning in first-run setup** — when running inside Parallels Desktop on a Mac, the setup dialog now shows a yellow warning panel advising users to keep their data folder on the Windows side (`C:\` drive). If the user selects a Mac-side path (`\\Mac\Home\...`), a confirmation dialog explains that SQLite databases do not work reliably on network-mounted filesystems. Non-Parallels users see no change.
+- **Parallels / Mac documentation** — new "Running on a Mac (Parallels)" section in the installation help, and a new "Database errors on Mac (Parallels)" troubleshooting entry
+- **Updated installer screenshot** — annotated screenshot showing the recommended "This computer for me only" option
+
+---
+
 ## [4.12.1] — 2026-03-19
 
 ### Fixed

@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using Microsoft.Win32;
 using Supervertaler.Trados.Settings;
 
 namespace Supervertaler.Trados.Controls
@@ -19,6 +20,7 @@ namespace Supervertaler.Trados.Controls
         private TextBox _pathBox;
         private Button  _browseButton;
         private Label  _noteLabel;
+        private Panel  _parallelsWarningPanel;
         private Button  _okButton;
         private Button  _cancelButton;
 
@@ -78,6 +80,20 @@ namespace Supervertaler.Trados.Controls
                 return;
             }
 
+            // Warn if the path points to a Mac-side Parallels share
+            if (IsMacSidePath(path))
+            {
+                var result = MessageBox.Show(this,
+                    "The folder you selected is on the Mac side of Parallels (a shared network folder). " +
+                    "Supervertaler uses SQLite databases for termbases, and SQLite does not work " +
+                    "reliably on network-mounted filesystems — you may experience database errors or data loss.\r\n\r\n" +
+                    "We strongly recommend using a Windows-side path instead (e.g., C:\\Users\\<username>\\Supervertaler).\r\n\r\n" +
+                    "Use this Mac-side path anyway?",
+                    "Supervertaler Setup — Mac Path Warning",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (result != DialogResult.Yes) return;
+            }
+
             // Attempt to create the folder now so we can validate it's writable
             try
             {
@@ -97,6 +113,37 @@ namespace Supervertaler.Trados.Controls
             Close();
         }
 
+        // ── Parallels / Mac detection ────────────────────────────────
+
+        private static bool IsRunningInParallels()
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS"))
+                {
+                    if (key != null)
+                    {
+                        var combined = ((key.GetValue("SystemManufacturer") as string ?? "") + " " +
+                                        (key.GetValue("SystemProductName") as string ?? "")).ToLowerInvariant();
+                        if (combined.Contains("parallels")) return true;
+                    }
+                }
+                using (var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Parallels\Parallels Tools"))
+                {
+                    if (key != null) return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        /// <summary>Returns true if the path points to a Mac-side shared folder (e.g. \\Mac\Home\...).</summary>
+        private static bool IsMacSidePath(string path)
+        {
+            return !string.IsNullOrEmpty(path) &&
+                   path.TrimStart().StartsWith(@"\\Mac\", StringComparison.OrdinalIgnoreCase);
+        }
+
         // ── UI construction ───────────────────────────────────────────
 
         private void InitializeComponent()
@@ -107,7 +154,6 @@ namespace Supervertaler.Trados.Controls
             Text            = "Supervertaler for Trados — First-Run Setup";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             StartPosition   = FormStartPosition.CenterScreen;
-            ClientSize      = new Size(540, 290);
             MaximizeBox     = false;
             MinimizeBox     = false;
             ShowInTaskbar   = false;
@@ -169,10 +215,45 @@ namespace Supervertaler.Trados.Controls
                 AutoSize  = false
             };
 
+            // ── Parallels / Mac warning (shown only when VM detected) ─
+            bool inParallels = IsRunningInParallels();
+            int parallelsHeight = inParallels ? 64 : 0;
+
+            _parallelsWarningPanel = new Panel
+            {
+                Location  = new Point(16, 194),
+                Size      = new Size(508, 56),
+                BackColor = Color.FromArgb(255, 248, 220),  // light yellow
+                Visible   = inParallels,
+                Padding   = new Padding(8)
+            };
+            var parallelsIcon = new Label
+            {
+                Text      = "\u26A0",  // ⚠ warning sign
+                Font      = new Font("Segoe UI", 14f),
+                Location  = new Point(8, 8),
+                Size      = new Size(28, 28),
+                AutoSize  = false
+            };
+            var parallelsText = new Label
+            {
+                Text      = "Parallels detected — you're running on a Mac. Keep the data folder on " +
+                            "the Windows side (C:\\ drive). Do not use a Mac-side path like \\\\Mac\\Home\\... — " +
+                            "SQLite databases do not work reliably on shared network folders.",
+                Font      = new Font("Segoe UI", 8.25f),
+                ForeColor = Color.FromArgb(120, 80, 0),
+                Location  = new Point(36, 6),
+                Size      = new Size(460, 44),
+                AutoSize  = false
+            };
+            _parallelsWarningPanel.Controls.Add(parallelsIcon);
+            _parallelsWarningPanel.Controls.Add(parallelsText);
+
             // ── Separator ─────────────────────────────────────────────
+            int sepY = 244 + parallelsHeight;
             var separator = new Panel
             {
-                Location  = new Point(0, 244),
+                Location  = new Point(0, sepY),
                 Size      = new Size(540, 1),
                 BackColor = Color.FromArgb(200, 200, 200)
             };
@@ -182,7 +263,7 @@ namespace Supervertaler.Trados.Controls
             {
                 Text         = "OK",
                 DialogResult = DialogResult.None, // handled manually
-                Location     = new Point(348, 254),
+                Location     = new Point(348, sepY + 10),
                 Size         = new Size(80, 26)
             };
             _okButton.Click += OkButton_Click;
@@ -192,16 +273,20 @@ namespace Supervertaler.Trados.Controls
             {
                 Text         = "Cancel",
                 DialogResult = DialogResult.Cancel,
-                Location     = new Point(444, 254),
+                Location     = new Point(444, sepY + 10),
                 Size         = new Size(80, 26)
             };
             CancelButton = _cancelButton;
+
+            // ── Form height ──────────────────────────────────────────
+            ClientSize = new Size(540, 290 + parallelsHeight);
 
             Controls.AddRange(new Control[]
             {
                 _headerLabel, _bodyLabel,
                 _pathLabel, _pathBox, _browseButton,
                 _noteLabel,
+                _parallelsWarningPanel,
                 separator,
                 _okButton, _cancelButton
             });

@@ -103,6 +103,24 @@ See [MultiTerm Support](multiterm-support.md) for full details.
 
 ---
 
+## Database errors on Mac (Parallels)
+
+**Symptoms:** Database locked errors, "cannot open database", or corrupt termbase data when running Trados Studio inside Parallels Desktop on a Mac.
+
+**Cause:** Your Supervertaler data folder is on a Mac-side shared path (e.g., `\\Mac\Home\Supervertaler`). Parallels mounts Mac folders as virtual network shares, and SQLite databases do not work reliably on network filesystems — WAL mode (used by Supervertaler termbases) requires a local filesystem for correct locking.
+
+**Solution:**
+
+1. Move your data folder to the Windows side (e.g., `C:\Users\<username>\Supervertaler`)
+2. Copy your `.db` termbase files from the Mac-side location into the new Windows-side folder
+3. Update the data folder path in Supervertaler settings, or delete `%AppData%\Supervertaler\config.json` and restart Trados to trigger the first-run setup again
+
+{% hint style="info" %}
+See [Installation — Running on a Mac (Parallels)](installation.md#running-on-a-mac-parallels) for the recommended setup.
+{% endhint %}
+
+---
+
 ## Performance issues
 
 **Symptoms:** The editor feels sluggish, or TermLens takes a long time to display matches.

@@ -59,6 +59,22 @@ Go to **View > Supervertaler Assistant** to show the panel.
 Both panels are standard Trados dockable panels. You can drag them to any docking position (left, right, top, bottom, floating) or move them to a second monitor. Trados remembers their position between sessions.
 {% endhint %}
 
+## Running on a Mac (Parallels)
+
+If you are running Trados Studio inside **Parallels Desktop** on a Mac, there is one important rule for the first-run setup:
+
+**Keep your data folder on the Windows side** — use the default path (e.g., `C:\Users\<username>\Supervertaler`). Do **not** point it to a Mac-side path like `\\Mac\Home\Supervertaler`.
+
+Supervertaler stores termbases as SQLite databases, and SQLite requires a local filesystem to work reliably. The `\\Mac\Home\...` paths in Parallels are mounted via a virtual network share, which can cause database locking errors or data loss.
+
+{% hint style="warning" %}
+**Mac users:** When the first-run setup dialog appears, accept the default `C:\Users\<username>\Supervertaler` path. If you previously used Supervertaler Workbench on the Mac side, copy your termbases into the Windows-side folder rather than pointing to the Mac path directly.
+{% endhint %}
+
+The plugin automatically detects Parallels and shows a warning if you select a Mac-side path during setup.
+
+---
+
 ## Updating
 
 To update to a newer version:
