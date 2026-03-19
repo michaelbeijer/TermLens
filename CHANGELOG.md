@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.1] — 2026-03-19
+
+### Fixed
+- **Version numbers now consistent across all plugin files** — the plugin.xml and pluginpackage.manifest.xml version attributes were out of sync with the assembly version, which could cause the wrong version to display in Trados. All version files are now aligned. Also rewrote `bump_version.py` to update all three version files (.csproj, plugin.xml, manifest) in a single command.
+
+---
+
 ## [4.12.0] — 2026-03-19
 
 ### Added
