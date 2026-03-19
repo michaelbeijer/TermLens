@@ -1712,6 +1712,16 @@ namespace Supervertaler.Trados
                                 settings.UsageStatisticsId = Guid.NewGuid().ToString("D");
                             settings.Save();
 
+                            // Sync the choice into the ViewPart's live _settings so the
+                            // settings form shows the correct checkbox state without
+                            // needing a Trados restart.
+                            if (_settings != null)
+                            {
+                                _settings.UsageStatisticsAsked   = settings.UsageStatisticsAsked;
+                                _settings.UsageStatisticsEnabled = settings.UsageStatisticsEnabled;
+                                _settings.UsageStatisticsId      = settings.UsageStatisticsId;
+                            }
+
                             // If they opted in, send the first ping now
                             if (settings.UsageStatisticsEnabled)
                             {

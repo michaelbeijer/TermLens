@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.3] — 2026-03-19
+
+### Fixed
+- **Usage statistics checkbox now reflects opt-in choice** — when a user clicked "Yes" in the first-launch usage statistics dialog, the setting was saved to disk but the in-memory settings object was not updated. This caused the checkbox in Settings to appear unchecked until Trados was restarted. The opt-in choice is now synced into the live settings immediately.
+
+---
+
 ## [4.12.2] — 2026-03-19
 
 ### Added
