@@ -1,57 +1,53 @@
+# Installation
+
 {% hint style="info" %}
 You are viewing help for **Supervertaler for Trados** — the Trados Studio plugin. Looking for help with the standalone app? Visit [Supervertaler Workbench help](https://help.supervertaler.com).
 {% endhint %}
 
-# Installation
+## Installation
 
-## Download
+### Download
 
 1. Go to the [GitHub Releases](https://github.com/Supervertaler/Supervertaler-for-Trados/releases) page
 2. Download the latest `Supervertaler.Trados.sdlplugin` file
 
-## Install
+### Install
 
 1. **Close Trados Studio** if it is running
 2. **Double-click** the downloaded `Supervertaler.Trados.sdlplugin` file
 3. The Trados Plugin Installer opens — select your Trados Studio version and choose an installation location:
 
-<figure><img src=".gitbook/assets/plugin-installer.png" alt="Trados Plugin Installer showing version selection and installation location options"><figcaption>The Trados Plugin Installer lets you choose which Trados version to install for and where to place the plugin.</figcaption></figure>
+<figure><img src=".gitbook/assets/Trados-plugin-installation-dialogue.png" alt="Trados Plugin Installer showing version selection and installation location options"><figcaption><p>The Trados Plugin Installer lets you choose which Trados version to install for and where to place the plugin.</p></figcaption></figure>
 
 4. Click **Next**, then **Finish** to complete the installation
 5. **Start Trados Studio** — the plugin loads automatically
 
-### Installation locations
+#### Installation locations
 
 The installer offers three options for where to place the plugin. Each option stores the plugin in a different Windows folder, which determines who can use it and whether it follows you to other computers.
 
-**"All your domain computers"** (default)
-: Installs to: `C:\Users\<user>\AppData\Roaming\Trados\Trados Studio\18\Plugins\`
-: The Windows **Roaming** profile folder. In corporate environments with Active Directory, this folder automatically syncs to a central server and follows your Windows account when you log into a different PC on the same network. If you log into PC-A at the office and then PC-B, the plugin is available on both without reinstalling. **If you are not on a corporate domain network, this behaves the same as "This computer for me only"** — the folder simply stays on your machine.
+**"All your domain computers"** (default) : Installs to: `C:\Users\<user>\AppData\Roaming\Trados\Trados Studio\18\Plugins\` : The Windows **Roaming** profile folder. In corporate environments with Active Directory, this folder automatically syncs to a central server and follows your Windows account when you log into a different PC on the same network. If you log into PC-A at the office and then PC-B, the plugin is available on both without reinstalling. **If you are not on a corporate domain network, this behaves the same as "This computer for me only"** — the folder simply stays on your machine.
 
-**"This computer for me only"**
-: Installs to: `C:\Users\<user>\AppData\Local\Trados\Trados Studio\18\Plugins\Packages\`
-: The Windows **Local** profile folder. The plugin stays on this specific machine and is only available to your Windows user account. If another person logs into the same PC with a different Windows account, they will not have the plugin. **This is the recommended option for most users** — personal laptops, home offices, and single-user setups.
+**"This computer for me only"** : Installs to: `C:\Users\<user>\AppData\Local\Trados\Trados Studio\18\Plugins\Packages\` : The Windows **Local** profile folder. The plugin stays on this specific machine and is only available to your Windows user account. If another person logs into the same PC with a different Windows account, they will not have the plugin. **This is the recommended option for most users** — personal laptops, home offices, and single-user setups.
 
-**"This computer for all users"**
-: Installs to: `C:\ProgramData\Trados\Trados Studio\18\Plugins\Packages\`
-: The shared **ProgramData** folder. The plugin is available to every Windows user account on this machine. Use this on shared workstations where multiple people log in with their own Windows accounts and all need the plugin. Rarely needed for most translators.
+**"This computer for all users"** : Installs to: `C:\ProgramData\Trados\Trados Studio\18\Plugins\Packages\` : The shared **ProgramData** folder. The plugin is available to every Windows user account on this machine. Use this on shared workstations where multiple people log in with their own Windows accounts and all need the plugin. Rarely needed for most translators.
 
 {% hint style="info" %}
 **Which should I choose?** If you work on your own computer (laptop or desktop), select **"This computer for me only"**. The default "All your domain computers" option also works fine — on a non-domain PC it behaves identically.
 {% endhint %}
 
-## Verify Installation
+### Verify Installation
 
 After restarting Trados Studio, open a project in the Editor view. You should see:
 
-- **TermLens panel** — docked above the editor area (or in the bottom panel area)
-- **Supervertaler Assistant panel** — docked on the right side
+* **TermLens panel** — docked above the editor area (or in the bottom panel area)
+* **Supervertaler Assistant panel** — docked on the right side
 
-### If the TermLens panel is not visible
+#### If the TermLens panel is not visible
 
 Go to **View > TermLens** to show the panel.
 
-### If the Supervertaler Assistant panel is not visible
+#### If the Supervertaler Assistant panel is not visible
 
 Go to **View > Supervertaler Assistant** to show the panel.
 
@@ -59,7 +55,7 @@ Go to **View > Supervertaler Assistant** to show the panel.
 Both panels are standard Trados dockable panels. You can drag them to any docking position (left, right, top, bottom, floating) or move them to a second monitor. Trados remembers their position between sessions.
 {% endhint %}
 
-## Running on a Mac (Parallels)
+### Running on a Mac (Parallels)
 
 If you are running Trados Studio inside **Parallels Desktop** on a Mac, there is one important rule for the first-run setup:
 
@@ -73,9 +69,9 @@ Supervertaler stores termbases as SQLite databases, and SQLite requires a local 
 
 The plugin automatically detects Parallels and shows a warning if you select a Mac-side path during setup.
 
----
+***
 
-## Updating
+### Updating
 
 To update to a newer version:
 
@@ -90,15 +86,15 @@ The new version cleanly replaces the previous installation. Your settings, termb
 Trados Studio **must be fully closed** before installing or updating. If Trados is still running, the installer may silently fail because the plugin files are locked.
 {% endhint %}
 
-## Troubleshooting: old version still showing after update
+### Troubleshooting: old version still showing after update
 
 If Trados still loads an older version of the plugin after installing a new one, an old copy may be lingering in a different installation location. Check all three plugin folders and remove any old `Supervertaler.Trados.sdlplugin` (in `Packages`) and `Supervertaler.Trados` folder (in `Unpacked`):
 
-| Folder | Path |
-|--------|------|
-| Roaming | `%AppData%\Trados\Trados Studio\18\Plugins\Packages\` |
-| Local | `%LocalAppData%\Trados\Trados Studio\18\Plugins\Packages\` |
-| All users | `%ProgramData%\Trados\Trados Studio\18\Plugins\Packages\` |
+| Folder    | Path                                                       |
+| --------- | ---------------------------------------------------------- |
+| Roaming   | `%AppData%\Trados\Trados Studio\18\Plugins\Packages\`      |
+| Local     | `%LocalAppData%\Trados\Trados Studio\18\Plugins\Packages\` |
+| All users | `%ProgramData%\Trados\Trados Studio\18\Plugins\Packages\`  |
 
 {% hint style="info" %}
 **Quick way to check:** paste each path into the Windows Run dialog (`Win+R`) or File Explorer address bar. If the folder exists and contains an old `Supervertaler.Trados.sdlplugin`, delete it. Also check for an `Unpacked\Supervertaler.Trados` folder at the same level and delete it if present.
@@ -106,7 +102,7 @@ If Trados still loads an older version of the plugin after installing a new one,
 
 After removing the old files, double-click the new `.sdlplugin` to install it fresh, then start Trados.
 
-## Uninstalling
+### Uninstalling
 
 To remove the plugin:
 
@@ -116,8 +112,8 @@ To remove the plugin:
 4. Click **Uninstall**
 5. Restart Trados Studio
 
----
+***
 
-## Next Steps
+### Next Steps
 
-- [Getting Started](getting-started.md) — set up your first termbase and API key
+* [Getting Started](getting-started.md) — set up your first termbase and API key
