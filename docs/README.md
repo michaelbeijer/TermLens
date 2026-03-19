@@ -29,7 +29,7 @@ Translate multiple segments at once using AI. Choose a scope (empty segments, al
 
 ### Prompt Library
 
-14 built-in domain prompts covering medical, legal, patent, financial, technical, marketing, and IT translation, plus style guides for Dutch, English, French, German, and Spanish. You can also create your own custom prompts.
+A built-in Default Translation Prompt and Default Proofreading Prompt to get you started, plus QuickLauncher prompts for common tasks. Create your own custom prompts in the Prompt Manager — duplicate the default and tailor it to your domain.
 
 ### Termbase Management
 

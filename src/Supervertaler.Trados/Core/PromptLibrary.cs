@@ -231,10 +231,15 @@ namespace Supervertaler.Trados.Core
         /// <summary>
         /// Ensures built-in prompts exist in the prompts directory.
         /// Creates any that are missing (idempotent — safe to call on every startup).
+        /// Also removes domain-specific translate prompts that were shipped in v4.12.x
+        /// but replaced by the single Default Translation Prompt in v4.13.0.
         /// </summary>
         public void EnsureBuiltInPrompts()
         {
             Directory.CreateDirectory(PromptsDir);
+
+            // Clean up domain-specific translate prompts removed in v4.13.0
+            CleanUpRetiredPrompts();
 
             foreach (var builtin in GetBuiltInPromptDefinitions())
             {
@@ -264,6 +269,46 @@ namespace Supervertaler.Trados.Core
 
             // Invalidate cache so next GetAllPrompts() reloads
             _cache = null;
+        }
+
+        /// <summary>
+        /// Removes domain-specific translate prompts that were shipped in v4.12.x.
+        /// Only deletes files that still contain "built_in: true" — user-modified copies are left alone.
+        /// </summary>
+        private void CleanUpRetiredPrompts()
+        {
+            var retiredNames = new[]
+            {
+                "Medical Translation Specialist",
+                "Legal Translation Specialist",
+                "Patent Translation Specialist",
+                "Financial Translation Specialist",
+                "Technical Translation Specialist",
+                "Marketing & Creative Specialist",
+                "IT & Software Localization Specialist",
+                "Professional Tone & Style",
+                "Preserve Formatting & Layout"
+            };
+
+            var translateDir = Path.Combine(PromptsDir, "Translate");
+            if (!Directory.Exists(translateDir)) return;
+
+            foreach (var name in retiredNames)
+            {
+                var filePath = Path.Combine(translateDir, SanitizeFileName(name) + ".svprompt");
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        var content = File.ReadAllText(filePath);
+                        if (content.Contains("built_in: true"))
+                        {
+                            File.Delete(filePath);
+                        }
+                    }
+                    catch { /* ignore — file locked or permissions */ }
+                }
+            }
         }
 
         /// <summary>
@@ -518,211 +563,32 @@ namespace Supervertaler.Trados.Core
         {
             return new List<PromptTemplate>
             {
-                // ─── Domain Expertise ─────────────────────────────────
+                // ─── Default Translation Prompt ──────────────────────
                 new PromptTemplate
                 {
-                    Name = "Medical Translation Specialist",
-                    Description = "Specialized for medical and healthcare translation",
+                    Name = "Default Translation Prompt",
+                    Description = "General-purpose translation prompt — use as-is or as a starting point for your own prompts",
                     Domain = "Translate",
                     IsBuiltIn = true,
-                    Content = @"You are a medical translation specialist with extensive knowledge of medical terminology, anatomy, pharmacology, and healthcare procedures. Your task is to translate medical content from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} with the highest level of accuracy and precision.
+                    Content = @"You are a professional translator working from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}}. Translate the source text accurately and naturally, following these guidelines:
 
-Key requirements:
-- Maintain exact medical terminology and drug names (verify generic/brand name accuracy)
-- Preserve dosages, measurements, and medical units precisely
-- Follow target language medical convention standards
-- Ensure patient safety by never altering critical medical information
-- Use appropriate medical register and formality level
-- Maintain consistency in anatomical terms and medical procedures
-- Consider regulatory and legal implications of medical translations
+## Core principles
+- Produce a fluent, idiomatic translation that reads as if originally written in {{TARGET_LANGUAGE}}
+- Preserve the meaning, tone, and register of the source text
+- Maintain consistency in terminology throughout the document
+- Keep numbers, dates, measurements, and proper nouns accurate
+- Preserve all formatting, tags, and placeholders exactly as they appear
 
-Special attention to:
-- Drug interactions and contraindications
-- Diagnostic criteria and clinical guidelines
-- Patient consent forms and medical legal documents
-- Medical device instructions and safety warnings
-- Clinical trial protocols and research documentation"
-                },
-                new PromptTemplate
-                {
-                    Name = "Legal Translation Specialist",
-                    Description = "Specialized for legal and juridical translation",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"You are a legal translation specialist with deep expertise in comparative law, legal systems, and juridical terminology. Your task is to translate legal content from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} with absolute precision and legal accuracy.
+## Terminology
+- Use the glossary terms provided (if any) — they take priority over alternative translations
+- When a term has no established equivalent, keep the source term and add a brief explanation in parentheses if needed
 
-Key requirements:
-- Preserve exact legal terminology and maintain legal precision
-- Consider differences between legal systems (common law vs. civil law)
-- Maintain formal legal register and appropriate juridical tone
-- Preserve legal concepts even when direct equivalents don't exist
-- Flag legal terms that may require legal system adaptation
-- Ensure compliance with target jurisdiction's legal conventions
-- Maintain chronological and procedural accuracy
-- Preserve legal citations and references appropriately
+## Style
+- Match the formality level of the source (formal documents stay formal, casual content stays casual)
+- Use natural sentence structures in the target language rather than mirroring source syntax
+- Avoid unnecessary additions, omissions, or explanatory notes unless explicitly requested
 
-Special attention to:
-- Contractual terms and conditions
-- Legal procedures and court processes
-- Rights, obligations, and legal consequences
-- Statutory references and legal citations
-- Corporate and commercial law terminology
-- International law and cross-border implications"
-                },
-                new PromptTemplate
-                {
-                    Name = "Patent Translation Specialist",
-                    Description = "Specialized for patent and intellectual property translation",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"You are an expert {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} patent translator with deep expertise in intellectual property, technical terminology, and patent law requirements.
-
-Key patent translation principles:
-- Maintain technical precision and legal accuracy
-- Preserve claim structure and dependency relationships
-- Use consistent terminology throughout (especially for technical terms)
-- Ensure numerical references, measurements, and chemical formulas remain accurate
-- Maintain the formal, precise tone required for patent documentation
-- If a sentence refers to figures or drawings (e.g., 'Figure 1A', 'FIG. 2B'), use context to accurately translate references to components and structural relationships
-
-Special attention to:
-- Patent claims (independent and dependent) — preserve exact scope
-- Technical descriptions and specifications
-- Abstract and summary sections
-- Prior art references
-- Inventor and applicant information"
-                },
-                new PromptTemplate
-                {
-                    Name = "Financial Translation Specialist",
-                    Description = "Specialized for financial and banking translation",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"You are a financial translation specialist with expertise in banking, investment, financial markets, and regulatory compliance. Your task is to translate financial content from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} with precision and market-appropriate terminology.
-
-Key requirements:
-- Maintain exact financial figures, percentages, and calculations
-- Use appropriate financial terminology and market conventions
-- Preserve regulatory compliance language and requirements
-- Follow target market's financial reporting standards
-- Maintain consistency in financial instrument names and terminology
-- Ensure accuracy in currency codes, exchange rates, and financial data
-- Consider cross-border financial regulations and compliance
-- Preserve risk disclosures and legal financial obligations
-
-Special attention to:
-- Financial statements and accounting principles
-- Investment products and risk disclosures
-- Banking procedures and regulatory requirements
-- Market analysis and financial forecasting
-- Tax implications and regulatory compliance
-- Insurance and actuarial terminology
-- Corporate finance and M&A documentation"
-                },
-                new PromptTemplate
-                {
-                    Name = "Technical Translation Specialist",
-                    Description = "Specialized for engineering and technical documentation",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"You are a technical translation specialist with extensive knowledge of engineering, manufacturing, and industrial processes. Your task is to translate technical content from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} with precision and clarity.
-
-Key requirements:
-- Maintain exact technical terminology for the relevant engineering discipline
-- Preserve measurements, specifications, and tolerances precisely
-- Follow target language technical writing conventions and standards
-- Ensure safety-critical information is translated with absolute accuracy
-- Use consistent terminology throughout the document
-- Preserve references to technical standards (ISO, DIN, ASTM, etc.)
-
-Special attention to:
-- Operating and maintenance manuals
-- Safety instructions and warnings
-- Technical specifications and datasheets
-- Assembly and installation guides
-- Quality control and testing procedures
-- Engineering drawings and diagram references"
-                },
-                new PromptTemplate
-                {
-                    Name = "Marketing & Creative Specialist",
-                    Description = "Specialized for marketing copy and creative content",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"You are a marketing and creative translation specialist (transcreator) with expertise in adapting persuasive content across cultures. Your task is to translate marketing content from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} while preserving its persuasive impact and cultural relevance.
-
-Key requirements:
-- Adapt messaging for cultural relevance in the target market
-- Preserve brand voice and tone while making it natural in the target language
-- Maintain the persuasive impact and call-to-action effectiveness
-- Adapt idioms, wordplay, and cultural references appropriately
-- Preserve SEO keywords where applicable (adapt for target market search behavior)
-- Maintain visual and typographic considerations (text length for layouts)
-
-Special attention to:
-- Headlines, taglines, and slogans
-- Product descriptions and USPs
-- Social media content and campaigns
-- Email marketing copy
-- Website and landing page content
-- Press releases and corporate communications"
-                },
-                new PromptTemplate
-                {
-                    Name = "IT & Software Localization Specialist",
-                    Description = "Specialized for software UI and IT documentation",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"You are an IT and software localization specialist with expertise in translating user interfaces, technical documentation, and software-related content. Your task is to translate IT content from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} with technical accuracy and user-friendly language.
-
-Key requirements:
-- Use established target-language software terminology (menus, buttons, dialogs)
-- Maintain consistency with platform conventions (Windows, macOS, Linux, mobile)
-- Preserve code snippets, API references, and technical identifiers untranslated
-- Adapt UI strings for appropriate length (button labels, menu items)
-- Maintain placeholder syntax and variables (e.g., {0}, %s, {{variable}})
-- Follow target language software localization standards
-
-Special attention to:
-- User interface strings (buttons, menus, tooltips, error messages)
-- Help documentation and knowledge base articles
-- API documentation and developer guides
-- Release notes and changelogs
-- System administration guides
-- Cloud and SaaS terminology"
-                },
-
-                // ─── Project Prompts ────────────────────────────────────
-                new PromptTemplate
-                {
-                    Name = "Professional Tone & Style",
-                    Description = "Maintain formal, business-appropriate language",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"IMPORTANT: Maintain a professional, formal tone throughout the translation. Use business-appropriate language and avoid colloquialisms or casual expressions.
-
-Guidelines:
-- Use formal register and respectful forms of address
-- Prefer established business terminology over informal alternatives
-- Maintain consistency in style and formality level
-- Avoid contractions and informal abbreviations
-- Use complete sentences with proper grammar"
-                },
-                new PromptTemplate
-                {
-                    Name = "Preserve Formatting & Layout",
-                    Description = "Strict formatting preservation for layout-sensitive content",
-                    Domain = "Translate",
-                    IsBuiltIn = true,
-                    Content = @"CRITICAL FORMATTING REQUIREMENT:
-Preserve ALL formatting elements exactly as they appear in the source:
-- Line breaks and paragraph boundaries
-- Bullet points and numbering
-- Indentation and spacing
-- Special characters and punctuation marks
-- Whitespace patterns and alignment
-
-Translate only the text content while keeping ALL formatting identical to the source."
+This prompt is a starting point. Duplicate it in the Prompt Manager and customise it for your domain — add terminology rules, style preferences, or domain-specific instructions to get better results."
                 },
 
                 // ─── Proofreading ─────────────────────────────────────────

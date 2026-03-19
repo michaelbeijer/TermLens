@@ -35,11 +35,11 @@ The scope dropdown controls which segments are translated:
 
 Choose a prompt to guide the AI translation style and domain. The prompt selector shows:
 
-* **Built-in prompts** – 14 prompts covering medical, legal, patent, financial, technical, marketing, IT, style guides, and project prompts
+* **Default Translation Prompt** – a general-purpose prompt that works well for most content types. Use it as-is or duplicate it in the Prompt Manager and customise it for your domain.
 * **Custom prompts** – your own prompts created in the Prompt Manager
 
 {% hint style="info" %}
-Domain-specific prompts (e.g., Medical Translation Specialist, Legal Translation Specialist) produce significantly better results for specialized content. Choose the prompt that matches your source material.
+For specialised fields (medical, legal, patent, etc.), create a custom prompt with domain-specific terminology rules and instructions. A tailored prompt is the single most effective way to improve translation quality.
 {% endhint %}
 
 ## Provider and Model
@@ -73,9 +73,9 @@ Ctrl+T is also available via right-click in the editor ("Translate active segmen
 
 Start by translating only the empty segments (scope: **Empty Segments Only**). Review the results, then fix any issues. This avoids overwriting segments you have already edited.
 
-### Use Domain-Specific Prompts
+### Create Domain-Specific Prompts
 
-The built-in domain prompts include detailed instructions for medical terminology, legal precision, patent claim structure, and other specialized fields. Selecting the right prompt is the single most effective way to improve translation quality.
+For specialised content, duplicate the Default Translation Prompt in the Prompt Manager and add domain-specific instructions (terminology rules, style preferences, formatting requirements). A tailored prompt is the single most effective way to improve translation quality.
 
 ### Combine with TM
 

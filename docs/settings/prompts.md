@@ -22,12 +22,12 @@ The plugin ships with built-in prompts organised into three categories:
 
 | Category          | Prompts                                                                                                                                                                      | Used in              |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| **Translate**     | Medical, Legal, Patent, Financial, Technical, Marketing, IT, Professional Tone, Preserve Formatting                                                                          | Batch Translate mode |
+| **Translate**     | Default Translation Prompt                                                                                                                                                   | Batch Translate mode |
 | **Proofread**     | Default Proofreading Prompt                                                                                                                                                  | Batch Proofread mode |
 | **QuickLauncher** | Assess translation, Define, Explain (in general), Explain (within project context), Translate segment using fuzzy matches, Translate selection in context of current project | QuickLauncher menu   |
 
 {% hint style="info" %}
-Built-in prompts are **read-only**. To customise one, create a new prompt and paste the built-in content as a starting point.
+The Default Translation Prompt is a general-purpose starting point. Duplicate it and add domain-specific instructions (terminology rules, style preferences, formatting requirements) for your specialisation.
 {% endhint %}
 
 ***
@@ -258,13 +258,12 @@ Prompts are stored as `.svprompt` files (Markdown with YAML frontmatter). This i
 
 ```yaml
 ---
-name: Medical Translation Specialist
-description: Clinical and pharmaceutical content
+name: My Patent Prompt
+description: Patent and IP translation with strict terminology rules
 category: Translate
-built_in: true
 ---
 
-You are a professional medical translator...
+You are an expert {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} patent translator...
 ```
 
 | YAML field            | Description                                                                      |
@@ -308,7 +307,7 @@ While editing prompt content, press **Ctrl+,** to open the variable picker menu.
 1. Select a custom prompt
 2. Click **Delete** and confirm
 
-Built-in prompts cannot be deleted. Click **Restore** to recreate any built-in prompts you have deleted.
+Built-in prompts cannot be deleted. Click **Restore** to recreate any built-in prompts you have removed.
 
 ***
 

@@ -8,7 +8,7 @@ The **Batch Operations** tab in the Supervertaler Assistant panel provides two A
 
 | Mode | Description |
 |------|-------------|
-| **[Batch Translate](batch-translate.md)** | Translate segments using AI with domain-specific prompts |
+| **[Batch Translate](batch-translate.md)** | Translate segments using AI with customisable prompts |
 | **[AI Proofreader](ai-proofreader.md)** | Check translations for errors, inconsistencies, and style issues |
 
 Switch between modes using the **Mode** dropdown at the top of the Batch Operations tab.

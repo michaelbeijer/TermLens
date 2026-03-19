@@ -6,7 +6,7 @@ Supervertaler for Trados is a Trados Studio 2024 (v18) plugin that brings key Su
 - **TermLens** — live inline terminology display (termbase panel) — fully implemented
 - **AI Assistant** — project-aware chat interface in a separate dockable panel — fully implemented (multimodal, TM matches, AI context control)
 - **Batch Translate** — AI-powered segment translation — fully implemented (OpenAI/Anthropic/Google)
-- **Prompt Library** — domain-specific and custom prompt management — fully implemented (14 built-in prompts)
+- **Prompt Library** — custom prompt management — fully implemented (1 default translate prompt, 1 proofreading prompt, 6 QuickLauncher prompts)
 
 ### Tech stack
 - **Language**: C# / .NET Framework 4.8, SDK-style .csproj

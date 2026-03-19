@@ -64,6 +64,7 @@ namespace Supervertaler.Trados.Core
                 var payload = new UsagePing
                 {
                     AnonymousId = anonymousId,
+                    Product = "trados",
                     PluginVersion = GetPluginVersion(),
                     OsVersion = GetOsVersion(),
                     TradosVersion = GetTradosVersion(),
@@ -210,6 +211,9 @@ namespace Supervertaler.Trados.Core
         {
             [DataMember(Name = "id")]
             public string AnonymousId { get; set; }
+
+            [DataMember(Name = "product")]
+            public string Product { get; set; }
 
             [DataMember(Name = "plugin_version")]
             public string PluginVersion { get; set; }

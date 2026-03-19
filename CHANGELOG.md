@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.13.0] — 2026-03-19
+
+### Changed
+- **Simplified built-in prompts** — replaced the 9 domain-specific translate prompts (Medical, Legal, Patent, Financial, Technical, Marketing, IT, Professional Tone, Preserve Formatting) with a single **Default Translation Prompt**. The default prompt is a general-purpose starting point that users can duplicate and customise for their specific domain. The Default Proofreading Prompt and all QuickLauncher prompts are unchanged.
+- **Automatic cleanup of retired prompts** — on first launch after the update, the old domain-specific translate prompt files are automatically removed from the prompt library (only if they still contain the original built-in content — user-modified copies are preserved).
+
+---
+
 ## [4.12.5] — 2026-03-19
 
 ### Fixed
