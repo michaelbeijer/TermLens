@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.17.1] — 2026-03-21
+
+### Changed
+- **Auto-restart after update** — clicking "Install Update" now offers to automatically restart Trados Studio, instead of asking the user to close and reopen it manually. Saves time on the lengthy Trados startup cycle.
+
+---
+
 ## [4.17.0] — 2026-03-21
 
 ### Added

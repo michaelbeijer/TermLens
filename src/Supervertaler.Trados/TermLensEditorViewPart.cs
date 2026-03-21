@@ -1891,19 +1891,59 @@ namespace Supervertaler.Trados
                             try { System.IO.Directory.Move(unpackedDir, oldDir); } catch { }
                         }
 
-                        // 3. Done — prompt restart
+                        // 3. Done — auto-restart Trados
                         lblStatus.ForeColor = System.Drawing.Color.FromArgb(0, 128, 0);
                         lblStatus.Text = "Update installed successfully.";
                         lnkFolder.Visible = false;
                         lnkNotes.Visible = false;
 
-                        MessageBox.Show(
+                        var restartResult = MessageBox.Show(
                             $"Supervertaler for Trados v{newVersion} has been installed.\n\n" +
-                            "Please close and restart Trados Studio to load the new version.",
+                            "Trados Studio needs to restart to load the new version.\n" +
+                            "Restart now?",
                             "Update Installed",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Information);
 
-                        form.DialogResult = DialogResult.Yes;
+                        if (restartResult == DialogResult.Yes)
+                        {
+                            // Find and launch Trados executable, then close current instance
+                            try
+                            {
+                                var tradosExe = FindTradosExecutable();
+                                if (tradosExe != null)
+                                {
+                                    System.Diagnostics.Process.Start(tradosExe);
+                                    form.DialogResult = DialogResult.Yes;
+                                    // Use BeginInvoke to close after dialog exits cleanly
+                                    System.Threading.SynchronizationContext.Current?.Post(_ =>
+                                    {
+                                        System.Windows.Forms.Application.Exit();
+                                    }, null);
+                                }
+                                else
+                                {
+                                    MessageBox.Show(
+                                        "Could not find Trados Studio executable.\n" +
+                                        "Please close and restart Trados Studio manually.",
+                                        "Restart",
+                                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    form.DialogResult = DialogResult.Yes;
+                                }
+                            }
+                            catch
+                            {
+                                MessageBox.Show(
+                                    "Could not restart Trados Studio automatically.\n" +
+                                    "Please close and restart Trados Studio manually.",
+                                    "Restart",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                form.DialogResult = DialogResult.Yes;
+                            }
+                        }
+                        else
+                        {
+                            form.DialogResult = DialogResult.Yes;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -1934,6 +1974,48 @@ namespace Supervertaler.Trados
                 }
                 // Remind Me Later — do nothing, will check again next session
             }
+        }
+
+        /// <summary>
+        /// Locates the Trados Studio executable. Tries the running process first,
+        /// then falls back to common install paths.
+        /// </summary>
+        private static string FindTradosExecutable()
+        {
+            // Try to find it from the currently running process
+            try
+            {
+                foreach (var proc in System.Diagnostics.Process.GetProcesses())
+                {
+                    try
+                    {
+                        if (proc.ProcessName.IndexOf("SDLTradosStudio", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            proc.ProcessName.IndexOf("TradosStudio", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            var path = proc.MainModule?.FileName;
+                            if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
+                                return path;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+
+            // Fallback: well-known install paths
+            var candidates = new[]
+            {
+                @"C:\Program Files (x86)\Trados\Trados Studio\Studio18\SDLTradosStudio.exe",
+                @"C:\Program Files\Trados\Trados Studio\Studio18\SDLTradosStudio.exe",
+            };
+
+            foreach (var path in candidates)
+            {
+                if (System.IO.File.Exists(path))
+                    return path;
+            }
+
+            return null;
         }
     }
 }
