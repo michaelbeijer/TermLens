@@ -175,6 +175,11 @@ namespace Supervertaler.Trados.Core
                 if (p.IsQuickLauncher)
                     result.Add(p);
             }
+            result.Sort((a, b) =>
+            {
+                var cmp = a.SortOrder.CompareTo(b.SortOrder);
+                return cmp != 0 ? cmp : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            });
             return result;
         }
 
@@ -212,6 +217,8 @@ namespace Supervertaler.Trados.Core
                 sb.AppendLine("category: \"" + EscapeYamlString(prompt.Domain) + "\"");
             if (prompt.IsBuiltIn)
                 sb.AppendLine("built_in: true");
+            if (prompt.SortOrder != 100)
+                sb.AppendLine("sort_order: " + prompt.SortOrder);
             sb.AppendLine("---");
             sb.AppendLine();
             sb.Append(prompt.Content ?? "");
@@ -223,6 +230,18 @@ namespace Supervertaler.Trados.Core
             prompt.RelativePath = GetRelativePath(filePath, PromptsDir);
 
             Refresh();
+        }
+
+        /// <summary>
+        /// Updates just the sort_order of a prompt and re-saves it to disk.
+        /// </summary>
+        public void UpdateSortOrder(PromptTemplate prompt, int newOrder)
+        {
+            if (prompt == null || prompt.IsReadOnly || string.IsNullOrEmpty(prompt.FilePath))
+                return;
+
+            prompt.SortOrder = newOrder;
+            SavePrompt(prompt);
         }
 
         /// <summary>
@@ -533,6 +552,11 @@ namespace Supervertaler.Trados.Core
                     case "quicklauncher_label":
                     case "quickmenu_label": // backward compatibility
                         prompt.QuickLauncherLabel = value;
+                        break;
+                    case "sort_order":
+                        int order;
+                        if (int.TryParse(value, out order))
+                            prompt.SortOrder = order;
                         break;
                 }
             }
@@ -846,6 +870,149 @@ Use the fuzzy matches and surrounding context as reference, but produce a fresh,
 Using the project context above, suggest the best translation for ""{{SELECTION}}"" from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}}. Reference relevant segments in your explanation."
                 }
             };
+        }
+
+        // ─── Folder-aware tree structure ──────────────────────────────
+
+        /// <summary>
+        /// Builds a tree of folders and prompts mirroring the on-disk structure.
+        /// Includes empty folders. Root-level prompts go into a list on the returned node.
+        /// </summary>
+        public PromptFolderNode GetFolderStructure()
+        {
+            if (_cache == null)
+                Refresh();
+
+            var root = new PromptFolderNode
+            {
+                Name = "",
+                RelativePath = ""
+            };
+
+            if (!Directory.Exists(PromptsDir))
+                return root;
+
+            // Build folder tree from disk (includes empty folders)
+            BuildFolderTree(root, PromptsDir, PromptsDir);
+
+            // Place each cached prompt into the right folder node
+            foreach (var prompt in _cache)
+            {
+                var folderPath = Path.GetDirectoryName(prompt.RelativePath) ?? "";
+                folderPath = folderPath.Replace('\\', '/');
+                var folder = FindOrCreateFolder(root, folderPath);
+                folder.Prompts.Add(prompt);
+            }
+
+            // Sort folders and prompts alphabetically
+            SortFolderTree(root);
+
+            return root;
+        }
+
+        private void BuildFolderTree(PromptFolderNode parent, string currentDir, string rootDir)
+        {
+            try
+            {
+                foreach (var subDir in Directory.GetDirectories(currentDir))
+                {
+                    var dirName = Path.GetFileName(subDir);
+                    if (dirName.StartsWith(".") || dirName == "__pycache__")
+                        continue;
+
+                    var relativePath = subDir.Length > rootDir.Length
+                        ? subDir.Substring(rootDir.Length + 1).Replace('\\', '/')
+                        : dirName;
+
+                    var child = new PromptFolderNode
+                    {
+                        Name = dirName,
+                        RelativePath = relativePath
+                    };
+                    parent.Children.Add(child);
+                    BuildFolderTree(child, subDir, rootDir);
+                }
+            }
+            catch { /* Ignore permission errors */ }
+        }
+
+        private PromptFolderNode FindOrCreateFolder(PromptFolderNode root, string relativePath)
+        {
+            if (string.IsNullOrEmpty(relativePath))
+                return root;
+
+            var parts = relativePath.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            var current = root;
+
+            foreach (var part in parts)
+            {
+                PromptFolderNode found = null;
+                foreach (var child in current.Children)
+                {
+                    if (string.Equals(child.Name, part, StringComparison.OrdinalIgnoreCase))
+                    {
+                        found = child;
+                        break;
+                    }
+                }
+                if (found == null)
+                {
+                    found = new PromptFolderNode
+                    {
+                        Name = part,
+                        RelativePath = current.RelativePath.Length > 0
+                            ? current.RelativePath + "/" + part
+                            : part
+                    };
+                    current.Children.Add(found);
+                }
+                current = found;
+            }
+            return current;
+        }
+
+        private void SortFolderTree(PromptFolderNode node)
+        {
+            node.Children.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+            node.Prompts.Sort((a, b) =>
+            {
+                var cmp = a.SortOrder.CompareTo(b.SortOrder);
+                return cmp != 0 ? cmp : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            });
+            foreach (var child in node.Children)
+                SortFolderTree(child);
+        }
+
+        /// <summary>
+        /// Creates a new subfolder in the prompt library.
+        /// </summary>
+        public void CreateFolder(string relativePath)
+        {
+            var fullPath = Path.Combine(PromptsDir, relativePath);
+            if (!Directory.Exists(fullPath))
+                Directory.CreateDirectory(fullPath);
+        }
+
+        /// <summary>
+        /// Moves a prompt file to a different folder within the prompt library.
+        /// </summary>
+        public void MovePrompt(PromptTemplate prompt, string newFolderRelative)
+        {
+            if (prompt == null || prompt.IsReadOnly) return;
+
+            var fileName = Path.GetFileName(prompt.FilePath);
+            var newDir = string.IsNullOrEmpty(newFolderRelative)
+                ? PromptsDir
+                : Path.Combine(PromptsDir, newFolderRelative);
+
+            if (!Directory.Exists(newDir))
+                Directory.CreateDirectory(newDir);
+
+            var newPath = Path.Combine(newDir, fileName);
+            if (File.Exists(newPath)) return; // Don't overwrite
+
+            File.Move(prompt.FilePath, newPath);
+            Refresh();
         }
     }
 }

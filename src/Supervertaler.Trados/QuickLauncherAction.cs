@@ -111,9 +111,13 @@ namespace Supervertaler.Trados
             // ContextMenuStrip is small; GC handles it.
             var menu = new ContextMenuStrip();
 
-            foreach (var prompt in prompts)
+            // Determine whether custom slot assignments exist
+            var hasCustomSlots = settings?.AiSettings?.QuickLauncherSlots != null
+                                 && settings.AiSettings.QuickLauncherSlots.Count > 0;
+
+            for (int idx = 0; idx < prompts.Count; idx++)
             {
-                var capturedPrompt = prompt;
+                var capturedPrompt = prompts[idx];
                 var capturedSourceText = sourceText;
                 var capturedTargetText = targetText;
                 var capturedSelection = selection;
@@ -124,7 +128,24 @@ namespace Supervertaler.Trados
                 var capturedDoc = doc;
                 var capturedSurroundingCount = surroundingCount;
 
-                var item = new ToolStripMenuItem(capturedPrompt.MenuLabel);
+                var slotNum = idx + 1;
+                var label = capturedPrompt.MenuLabel;
+                var item = new ToolStripMenuItem(label);
+
+                if (hasCustomSlots)
+                {
+                    // Show only custom slot assignments (no position-based fallback)
+                    var shortcutDisplay = QuickLauncherSlotRunner.GetShortcutDisplay(
+                        capturedPrompt.FilePath, settings?.AiSettings);
+                    if (shortcutDisplay != null)
+                        item.ShortcutKeyDisplayString = shortcutDisplay;
+                }
+                else if (slotNum <= 10)
+                {
+                    // No custom slots configured — auto-assign by position
+                    var keyDigit = slotNum == 10 ? "0" : slotNum.ToString();
+                    item.ShortcutKeyDisplayString = $"Ctrl+Alt+{keyDigit}";
+                }
                 if (!string.IsNullOrEmpty(capturedPrompt.Description))
                     item.ToolTipText = capturedPrompt.Description;
 

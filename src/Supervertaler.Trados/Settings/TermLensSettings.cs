@@ -190,7 +190,11 @@ namespace Supervertaler.Trados.Settings
                 var json = File.ReadAllText(settingsFile, Encoding.UTF8);
                 using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
-                    var serializer = new DataContractJsonSerializer(typeof(TermLensSettings));
+                    var loadSettings = new DataContractJsonSerializerSettings
+                    {
+                        UseSimpleDictionaryFormat = true
+                    };
+                    var serializer = new DataContractJsonSerializer(typeof(TermLensSettings), loadSettings);
                     var s = (TermLensSettings)serializer.ReadObject(stream);
 
                     // Migrate: old single WriteTermbaseId → new WriteTermbaseIds list

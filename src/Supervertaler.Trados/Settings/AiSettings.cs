@@ -119,6 +119,15 @@ namespace Supervertaler.Trados.Settings
         }
 
         /// <summary>
+        /// QuickLauncher shortcut slot assignments.
+        /// Maps slot number (1–10) to prompt file path (relative to prompts folder).
+        /// Null/empty means auto-assign by menu order (legacy behaviour).
+        /// </summary>
+        [DataMember(Name = "quickLauncherSlots")]
+        public Dictionary<string, string> QuickLauncherSlots { get; set; }
+            = new Dictionary<string, string>();
+
+        /// <summary>
         /// Whether to include term definitions, domains, and notes alongside
         /// matched terminology in the AI chat prompt.
         /// </summary>

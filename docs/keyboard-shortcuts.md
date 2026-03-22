@@ -34,6 +34,17 @@ All keyboard shortcuts available in Supervertaler for Trados, with Mac equivalen
 | `Ctrl+Q` | `Control+Q` | Open QuickLauncher prompt menu |
 | `Ctrl+T` | `Control+T` | Translate the active segment (uses Batch Translate settings) |
 
+## QuickLauncher Shortcuts
+
+| Shortcut (Windows) | Shortcut (Mac) | Action |
+|---------------------|----------------|--------|
+| `Ctrl+Alt+1` ... `Ctrl+Alt+9` | `Control+Option+1` ... `Control+Option+9` | Run QuickLauncher prompt assigned to slot 1–9 |
+| `Ctrl+Alt+0` | `Control+Option+0` | Run QuickLauncher prompt assigned to slot 10 |
+
+{% hint style="info" %}
+Assign prompts to slots in **Settings → Prompts**. Select a QuickLauncher prompt and choose a shortcut from the dropdown in the detail pane. If no slots are assigned, the shortcuts default to menu position order.
+{% endhint %}
+
 ## Navigation and Display
 
 | Shortcut (Windows) | Shortcut (Mac) | Action |

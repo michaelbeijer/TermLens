@@ -271,6 +271,7 @@ You are an expert {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} patent translator..
 | `category`            | `Translate`, `Proofread`, or `QuickLauncher` — controls where the prompt appears |
 | `quicklauncher_label` | Short label for the QuickLauncher menu (optional, falls back to `name`)          |
 | `built_in`            | `true` for shipped prompts (managed by the plugin)                               |
+| `sort_order`          | Numeric order within folder (lower values first). Set automatically by the ▲/▼ buttons. |
 
 {% hint style="info" %}
 Older prompts using the `domain` key instead of `category` are still supported for backward compatibility.
@@ -306,6 +307,35 @@ While editing prompt content, press **Ctrl+,** to open the variable picker menu.
 2. Click **Delete** and confirm
 
 Built-in prompts cannot be deleted. Click **Restore** to recreate any built-in prompts you have removed.
+
+***
+
+### Keyboard shortcuts for QuickLauncher prompts
+
+You can assign keyboard shortcuts (Ctrl+Alt+1 through Ctrl+Alt+0) to individual QuickLauncher prompts for instant access without opening the Ctrl+Q menu.
+
+1. Open **Settings → Prompts**
+2. Select a QuickLauncher prompt in the tree
+3. In the detail pane on the right, use the **Shortcut** dropdown to assign a slot
+4. Click **OK** to save
+
+Each shortcut can only be assigned to one prompt. If you assign a shortcut that is already in use, it is automatically cleared from the other prompt.
+
+Assigned shortcuts are shown next to prompt names in the Ctrl+Q menu and in the Trados keyboard shortcuts settings (File → Options → Keyboard Shortcuts → Supervertaler for Trados).
+
+### Reordering prompts
+
+Use the **▲** and **▼** buttons in the toolbar to change the order of prompts within a folder. This is especially useful for QuickLauncher prompts, as the order in the tree determines the order in the Ctrl+Q menu.
+
+The order is saved in each prompt's YAML frontmatter as a `sort_order` field.
+
+### Organising prompts in folders
+
+The Prompt Manager tree mirrors the folder structure inside your `prompt_library` directory. You can:
+
+- **Create folders** — click **New Folder** in the toolbar
+- **Move prompts** — drag and drop a prompt onto a folder to move it
+- **Browse prompts** — click any prompt to preview its content in the detail pane
 
 ***
 

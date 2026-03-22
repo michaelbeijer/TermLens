@@ -365,6 +365,8 @@ namespace Supervertaler.Trados.Controls
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             };
             _lblStatus.LinkClicked += OnModelSelectorClicked;
+            var modelTip = new ToolTip { AutoPopDelay = 5000, InitialDelay = 400 };
+            modelTip.SetToolTip(_lblStatus, "Click to change model");
 
             _txtInput = new ChatInputTextBox
             {

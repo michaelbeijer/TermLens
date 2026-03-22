@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.18.0] — 2026-03-22
+
+### Added
+- **TreeView-based Prompt Manager** — the Prompts settings tab has been completely redesigned. The flat grid has been replaced with a folder-based tree view that mirrors the on-disk `prompt_library` structure. Click any prompt to see its content in the detail pane on the right. Click "System Prompt" to view and edit the system prompt. Folders can be created, and prompts can be dragged and dropped between folders.
+- **QuickLauncher keyboard shortcuts** — assign Ctrl+Alt+1 through Ctrl+Alt+0 to individual QuickLauncher prompts in Settings → Prompts. Each shortcut runs the assigned prompt instantly without opening the menu. Shortcuts are shown next to prompt names in the Ctrl+Q menu.
+- **Prompt reordering** — prompts within a folder can be moved up or down using the ▲/▼ buttons in the toolbar. The order is persisted via a `sort_order` field in the YAML frontmatter and applies to the Ctrl+Q menu as well.
+- **Quick model switching** — click the provider/model label at the bottom of the AI Assistant chat to change models without opening Settings. Shows "Click to change model" tooltip on hover.
+
+### Changed
+- **Improved term popup readability** — definition and notes text is now darker and more readable in the TermLens hover popup.
+- **Multi-line term fields** — Definition and Notes in the term entry editor now have expand/collapse buttons (▲/▼) to toggle between compact and expanded views.
+
+---
+
 ## [4.17.1] — 2026-03-21
 
 ### Changed

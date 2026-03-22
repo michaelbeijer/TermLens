@@ -490,8 +490,7 @@ namespace Supervertaler.Trados.Controls
 
             // === Metadata fields ===
             _contentPanel.Controls.Add(MakeLabel("Definition:", leftX, y, labelColor));
-            var btnExpandDef = MakeExpandButton(leftX + 65, y, labelColor);
-            _contentPanel.Controls.Add(btnExpandDef);
+            var btnExpandDef = MakeExpandButton(leftX + 75, y, labelColor);
             y += 18;
 
             _txtDefinition = new TextBox
@@ -506,6 +505,9 @@ namespace Supervertaler.Trados.Controls
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             _contentPanel.Controls.Add(_txtDefinition);
+            // Add button AFTER textbox so it's on top (WinForms z-order)
+            _contentPanel.Controls.Add(btnExpandDef);
+            btnExpandDef.BringToFront();
             btnExpandDef.Click += (s, e) => ToggleExpand(_txtDefinition, btnExpandDef, ref _definitionExpanded);
             y += CollapsedHeight + 8;
 
@@ -523,8 +525,7 @@ namespace Supervertaler.Trados.Controls
             y += 28;
 
             _contentPanel.Controls.Add(MakeLabel("Notes:", leftX, y, labelColor));
-            var btnExpandNotes = MakeExpandButton(leftX + 42, y, labelColor);
-            _contentPanel.Controls.Add(btnExpandNotes);
+            var btnExpandNotes = MakeExpandButton(leftX + 48, y, labelColor);
             y += 18;
 
             _txtNotes = new TextBox
@@ -539,6 +540,9 @@ namespace Supervertaler.Trados.Controls
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             _contentPanel.Controls.Add(_txtNotes);
+            // Add button AFTER textbox so it's on top (WinForms z-order)
+            _contentPanel.Controls.Add(btnExpandNotes);
+            btnExpandNotes.BringToFront();
             btnExpandNotes.Click += (s, e) => ToggleExpand(_txtNotes, btnExpandNotes, ref _notesExpanded);
             y += CollapsedHeight + 8;
 
@@ -1121,29 +1125,33 @@ namespace Supervertaler.Trados.Controls
 
         // ─── UI helpers ──────────────────────────────────────────────
 
-        private static LinkLabel MakeExpandButton(int x, int y, Color color)
+        private static Button MakeExpandButton(int x, int y, Color color)
         {
-            return new LinkLabel
+            var btn = new Button
             {
-                Text = "\u25BC",  // ▼ down arrow
+                Text = "\u25BE",  // ▾ small down triangle
                 Location = new Point(x, y),
-                AutoSize = true,
-                LinkColor = color,
-                ActiveLinkColor = color,
-                VisitedLinkColor = color,
-                LinkBehavior = LinkBehavior.HoverUnderline,
-                Cursor = Cursors.Hand
+                Size = new Size(18, 16),
+                Font = new Font("Segoe UI", 6f),
+                ForeColor = color,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                TabStop = false
             };
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(230, 230, 230);
+            btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(210, 210, 210);
+            return btn;
         }
 
-        private void ToggleExpand(TextBox textBox, LinkLabel button, ref bool expanded)
+        private void ToggleExpand(TextBox textBox, Button button, ref bool expanded)
         {
             expanded = !expanded;
             int delta = ExpandedHeight - CollapsedHeight;
             if (!expanded) delta = -delta;
 
             textBox.Height = expanded ? ExpandedHeight : CollapsedHeight;
-            button.Text = expanded ? "\u25B2" : "\u25BC";  // ▲ or ▼
+            button.Text = expanded ? "\u25B4" : "\u25BE";  // ▴ or ▾
 
             // Shift all controls below the textbox
             int threshold = textBox.Bottom - (expanded ? delta : 0);

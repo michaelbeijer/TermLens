@@ -49,6 +49,12 @@ namespace Supervertaler.Trados.Models
         /// </summary>
         public string QuickLauncherLabel { get; set; } = "";
 
+        /// <summary>
+        /// Sort order within a folder (from YAML 'sort_order:' field).
+        /// Lower values appear first. Default 100 for unset (sorts after explicit values).
+        /// </summary>
+        public int SortOrder { get; set; } = 100;
+
         /// <summary>The label to display in the QuickLauncher menu (QuickLauncherLabel if set, else Name).</summary>
         public string MenuLabel => string.IsNullOrWhiteSpace(QuickLauncherLabel) ? Name : QuickLauncherLabel;
 
