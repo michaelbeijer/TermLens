@@ -24,7 +24,7 @@ TermLens uses five background colours to distinguish term types:
 | Colour       | Meaning                                                        |
 | ------------ | -------------------------------------------------------------- |
 | **Blue**     | Regular Supervertaler termbase match                           |
-| **Lavender** | Abbreviation match (matched via source abbreviation, not the full term) |
+| **Purple**   | Abbreviation match (matched via source abbreviation, not the full term) |
 | **Pink**     | Project termbase match (higher priority)                       |
 | **Yellow**   | Non-translatable term (source = target)                        |
 | **Green**    | MultiTerm termbase match (`.sdltb`)                            |
