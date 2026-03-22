@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Supervertaler.Trados.Models;
 
@@ -490,7 +492,44 @@ namespace Supervertaler.Trados.Core
                 }
             }
 
+            // Diagnostic: log when a lookup finds multiple entries (helps track
+            // the disappearing-duplicate-entry bug). Remove once resolved.
+            if (entries.Count > 1 || filtered.Count != entries.Count)
+            {
+                DiagnosticLogLookup(word, entries, filtered);
+            }
+
             return (filtered, abbrIds);
+        }
+
+        /// <summary>
+        /// Temporary diagnostic logging for the duplicate-source-term disappearing bug.
+        /// Remove once the bug is resolved.
+        /// </summary>
+        private static void DiagnosticLogLookup(string word, List<TermEntry> indexEntries, List<TermEntry> filtered)
+        {
+            try
+            {
+                var diagDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Supervertaler.Trados");
+                if (!Directory.Exists(diagDir)) Directory.CreateDirectory(diagDir);
+                var logPath = Path.Combine(diagDir, "termlens_diag.log");
+
+                var sb = new StringBuilder();
+                sb.Append($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] LookupTerm(\"{word}\"): index={indexEntries.Count}, filtered={filtered.Count}");
+                if (filtered.Count < indexEntries.Count)
+                    sb.Append(" [ENTRIES DROPPED BY CASE FILTER]");
+                sb.AppendLine();
+                foreach (var e in indexEntries)
+                    sb.AppendLine($"  ID={e.Id} src=\"{e.SourceTerm}\" tgt=\"{e.TargetTerm}\" cs={e.CaseSensitive} tb={e.TermbaseName}");
+
+                File.AppendAllText(logPath, sb.ToString());
+            }
+            catch
+            {
+                // Never crash for diagnostic logging
+            }
         }
     }
 }

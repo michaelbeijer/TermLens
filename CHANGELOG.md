@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.18.1] — 2026-03-22
+
+### Fixed
+- **Editing terms in inverted-direction termbases corrupted entries** — when editing a term via the multi-entry editor (right-click → Edit Term) and the termbase direction was opposite to the project direction (e.g. EN→NL termbase in a NL→EN project), the source and target terms were saved swapped. This caused the edited entry to disappear from TermLens on the next refresh and left corrupted data in the termbase. The multi-entry editor now correctly detects and handles inverted termbase directions, matching the behaviour of the single-entry editor.
+
+### Added
+- **Diagnostic logging for duplicate source terms** — temporary logging to `%LocalAppData%\Supervertaler.Trados\termlens_diag.log` when multiple entries share the same source term. Helps diagnose any remaining edge cases. Will be removed in a future release.
+
+---
+
 ## [4.18.0] — 2026-03-22
 
 ### Added

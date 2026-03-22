@@ -1140,7 +1140,7 @@ namespace Supervertaler.Trados
 
                     if (entryTermbases.Count == 0) return;
 
-                    using (var dlg = new TermEntryEditorDialog(entryTermbases, dbPath))
+                    using (var dlg = new TermEntryEditorDialog(entryTermbases, dbPath, GetDocumentSourceLanguage()))
                     {
                         var parent = _control.Value.FindForm();
                         var result = parent != null ? dlg.ShowDialog(parent) : dlg.ShowDialog();

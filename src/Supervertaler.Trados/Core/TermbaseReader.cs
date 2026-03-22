@@ -365,7 +365,54 @@ namespace Supervertaler.Trados.Core
                 }
             }
 
+            // Diagnostic: log source terms with multiple entries to help track
+            // the disappearing-duplicate-entry bug
+            DiagnosticLogDuplicates(index, allEntries.Count);
+
             return index;
+        }
+
+        /// <summary>
+        /// Temporary diagnostic logging for the duplicate-source-term disappearing bug.
+        /// Writes to %LocalAppData%\Supervertaler.Trados\termlens_diag.log when entries
+        /// share the same source term key. Remove once the bug is resolved.
+        /// </summary>
+        private static void DiagnosticLogDuplicates(Dictionary<string, List<TermEntry>> index, int totalLoaded)
+        {
+            try
+            {
+                var diagDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Supervertaler.Trados");
+                if (!Directory.Exists(diagDir)) Directory.CreateDirectory(diagDir);
+                var logPath = Path.Combine(diagDir, "termlens_diag.log");
+
+                var sb = new StringBuilder();
+                sb.AppendLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] LoadAllTerms: {totalLoaded} entries loaded, {index.Count} index keys");
+
+                foreach (var kvp in index)
+                {
+                    if (kvp.Value.Count > 1)
+                    {
+                        // Only log entries where there are genuinely different IDs
+                        var distinctIds = new HashSet<long>();
+                        foreach (var e in kvp.Value) distinctIds.Add(e.Id);
+                        if (distinctIds.Count > 1)
+                        {
+                            sb.Append($"  key=\"{kvp.Key}\" has {kvp.Value.Count} entries (IDs:");
+                            foreach (var e in kvp.Value)
+                                sb.Append($" {e.Id}[{e.TargetTerm}]");
+                            sb.AppendLine(")");
+                        }
+                    }
+                }
+
+                File.AppendAllText(logPath, sb.ToString());
+            }
+            catch
+            {
+                // Never crash for diagnostic logging
+            }
         }
 
         private List<string> GetTargetSynonyms(long termId)

@@ -61,6 +61,7 @@ namespace Supervertaler.Trados.Controls
             public string Source, Target, Definition, Domain, Notes, Url;
             public string SourceAbbr, TargetAbbr;
             public bool IsNonTranslatable;
+            public bool IsInverted;
             public List<SynonymEntry> SourceSyns = new List<SynonymEntry>();
             public List<SynonymEntry> TargetSyns = new List<SynonymEntry>();
             public bool SynonymsLoaded;
@@ -124,13 +125,15 @@ namespace Supervertaler.Trados.Controls
         /// <summary>
         /// Multi-entry edit mode — opens with a termbase switcher for entries from multiple termbases.
         /// </summary>
-        public TermEntryEditorDialog(List<KeyValuePair<TermEntry, TermbaseInfo>> entries, string dbPath)
+        public TermEntryEditorDialog(List<KeyValuePair<TermEntry, TermbaseInfo>> entries, string dbPath,
+            string projectSourceLang = null)
         {
             _dbPath = dbPath;
 
             foreach (var kv in entries)
             {
                 var entry = kv.Key;
+                var inverted = IsDirectionInverted(projectSourceLang, kv.Value?.SourceLang);
                 _allEntryData.Add(new EntryData
                 {
                     Entry = entry,
@@ -143,7 +146,8 @@ namespace Supervertaler.Trados.Controls
                     Domain = entry.Domain ?? "",
                     Notes = entry.Notes ?? "",
                     Url = entry.Url ?? "",
-                    IsNonTranslatable = entry.IsNonTranslatable
+                    IsNonTranslatable = entry.IsNonTranslatable,
+                    IsInverted = inverted
                 });
             }
 
@@ -151,6 +155,7 @@ namespace Supervertaler.Trados.Controls
             var primary = _allEntryData[0];
             _termbase = primary.Termbase;
             _termId = primary.Entry.Id;
+            _isInverted = primary.IsInverted;
 
             BuildUI(primary.Termbase);
             PopulateFromEntry(primary.Entry);
@@ -729,9 +734,10 @@ namespace Supervertaler.Trados.Controls
             _activeEntryIndex = newIndex;
             var ed = _allEntryData[newIndex];
 
-            // Update tracked termbase/ID for save/delete operations
+            // Update tracked termbase/ID/direction for save/delete operations
             _termbase = ed.Termbase;
             _termId = ed.Entry.Id;
+            _isInverted = ed.IsInverted;
 
             // Load fields
             _txtSource.Text = ed.Source;
