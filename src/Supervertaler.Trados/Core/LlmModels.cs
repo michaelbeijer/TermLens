@@ -42,38 +42,26 @@ namespace Supervertaler.Trados.Core
         {
             new LlmModelInfo
             {
-                Id = "gpt-4o", DisplayName = "GPT-4o",
-                Description = "Best balance of speed, quality, and cost",
+                Id = "gpt-4.1", DisplayName = "GPT-4.1",
+                Description = "Recommended for most tasks — fast, accurate, 1M context window for long documents",
                 Provider = LlmProvider.OpenAi
             },
             new LlmModelInfo
             {
-                Id = "gpt-4o-mini", DisplayName = "GPT-4o Mini",
-                Description = "Fast and affordable for simpler tasks",
+                Id = "gpt-4.1-mini", DisplayName = "GPT-4.1 Mini",
+                Description = "Budget-friendly — same 1M context as GPT-4.1 at a fraction of the cost, ideal for large batch jobs",
                 Provider = LlmProvider.OpenAi
             },
             new LlmModelInfo
             {
-                Id = "gpt-5", DisplayName = "GPT-5",
-                Description = "Advanced reasoning model — slower, higher quality",
-                Provider = LlmProvider.OpenAi,
-                IsReasoningModel = true,
-                DefaultTimeoutMs = 600_000,
-                DefaultMaxTokens = 32768
+                Id = "gpt-5.3-chat-latest", DisplayName = "GPT-5.3",
+                Description = "Premium quality — best results for complex legal, medical, or technical translation",
+                Provider = LlmProvider.OpenAi
             },
             new LlmModelInfo
             {
-                Id = "o1", DisplayName = "o1",
-                Description = "Reasoning model for complex tasks",
-                Provider = LlmProvider.OpenAi,
-                IsReasoningModel = true,
-                DefaultTimeoutMs = 600_000,
-                DefaultMaxTokens = 32768
-            },
-            new LlmModelInfo
-            {
-                Id = "o3", DisplayName = "o3",
-                Description = "Latest reasoning model",
+                Id = "o4-mini", DisplayName = "o4-mini (Reasoning)",
+                Description = "Thinks step-by-step — use for Analyse Project & Generate Prompt, not for translation",
                 Provider = LlmProvider.OpenAi,
                 IsReasoningModel = true,
                 DefaultTimeoutMs = 600_000,
@@ -108,19 +96,19 @@ namespace Supervertaler.Trados.Core
             new LlmModelInfo
             {
                 Id = "gemini-2.5-flash", DisplayName = "Gemini 2.5 Flash",
-                Description = "Fast and affordable",
+                Description = "Recommended — fast, affordable, 1M context",
                 Provider = LlmProvider.Gemini
             },
             new LlmModelInfo
             {
                 Id = "gemini-2.5-pro", DisplayName = "Gemini 2.5 Pro",
-                Description = "Higher quality, supports complex translation",
+                Description = "Higher quality — advanced reasoning, 1M context",
                 Provider = LlmProvider.Gemini
             },
             new LlmModelInfo
             {
-                Id = "gemini-3-pro-preview", DisplayName = "Gemini 3 Pro Preview",
-                Description = "Latest preview model",
+                Id = "gemini-3.1-pro-preview", DisplayName = "Gemini 3.1 Pro (Preview)",
+                Description = "Newest model (preview) — Google's most advanced, 1M context",
                 Provider = LlmProvider.Gemini
             }
         };
@@ -141,8 +129,8 @@ namespace Supervertaler.Trados.Core
             },
             new LlmModelInfo
             {
-                Id = "qwen3:8b", DisplayName = "Qwen 3 8B",
-                Description = "General-purpose, 100+ languages (8 GB RAM)",
+                Id = "qwen3:14b", DisplayName = "Qwen 3 14B",
+                Description = "General-purpose, 100+ languages (10 GB RAM)",
                 Provider = LlmProvider.Ollama
             },
             new LlmModelInfo
@@ -157,24 +145,24 @@ namespace Supervertaler.Trados.Core
         {
             new LlmModelInfo
             {
-                Id = "grok-4.20-0309-reasoning", DisplayName = "Grok 4.20 (Reasoning)",
-                Description = "Flagship with deep reasoning — ideal for prompt generation",
-                Provider = LlmProvider.Grok,
-                IsReasoningModel = true,
-                DefaultTimeoutMs = 600_000,
-                DefaultMaxTokens = 32768
-            },
-            new LlmModelInfo
-            {
                 Id = "grok-4.20-0309-non-reasoning", DisplayName = "Grok 4.20",
-                Description = "Flagship — highest quality, multimodal",
+                Description = "Recommended — highest quality, 2M context",
                 Provider = LlmProvider.Grok
             },
             new LlmModelInfo
             {
                 Id = "grok-4-1-fast-non-reasoning", DisplayName = "Grok 4.1 Fast",
-                Description = "Fast and affordable, multimodal — great for batch jobs",
+                Description = "Fast and affordable — great for batch jobs",
                 Provider = LlmProvider.Grok
+            },
+            new LlmModelInfo
+            {
+                Id = "grok-4.20-0309-reasoning", DisplayName = "Grok 4.20 (Reasoning)",
+                Description = "Deep reasoning — ideal for prompt generation",
+                Provider = LlmProvider.Grok,
+                IsReasoningModel = true,
+                DefaultTimeoutMs = 600_000,
+                DefaultMaxTokens = 32768
             }
         };
 

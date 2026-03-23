@@ -14,7 +14,7 @@ namespace Supervertaler.Trados.Settings
         public string SelectedProvider { get; set; } = "openai";
 
         [DataMember(Name = "openaiModel")]
-        public string OpenAiModel { get; set; } = "gpt-4o";
+        public string OpenAiModel { get; set; } = "gpt-4.1";
 
         [DataMember(Name = "claudeModel")]
         public string ClaudeModel { get; set; } = "claude-sonnet-4-6";

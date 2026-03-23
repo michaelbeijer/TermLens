@@ -8,6 +8,7 @@
 * [Getting Started](getting-started.md)
 * [Example Project](example-project.md)
 * [Licensing & Pricing](licensing.md)
+* [AI Cost Guide](ai-cost-guide.md)
 
 ## Features
 

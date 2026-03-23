@@ -45,7 +45,7 @@ namespace Supervertaler.Trados.Core
                           string baseUrl = null, int maxTokens = 16384)
         {
             _provider = provider ?? LlmModels.ProviderOpenAi;
-            _model = model ?? "gpt-4o";
+            _model = model ?? "gpt-4.1";
             _apiKey = apiKey ?? "";
             _baseUrl = baseUrl;
             _maxTokens = maxTokens;
@@ -975,8 +975,11 @@ namespace Supervertaler.Trados.Core
         private static bool IsReasoningModel(string model)
         {
             if (string.IsNullOrEmpty(model)) return false;
+            var info = LlmModels.FindModel(model);
+            if (info != null) return info.IsReasoningModel;
+            // Fallback heuristic for custom/unknown model IDs
             var lower = model.ToLowerInvariant();
-            return lower.Contains("gpt-5") || lower.StartsWith("o1") || lower.StartsWith("o3");
+            return lower.Contains("reasoning") || lower.StartsWith("o1") || lower.StartsWith("o3") || lower.StartsWith("o4");
         }
 
         private int GetOllamaTimeout()

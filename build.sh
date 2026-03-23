@@ -17,6 +17,26 @@ OLD_UNPACKED_DIR="$APPDATA/Trados/Trados Studio/18/Plugins/Unpacked/TermLens"
 OLD_LOCAL_PACKAGES="$LOCALAPPDATA/Trados/Trados Studio/18/Plugins/Packages"
 OLD_LOCAL_UNPACKED="$LOCALAPPDATA/Trados/Trados Studio/18/Plugins/Unpacked/Supervertaler for Trados"
 
+# Verify all version files are in sync before building.
+CSPROJ_VER=$(sed -n 's/.*<Version>\([0-9.]*\)<\/Version>.*/\1/p' "$PROJECT_DIR/Supervertaler.Trados.csproj" | head -1)
+MANIFEST_VER=$(sed -n 's/.*<Version>\([0-9.]*\)<\/Version>.*/\1/p' "$PROJECT_DIR/pluginpackage.manifest.xml")
+PLUGIN_VER=$(python "$SCRIPT_DIR/tools/read_plugin_version.py" "$PROJECT_DIR/Supervertaler.Trados.plugin.xml" 2>/dev/null || echo "?")
+
+CSPROJ_FOUR="${CSPROJ_VER}.0"
+if [ "$CSPROJ_FOUR" != "$MANIFEST_VER" ] || [ "$CSPROJ_FOUR" != "$PLUGIN_VER" ]; then
+    echo ""
+    echo "  ERROR: Version mismatch detected!"
+    echo "    .csproj:  $CSPROJ_VER ($CSPROJ_FOUR)"
+    echo "    manifest: $MANIFEST_VER"
+    echo "    plugin:   $PLUGIN_VER"
+    echo ""
+    echo "  Run: python bump_version.py $CSPROJ_VER"
+    echo ""
+    exit 1
+fi
+echo "  Version check passed: $CSPROJ_FOUR"
+echo ""
+
 echo "=== Building Supervertaler for Trados ==="
 "$DOTNET" build "$PROJECT_DIR/Supervertaler.Trados.csproj" -c Release
 

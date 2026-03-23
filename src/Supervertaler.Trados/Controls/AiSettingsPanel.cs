@@ -701,7 +701,7 @@ namespace Supervertaler.Trados.Controls
             switch (provider)
             {
                 case LlmModels.ProviderOpenAi:
-                    settings.OpenAiModel = selectedModel?.Id ?? "gpt-4o";
+                    settings.OpenAiModel = selectedModel?.Id ?? "gpt-4.1";
                     break;
                 case LlmModels.ProviderClaude:
                     settings.ClaudeModel = selectedModel?.Id ?? "claude-sonnet-4-6";
@@ -922,7 +922,7 @@ namespace Supervertaler.Trados.Controls
             var provider = GetSelectedProviderKey();
             if (provider == LlmModels.ProviderCustomOpenAi)
                 return _txtCustomModel.Text.Trim();
-            return (_cmbModel.SelectedItem as ModelItem)?.Id ?? "gpt-4o";
+            return (_cmbModel.SelectedItem as ModelItem)?.Id ?? "gpt-4.1";
         }
 
         private string GetEffectiveApiKey()
