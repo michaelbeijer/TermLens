@@ -447,7 +447,7 @@ namespace Supervertaler.Trados.Controls
 
             // Header: Feature label + timestamp
             var headerText = $"{entry.FeatureLabel}  {entry.Timestamp:HH:mm:ss}";
-            var headerSize = TextRenderer.MeasureText(headerText, headerFont);
+            var headerHeight = Math.Max(16, TextRenderer.MeasureText(headerText, headerFont).Height);
             var lblHeader = new Label
             {
                 Text = headerText,
@@ -459,8 +459,8 @@ namespace Supervertaler.Trados.Controls
             card.Controls.Add(lblHeader);
 
             // Summary line
-            var summaryY = 6 + headerSize.Height + 2;
-            var summarySize = TextRenderer.MeasureText(entry.SummaryLine, bodyFont);
+            var summaryY = 6 + headerHeight + 2;
+            var summaryHeight = Math.Max(16, TextRenderer.MeasureText(entry.SummaryLine, bodyFont).Height);
             var lblSummary = new Label
             {
                 Text = entry.SummaryLine,
@@ -471,7 +471,7 @@ namespace Supervertaler.Trados.Controls
             };
             card.Controls.Add(lblSummary);
 
-            int yPos = summaryY + summarySize.Height + 4;
+            int yPos = summaryY + summaryHeight + 4;
             var textWidth = availableWidth - 20;
 
             // Expandable sections
@@ -523,8 +523,8 @@ namespace Supervertaler.Trados.Controls
             };
             card.Controls.Add(lnkCopyAll);
 
-            var copyAllSize = TextRenderer.MeasureText("Copy all", smallFont);
-            card.Height = Math.Max(40, yPos + copyAllSize.Height + 8);
+            var copyAllHeight = Math.Max(14, TextRenderer.MeasureText("Copy all", smallFont).Height);
+            card.Height = Math.Max(40, yPos + copyAllHeight + 8);
 
             // Hover effect
             Action<Control> applyHover = null;
@@ -564,7 +564,7 @@ namespace Supervertaler.Trados.Controls
             int yPos, int textWidth, Font linkFont, Font contentFont)
         {
             var toggleText = $"Show {title.ToLowerInvariant()}...";
-            var toggleSize = TextRenderer.MeasureText(toggleText, linkFont);
+            var toggleHeight = Math.Max(14, TextRenderer.MeasureText(toggleText, linkFont).Height);
             var lnkToggle = new LinkLabel
             {
                 Text = toggleText,
@@ -582,7 +582,7 @@ namespace Supervertaler.Trados.Controls
                 Font = contentFont,
                 ForeColor = TextColor,
                 BackColor = Color.FromArgb(245, 248, 252),
-                Location = new Point(8, yPos + toggleSize.Height + 2),
+                Location = new Point(8, yPos + toggleHeight + 2),
                 Multiline = true,
                 ReadOnly = true,
                 WordWrap = true,
@@ -628,7 +628,7 @@ namespace Supervertaler.Trados.Controls
             card.Controls.Add(txtContent);
             card.Controls.Add(lnkCopy);
 
-            return yPos + toggleSize.Height + 2;
+            return yPos + toggleHeight + 2;
         }
 
         private void RecalcPromptCardHeight(Panel card)
