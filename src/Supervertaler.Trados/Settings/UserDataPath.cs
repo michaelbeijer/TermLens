@@ -15,9 +15,13 @@ namespace Supervertaler.Trados.Settings
     /// Folder layout under the root:
     ///   prompt_library/     — .svprompt files shared between both products
     ///   resources/          — supervertaler.db (shared termbase, if present)
+    ///   workbench/          — Supervertaler Workbench-specific data
+    ///     settings/         — Workbench settings files
     ///   trados/
-    ///     settings.json     — Trados plugin preferences
-    ///     license.json      — license activation state
+    ///     settings/         — Trados plugin settings
+    ///       settings.json   — plugin preferences
+    ///       license.json    — license activation state
+    ///       chat_history.json — AI Assistant chat history
     ///     projects/         — per-project settings overlays
     ///
     /// Call <see cref="NeedsFirstRunSetup"/> before any path access to check whether the
@@ -75,14 +79,17 @@ namespace Supervertaler.Trados.Settings
         /// <summary>Trados-specific sub-folder inside the shared root.</summary>
         public static string TradosDir => Path.Combine(Root, "trados");
 
+        /// <summary>Settings sub-folder inside the Trados directory.</summary>
+        public static string TradosSettingsDir => Path.Combine(TradosDir, "settings");
+
         /// <summary>Path to the plugin settings file.</summary>
-        public static string SettingsFilePath => Path.Combine(TradosDir, "settings.json");
+        public static string SettingsFilePath => Path.Combine(TradosSettingsDir, "settings.json");
 
         /// <summary>Path to the license activation file.</summary>
-        public static string LicenseFilePath => Path.Combine(TradosDir, "license.json");
+        public static string LicenseFilePath => Path.Combine(TradosSettingsDir, "license.json");
 
         /// <summary>Path to the persisted AI Assistant chat history file.</summary>
-        public static string ChatHistoryFilePath => Path.Combine(TradosDir, "chat_history.json");
+        public static string ChatHistoryFilePath => Path.Combine(TradosSettingsDir, "chat_history.json");
 
         /// <summary>Folder containing per-project settings overlays.</summary>
         public static string ProjectsDir => Path.Combine(TradosDir, "projects");
@@ -170,8 +177,66 @@ namespace Supervertaler.Trados.Settings
                 }
             }
 
+            // v2 layout migration: move trados/{settings,license,chat_history}.json
+            // into trados/settings/ subfolder
+            MigrateToSettingsSubfolder();
+
             // Clean up legacy/stale AppData folders (safe to run every startup)
             CleanupLegacyFolders();
+        }
+
+        /// <summary>
+        /// v2 layout migration: moves settings.json, license.json and chat_history.json
+        /// from trados/ into trados/settings/.  Gated on a .migrated_v2 flag file.
+        /// Safe to call on every startup.
+        /// </summary>
+        private static void MigrateToSettingsSubfolder()
+        {
+            var flagFile = Path.Combine(TradosDir, ".migrated_v2");
+            if (File.Exists(flagFile)) return;
+
+            // Only migrate if old-layout files exist at the trados/ level
+            var oldSettings    = Path.Combine(TradosDir, "settings.json");
+            var oldLicense     = Path.Combine(TradosDir, "license.json");
+            var oldChatHistory = Path.Combine(TradosDir, "chat_history.json");
+
+            if (!File.Exists(oldSettings) && !File.Exists(oldLicense) && !File.Exists(oldChatHistory))
+            {
+                // Nothing to migrate — probably a fresh install.  Write the flag
+                // so we don't check again, then create the settings dir.
+                try
+                {
+                    Directory.CreateDirectory(TradosSettingsDir);
+                    File.WriteAllText(flagFile, DateTime.UtcNow.ToString("O"), Encoding.UTF8);
+                }
+                catch { }
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(TradosSettingsDir);
+
+                MigrateFile(oldSettings,    SettingsFilePath);
+                MigrateFile(oldLicense,     LicenseFilePath);
+                MigrateFile(oldChatHistory, ChatHistoryFilePath);
+
+                // Delete old files after successful copy
+                TryDelete(oldSettings);
+                TryDelete(oldLicense);
+                TryDelete(oldChatHistory);
+
+                File.WriteAllText(flagFile, DateTime.UtcNow.ToString("O"), Encoding.UTF8);
+            }
+            catch
+            {
+                // Non-fatal — old files remain usable at the old paths
+            }
+        }
+
+        private static void TryDelete(string path)
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
         }
 
         /// <summary>

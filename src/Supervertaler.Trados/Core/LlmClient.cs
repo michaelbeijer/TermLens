@@ -314,15 +314,21 @@ namespace Supervertaler.Trados.Core
                     var configJson = File.ReadAllText(configPointer, Encoding.UTF8);
                     var userDataPath = ExtractJsonString(configJson, "user_data_path");
                     if (!string.IsNullOrEmpty(userDataPath))
+                    {
+                        // New layout: workbench/settings/settings.json
+                        paths.Add(Path.Combine(userDataPath, "workbench", "settings", "settings.json"));
+                        // Old layout fallback: settings/settings.json
                         paths.Add(Path.Combine(userDataPath, "settings", "settings.json"));
+                    }
                 }
                 catch { }
             }
 
-            // Path 2: ~/Supervertaler/settings/settings.json
-            paths.Add(Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                "Supervertaler", "settings", "settings.json"));
+            // Path 2: ~/Supervertaler/workbench/settings/settings.json (new layout)
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            paths.Add(Path.Combine(userProfile, "Supervertaler", "workbench", "settings", "settings.json"));
+            // Old layout fallback
+            paths.Add(Path.Combine(userProfile, "Supervertaler", "settings", "settings.json"));
 
             foreach (var path in paths)
             {
