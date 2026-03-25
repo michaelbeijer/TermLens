@@ -942,9 +942,13 @@ namespace Supervertaler.Trados
                 var projectPath = project?.FilePath;
                 var projectName = project?.GetProjectInfo()?.Name;
 
+                System.Diagnostics.Debug.WriteLine($"[TermLens] Project detection: path={projectPath ?? "(null)"}, name={projectName ?? "(null)"}, current={_currentProjectPath ?? "(null)"}");
+
                 // Same project (or no project) — nothing to do
                 if (string.Equals(projectPath, _currentProjectPath, StringComparison.OrdinalIgnoreCase))
                     return;
+
+                System.Diagnostics.Debug.WriteLine($"[TermLens] Project switch: '{_currentProjectName}' → '{projectName}'");
 
                 // Save outgoing project settings (if we had a project active)
                 SaveCurrentProjectSettings();
@@ -960,10 +964,19 @@ namespace Supervertaler.Trados
                 var ps = ProjectSettings.Load(projectPath);
                 if (ps != null)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[TermLens] Loaded project settings: db={ps.TermbasePath}, write={ps.WriteTermbaseIds?.Count ?? 0}, disabled={ps.DisabledTermbaseIds?.Count ?? 0}");
                     _settings.ApplyProjectOverlay(ps);
 
                     // Reload termbase with the project-specific path
                     LoadTermbase(forceReload: true);
+                }
+                else
+                {
+                    // First time encountering this project — snapshot current settings
+                    // so the user's configuration is remembered for this project.
+                    System.Diagnostics.Debug.WriteLine($"[TermLens] No project settings found — creating initial snapshot");
+                    var newPs = _settings.ExtractProjectSettings(projectPath, projectName);
+                    ProjectSettings.Save(projectPath, newPs);
                 }
             }
             catch
@@ -1308,6 +1321,17 @@ namespace Supervertaler.Trados
             UiScale.Factor = instance._settings.UiScaleFactor;
             _control.Value.SetFontSize(instance._settings.PanelFontSize);
             TermBlock.UseRepeatedDigitBadges = instance._settings.TermShortcutStyle == "repeated";
+
+            // Re-apply per-project overlay so reload doesn't clobber project-specific values
+            if (!string.IsNullOrEmpty(instance._currentProjectPath))
+            {
+                var ps = ProjectSettings.Load(instance._currentProjectPath);
+                if (ps != null)
+                    instance._settings.ApplyProjectOverlay(ps);
+            }
+
+            instance.LoadTermbase(forceReload: true);
+            instance.UpdateFromActiveSegment();
         }
 
         /// <summary>
@@ -1687,6 +1711,9 @@ namespace Supervertaler.Trados
 
         public override void Dispose()
         {
+            // Save per-project settings before shutting down
+            SaveCurrentProjectSettings();
+
             if (_currentInstance == this)
                 _currentInstance = null;
 

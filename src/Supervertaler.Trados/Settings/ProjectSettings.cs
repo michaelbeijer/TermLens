@@ -10,7 +10,7 @@ namespace Supervertaler.Trados.Settings
 {
     /// <summary>
     /// Per-project settings overlay. Stored in a separate JSON file per Trados project
-    /// at {SharedRoot}/trados/projects/{key}.json (resolved via UserDataPath).
+    /// at {SharedRoot}/trados/projects/{key} - {name}.json (resolved via UserDataPath).
     /// Only contains settings that vary between projects (termbase path, enabled/disabled
     /// termbases, write targets, etc.). Global settings (API keys, UI prefs) stay in
     /// the main settings.json.
@@ -97,12 +97,63 @@ namespace Supervertaler.Trados.Settings
         }
 
         /// <summary>
-        /// Returns the full path to the project settings file for the given project.
+        /// Sanitises a project name for use in a filename by removing characters
+        /// that are illegal in Windows file paths.
         /// </summary>
-        private static string GetProjectSettingsPath(string projectFilePath)
+        private static string SanitiseProjectName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return "";
+            var invalid = Path.GetInvalidFileNameChars();
+            var sb = new StringBuilder(name.Length);
+            foreach (var c in name)
+            {
+                if (Array.IndexOf(invalid, c) < 0)
+                    sb.Append(c);
+            }
+            // Trim trailing dots/spaces (Windows restriction)
+            return sb.ToString().TrimEnd('.', ' ');
+        }
+
+        /// <summary>
+        /// Returns the full path to the project settings file for the given project.
+        /// Uses the format: {hash} - {projectName}.json for human readability.
+        /// Falls back to finding by hash prefix if the exact file doesn't exist
+        /// (handles migration from old hash-only filenames and project renames).
+        /// </summary>
+        private static string GetProjectSettingsPath(string projectFilePath, string projectName = null)
         {
             var key = GetProjectKey(projectFilePath);
             if (key == null) return null;
+
+            // If we have a project name, build the readable filename
+            if (!string.IsNullOrEmpty(projectName))
+            {
+                var safeName = SanitiseProjectName(projectName);
+                if (!string.IsNullOrEmpty(safeName))
+                {
+                    var readablePath = Path.Combine(ProjectsDir, key + " - " + safeName + ".json");
+                    if (File.Exists(readablePath))
+                        return readablePath;
+                }
+            }
+
+            // Search for any file starting with the hash key (handles old names + renames)
+            if (Directory.Exists(ProjectsDir))
+            {
+                var matches = Directory.GetFiles(ProjectsDir, key + "*.json");
+                if (matches.Length > 0)
+                    return matches[0];
+            }
+
+            // No existing file found — return the readable path for new saves
+            if (!string.IsNullOrEmpty(projectName))
+            {
+                var safeName = SanitiseProjectName(projectName);
+                if (!string.IsNullOrEmpty(safeName))
+                    return Path.Combine(ProjectsDir, key + " - " + safeName + ".json");
+            }
+
+            // Absolute fallback — hash only
             return Path.Combine(ProjectsDir, key + ".json");
         }
 
@@ -139,6 +190,22 @@ namespace Supervertaler.Trados.Settings
                     if (ps.DisabledMultiTermIds == null) ps.DisabledMultiTermIds = new List<long>();
                     if (ps.DisabledAiTermbaseIds == null) ps.DisabledAiTermbaseIds = new List<long>();
 
+                    // Migrate old hash-only filenames to readable format
+                    if (!string.IsNullOrEmpty(ps.ProjectName))
+                    {
+                        var key = GetProjectKey(projectFilePath);
+                        var safeName = SanitiseProjectName(ps.ProjectName);
+                        if (key != null && !string.IsNullOrEmpty(safeName))
+                        {
+                            var readablePath = Path.Combine(ProjectsDir, key + " - " + safeName + ".json");
+                            if (!string.Equals(path, readablePath, StringComparison.OrdinalIgnoreCase)
+                                && !File.Exists(readablePath))
+                            {
+                                try { File.Move(path, readablePath); } catch { }
+                            }
+                        }
+                    }
+
                     return ps;
                 }
             }
@@ -150,16 +217,33 @@ namespace Supervertaler.Trados.Settings
 
         /// <summary>
         /// Saves project-specific settings for the given .sdlproj path.
+        /// Uses the project name from the settings object to create a human-readable filename.
+        /// Cleans up old files with a different name for the same hash (e.g. after a project rename).
         /// </summary>
         public static void Save(string projectFilePath, ProjectSettings ps)
         {
             try
             {
-                var path = GetProjectSettingsPath(projectFilePath);
-                if (path == null) return;
+                var key = GetProjectKey(projectFilePath);
+                if (key == null) return;
 
                 Directory.CreateDirectory(ProjectsDir);
 
+                // Determine the target path using the project name
+                var targetPath = GetProjectSettingsPath(projectFilePath, ps.ProjectName);
+                if (targetPath == null) return;
+
+                // Clean up old files for the same hash if the name has changed
+                var existingFiles = Directory.GetFiles(ProjectsDir, key + "*.json");
+                foreach (var oldFile in existingFiles)
+                {
+                    if (!string.Equals(oldFile, targetPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        try { File.Delete(oldFile); } catch { }
+                    }
+                }
+
+                // Serialise to JSON
                 using (var stream = new MemoryStream())
                 {
                     var serializerSettings = new DataContractJsonSerializerSettings
@@ -170,13 +254,91 @@ namespace Supervertaler.Trados.Settings
                     serializer.WriteObject(stream, ps);
 
                     var json = Encoding.UTF8.GetString(stream.ToArray());
-                    File.WriteAllText(path, json, Encoding.UTF8);
+
+                    // Pretty-print the JSON for human readability
+                    json = IndentJson(json);
+
+                    File.WriteAllText(targetPath, json, Encoding.UTF8);
                 }
             }
             catch
             {
                 // Silently ignore save failures
             }
+        }
+
+        /// <summary>
+        /// Naïve JSON indenter — works for the simple flat structure of project settings
+        /// without requiring an external JSON library.
+        /// </summary>
+        private static string IndentJson(string json)
+        {
+            var sb = new StringBuilder();
+            int indent = 0;
+            bool inString = false;
+            bool escaped = false;
+
+            foreach (char c in json)
+            {
+                if (escaped)
+                {
+                    sb.Append(c);
+                    escaped = false;
+                    continue;
+                }
+
+                if (c == '\\' && inString)
+                {
+                    sb.Append(c);
+                    escaped = true;
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = !inString;
+                    sb.Append(c);
+                    continue;
+                }
+
+                if (inString)
+                {
+                    sb.Append(c);
+                    continue;
+                }
+
+                switch (c)
+                {
+                    case '{':
+                    case '[':
+                        sb.Append(c);
+                        sb.AppendLine();
+                        indent++;
+                        sb.Append(new string(' ', indent * 2));
+                        break;
+                    case '}':
+                    case ']':
+                        sb.AppendLine();
+                        indent--;
+                        sb.Append(new string(' ', indent * 2));
+                        sb.Append(c);
+                        break;
+                    case ',':
+                        sb.Append(c);
+                        sb.AppendLine();
+                        sb.Append(new string(' ', indent * 2));
+                        break;
+                    case ':':
+                        sb.Append(": ");
+                        break;
+                    default:
+                        if (!char.IsWhiteSpace(c))
+                            sb.Append(c);
+                        break;
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }

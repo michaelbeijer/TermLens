@@ -5,9 +5,14 @@
 ### Fixed
 - **Settings accessible when trial expires** – the gear button on both the TermLens and Supervertaler Assistant panels now opens the Settings dialog even when the trial has expired or no licence is active, so users can enter a licence key
 - **AI Assistant gear button visible above overlay** – the settings and help buttons are no longer hidden behind the licence overlay
+- **Per-project settings now reliably remembered** – fixed a bug where `NotifySettingsChanged` reloaded global settings without re-applying the per-project overlay, causing termbase paths and enabled/disabled lists to revert when switching projects
+- **Per-project settings auto-saved on first encounter** – opening a Trados project that has no Supervertaler settings file now auto-creates one from the current configuration
+- **Per-project settings saved on shutdown** – settings are now saved when Trados closes, not just on project switch or settings dialog OK
 
 ### Changed
 - **Clearer expired trial message** – both panels now say "Click the ⚙ button above" instead of the vague "Enter a license key in Settings → License"
+- **Human-readable project settings filenames** – per-project files now use the format `{hash} - {project name}.json` instead of just `{hash}.json`; existing files are auto-migrated on load
+- **Pretty-printed project settings JSON** – project settings files are now indented for readability
 
 ---
 
