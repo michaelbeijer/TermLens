@@ -102,6 +102,7 @@ namespace Supervertaler.Trados.Core
                 {
                     case LlmModels.ProviderOpenAi:
                     case LlmModels.ProviderGrok:
+                    case LlmModels.ProviderMistral:
                     case LlmModels.ProviderCustomOpenAi:
                         result = await CallOpenAiAsync(prompt, systemPrompt, maxTokens, cancellationToken);
                         break;
@@ -155,6 +156,7 @@ namespace Supervertaler.Trados.Core
                 {
                     case LlmModels.ProviderOpenAi:
                     case LlmModels.ProviderGrok:
+                    case LlmModels.ProviderMistral:
                     case LlmModels.ProviderCustomOpenAi:
                         result = await CallOpenAiChatAsync(messages, systemPrompt, maxTokens, cancellationToken);
                         break;
@@ -293,6 +295,7 @@ namespace Supervertaler.Trados.Core
                 case LlmModels.ProviderClaude: return keys.Claude;
                 case LlmModels.ProviderGemini: return keys.Gemini;
                 case LlmModels.ProviderGrok: return keys.Grok;
+                case LlmModels.ProviderMistral: return keys.Mistral;
                 case LlmModels.ProviderCustomOpenAi: return keys.CustomOpenAi;
                 default: return null;
             }
@@ -362,6 +365,7 @@ namespace Supervertaler.Trados.Core
         private string OpenAiProviderLabel()
         {
             if (_provider == LlmModels.ProviderGrok) return "Grok";
+            if (_provider == LlmModels.ProviderMistral) return "Mistral";
             if (_provider == LlmModels.ProviderCustomOpenAi) return "Custom OpenAI";
             return "OpenAI";
         }
@@ -374,6 +378,8 @@ namespace Supervertaler.Trados.Core
         {
             if (_provider == LlmModels.ProviderGrok)
                 return "https://api.x.ai/v1";
+            if (_provider == LlmModels.ProviderMistral)
+                return "https://api.mistral.ai/v1";
             if (_provider == LlmModels.ProviderCustomOpenAi && !string.IsNullOrEmpty(_baseUrl))
                 return _baseUrl.TrimEnd('/');
             return "https://api.openai.com/v1";

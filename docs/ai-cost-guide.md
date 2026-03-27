@@ -58,6 +58,14 @@ These are estimates for a representative document. Actual usage varies with segm
 | **Grok 4.1 Fast** | $0.03 | $0.03 | < $0.01 |
 | **Grok 4.20 Reasoning** | — | — | $0.09 |
 
+### Mistral AI
+
+| Model | Translate | Proofread | AutoPrompt |
+|-------|-----------|-----------|-----------------|
+| **Mistral Large** (recommended) | $0.30 | $0.33 | $0.03 |
+| **Mistral Small** | $0.01 | $0.02 | < $0.01 |
+| **Mistral Nemo** | $0.02 | $0.02 | < $0.01 |
+
 ### Ollama (local)
 
 | Model | Translate | Proofread | AutoPrompt |
@@ -96,10 +104,13 @@ For reference, these are the per-token rates used in the calculations above:
 | Grok 4.20 | $2.00 | $6.00 |
 | Grok 4.1 Fast | $0.20 | $0.50 |
 | Grok 4.20 (Reasoning) | $2.00 | $6.00 |
+| Mistral Large | $2.00 | $6.00 |
+| Mistral Small | $0.10 | $0.30 |
+| Mistral Nemo | $0.15 | $0.15 |
 
 {% hint style="warning" %}
 Prices change regularly. Check your provider's pricing page for the latest rates:
-[OpenAI](https://openai.com/api/pricing/) · [Anthropic](https://www.anthropic.com/pricing#anthropic-api) · [Google Gemini](https://ai.google.dev/gemini-api/docs/pricing) · [xAI](https://docs.x.ai/developers/models)
+[OpenAI](https://openai.com/api/pricing/) · [Anthropic](https://www.anthropic.com/pricing#anthropic-api) · [Google Gemini](https://ai.google.dev/gemini-api/docs/pricing) · [xAI](https://docs.x.ai/developers/models) · [Mistral](https://mistral.ai/technology/)
 {% endhint %}
 
 ## Tips for managing costs

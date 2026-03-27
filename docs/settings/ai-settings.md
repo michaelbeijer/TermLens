@@ -18,6 +18,7 @@ Choose one of the supported AI providers:
 | **Claude (Anthropic)** | Claude Sonnet 4.6, Claude Haiku 4.5, Claude Opus 4.6 |
 | **Gemini (Google)** | Gemini 2.5 Flash, Gemini 2.5 Pro, Gemini 3.1 Pro (Preview) |
 | **Grok (xAI)** | Grok 4.20, Grok 4.1 Fast, Grok 4.20 (Reasoning) |
+| **Mistral AI** | Mistral Large, Mistral Small, Mistral Nemo |
 | **Ollama (Local)** | Run models locally, no API key required |
 | **Custom (OpenAI-compatible)** | Any provider with an OpenAI-compatible API |
 

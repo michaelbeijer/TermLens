@@ -25,6 +25,9 @@ namespace Supervertaler.Trados.Settings
         [DataMember(Name = "grokModel")]
         public string GrokModel { get; set; } = "grok-4.20-0309-non-reasoning";
 
+        [DataMember(Name = "mistralModel")]
+        public string MistralModel { get; set; } = "mistral-large-latest";
+
         [DataMember(Name = "ollamaModel")]
         public string OllamaModel { get; set; } = "translategemma:12b";
 
@@ -153,6 +156,7 @@ namespace Supervertaler.Trados.Settings
                 case "claude": ClaudeModel = modelId; break;
                 case "gemini": GeminiModel = modelId; break;
                 case "grok": GrokModel = modelId; break;
+                case "mistral": MistralModel = modelId; break;
                 case "ollama": OllamaModel = modelId; break;
                 case "custom_openai": SelectedCustomProfileName = modelId; break;
             }
@@ -169,6 +173,7 @@ namespace Supervertaler.Trados.Settings
                 case "claude": return ClaudeModel;
                 case "gemini": return GeminiModel;
                 case "grok": return GrokModel;
+                case "mistral": return MistralModel;
                 case "ollama": return OllamaModel;
                 case "custom_openai":
                     var profile = GetActiveCustomProfile();
@@ -209,6 +214,9 @@ namespace Supervertaler.Trados.Settings
 
         [DataMember(Name = "grok")]
         public string Grok { get; set; } = "";
+
+        [DataMember(Name = "mistral")]
+        public string Mistral { get; set; } = "";
 
         [DataMember(Name = "custom_openai")]
         public string CustomOpenAi { get; set; } = "";

@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.18.17] — 2026-03-27
+
+### Added
+- **Mistral AI support** – Mistral Large, Mistral Small, and Mistral Nemo are now available as a first-class provider alongside OpenAI, Claude, Gemini, Grok, and Ollama
+
+---
+
 ## [4.18.16] — 2026-03-27
 
 ### Added

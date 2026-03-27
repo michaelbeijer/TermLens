@@ -9,6 +9,7 @@ namespace Supervertaler.Trados.Core
         Claude,
         Gemini,
         Grok,
+        Mistral,
         Ollama,
         CustomOpenAi
     }
@@ -36,6 +37,7 @@ namespace Supervertaler.Trados.Core
         public const string ProviderGemini = "gemini";
         public const string ProviderOllama = "ollama";
         public const string ProviderGrok = "grok";
+        public const string ProviderMistral = "mistral";
         public const string ProviderCustomOpenAi = "custom_openai";
 
         public static readonly LlmModelInfo[] OpenAiModels =
@@ -95,6 +97,28 @@ namespace Supervertaler.Trados.Core
                 Id = "gemini-3.1-pro-preview", DisplayName = "Gemini 3.1 Pro (Preview)",
                 Description = "Newest model (preview) — Google's most advanced, 1M context",
                 Provider = LlmProvider.Gemini
+            }
+        };
+
+        public static readonly LlmModelInfo[] MistralModels =
+        {
+            new LlmModelInfo
+            {
+                Id = "mistral-large-latest", DisplayName = "Mistral Large",
+                Description = "Flagship — best quality, ideal for complex translation tasks",
+                Provider = LlmProvider.Mistral
+            },
+            new LlmModelInfo
+            {
+                Id = "mistral-small-latest", DisplayName = "Mistral Small",
+                Description = "Fast and cost-effective — great for large batch jobs",
+                Provider = LlmProvider.Mistral
+            },
+            new LlmModelInfo
+            {
+                Id = "open-mistral-nemo", DisplayName = "Mistral Nemo",
+                Description = "Open, multilingual — good general-purpose translation",
+                Provider = LlmProvider.Mistral
             }
         };
 
@@ -162,6 +186,7 @@ namespace Supervertaler.Trados.Core
                 case ProviderClaude: return ClaudeModels;
                 case ProviderGemini: return GeminiModels;
                 case ProviderGrok: return GrokModels;
+                case ProviderMistral: return MistralModels;
                 case ProviderOllama: return OllamaModels;
                 case ProviderCustomOpenAi: return new LlmModelInfo[0]; // Custom models are user-defined
                 default: return new LlmModelInfo[0];
@@ -175,7 +200,7 @@ namespace Supervertaler.Trados.Core
         {
             if (string.IsNullOrEmpty(modelId)) return null;
 
-            var allArrays = new[] { OpenAiModels, ClaudeModels, GeminiModels, GrokModels, OllamaModels };
+            var allArrays = new[] { OpenAiModels, ClaudeModels, GeminiModels, GrokModels, MistralModels, OllamaModels };
             foreach (var arr in allArrays)
             {
                 foreach (var m in arr)
@@ -198,6 +223,7 @@ namespace Supervertaler.Trados.Core
                 case LlmProvider.Claude: return ProviderClaude;
                 case LlmProvider.Gemini: return ProviderGemini;
                 case LlmProvider.Grok: return ProviderGrok;
+                case LlmProvider.Mistral: return ProviderMistral;
                 case LlmProvider.Ollama: return ProviderOllama;
                 case LlmProvider.CustomOpenAi: return ProviderCustomOpenAi;
                 default: return ProviderOpenAi;
@@ -215,6 +241,7 @@ namespace Supervertaler.Trados.Core
                 case ProviderClaude: return "Claude (Anthropic)";
                 case ProviderGemini: return "Gemini (Google)";
                 case ProviderGrok: return "Grok (xAI)";
+                case ProviderMistral: return "Mistral AI";
                 case ProviderOllama: return "Ollama (Local)";
                 case ProviderCustomOpenAi: return "Custom (OpenAI-compatible)";
                 default: return providerKey;
@@ -226,7 +253,7 @@ namespace Supervertaler.Trados.Core
         /// </summary>
         public static readonly string[] AllProviderKeys =
         {
-            ProviderOpenAi, ProviderClaude, ProviderGemini, ProviderGrok, ProviderOllama, ProviderCustomOpenAi
+            ProviderOpenAi, ProviderClaude, ProviderGemini, ProviderGrok, ProviderMistral, ProviderOllama, ProviderCustomOpenAi
         };
     }
 }

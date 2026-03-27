@@ -37,6 +37,11 @@ namespace Supervertaler.Trados.Core
             { "grok-4-1-fast-non-reasoning",  (0.20m,  0.50m)  },
             { "grok-4.20-0309-reasoning",     (3.00m,  15.00m) },
 
+            // Mistral AI
+            { "mistral-large-latest",         (2.00m,  6.00m)  },
+            { "mistral-small-latest",         (0.10m,  0.30m)  },
+            { "open-mistral-nemo",            (0.15m,  0.15m)  },
+
             // Ollama (local) — free
             { "translategemma:12b",        (0m, 0m) },
             { "translategemma:4b",         (0m, 0m) },

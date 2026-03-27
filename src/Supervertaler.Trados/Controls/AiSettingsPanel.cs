@@ -135,6 +135,23 @@ namespace Supervertaler.Trados.Controls
             Controls.Add(_cmbModel);
             y += 32;
 
+            // === View supported models link ===
+            var lnkViewModels = new LinkLabel
+            {
+                Text = "View all supported models...",
+                Location = new Point(120, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5f),
+                LinkColor = Color.FromArgb(0, 102, 153)
+            };
+            lnkViewModels.LinkClicked += (s, e) =>
+            {
+                using (var dlg = new SupportedModelsDialog())
+                    dlg.ShowDialog(this);
+            };
+            Controls.Add(lnkViewModels);
+            y += 22;
+
             // === API Key ===
             var lblApiKey = new Label
             {
@@ -642,6 +659,7 @@ namespace Supervertaler.Trados.Controls
             _providerApiKeys[LlmModels.ProviderClaude] = keys.Claude ?? "";
             _providerApiKeys[LlmModels.ProviderGemini] = keys.Gemini ?? "";
             _providerApiKeys[LlmModels.ProviderGrok] = keys.Grok ?? "";
+            _providerApiKeys[LlmModels.ProviderMistral] = keys.Mistral ?? "";
             _providerApiKeys[LlmModels.ProviderCustomOpenAi] = keys.CustomOpenAi ?? "";
             _providerApiKeys[LlmModels.ProviderOllama] = ""; // Ollama doesn't use API keys
 
@@ -732,6 +750,9 @@ namespace Supervertaler.Trados.Controls
                 case LlmModels.ProviderGrok:
                     settings.GrokModel = selectedModel?.Id ?? "grok-4.20-0309-non-reasoning";
                     break;
+                case LlmModels.ProviderMistral:
+                    settings.MistralModel = selectedModel?.Id ?? "mistral-large-latest";
+                    break;
                 case LlmModels.ProviderOllama:
                     settings.OllamaModel = selectedModel?.Id ?? "translategemma:12b";
                     break;
@@ -747,6 +768,7 @@ namespace Supervertaler.Trados.Controls
             settings.ApiKeys.Claude = _providerApiKeys.TryGetValue(LlmModels.ProviderClaude, out val) ? val : "";
             settings.ApiKeys.Gemini = _providerApiKeys.TryGetValue(LlmModels.ProviderGemini, out val) ? val : "";
             settings.ApiKeys.Grok = _providerApiKeys.TryGetValue(LlmModels.ProviderGrok, out val) ? val : "";
+            settings.ApiKeys.Mistral = _providerApiKeys.TryGetValue(LlmModels.ProviderMistral, out val) ? val : "";
             settings.ApiKeys.CustomOpenAi = _providerApiKeys.TryGetValue(LlmModels.ProviderCustomOpenAi, out val) ? val : "";
 
             // Ollama endpoint
@@ -965,6 +987,7 @@ namespace Supervertaler.Trados.Controls
                 case LlmModels.ProviderClaude: targetId = settings.ClaudeModel; break;
                 case LlmModels.ProviderGemini: targetId = settings.GeminiModel; break;
                 case LlmModels.ProviderGrok: targetId = settings.GrokModel; break;
+                case LlmModels.ProviderMistral: targetId = settings.MistralModel; break;
                 case LlmModels.ProviderOllama: targetId = settings.OllamaModel; break;
                 default: return;
             }

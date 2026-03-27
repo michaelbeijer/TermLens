@@ -162,6 +162,7 @@ The current provider and model are shown in the status area at the bottom of the
 | **Anthropic** | Claude Sonnet 4.6, Claude Haiku 4.5, Claude Opus 4.6           |
 | **Google**    | Gemini 2.5 Flash, Gemini 2.5 Pro, Gemini 3.1 Pro (Preview)     |
 | **Grok**      | Grok 4.20, Grok 4.1 Fast, Grok 4.20 (Reasoning)               |
+| **Mistral**   | Mistral Large, Mistral Small, Mistral Nemo                     |
 | **Ollama**    | TranslateGemma, Qwen 3, Aya Expanse (local, no API key needed) |
 | **Custom**    | Any OpenAI-compatible API endpoint                             |
 
