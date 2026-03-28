@@ -1,5 +1,23 @@
 # Changelog
 
+## [4.18.20] — 2026-03-28
+
+### Fixed
+- **Gemini API key no longer exposed in error messages** – API key moved from URL query parameter to `x-goog-api-key` request header
+- **Licence file corruption no longer silently resets to trial** – a warning is now shown when the licence file is unreadable, prompting the user to re-enter their key
+- **Gemini response parsing more robust** – regex anchored to the `candidates[].content.parts[].text` response structure to avoid matching wrong fields
+- **Unicode escapes in translations handled correctly** – `\uXXXX` sequences in LLM responses are now unescaped to the correct characters
+
+### Changed
+- **Diagnostic loggers removed** – temporary term-content loggers in TermbaseReader and TermMatcher that wrote to disk on every segment navigation have been removed
+- **ARM64 SQLite DLL declared in manifest** – `runtimes/win-arm64/native/e_sqlite3.dll` now has a corresponding `<File>` entry in the plugin manifest
+- **Default model names stay in sync** – provider defaults now reference the `LlmModels` arrays directly instead of hardcoded strings
+- **Multi-word term matching optimised** – the list of multi-word terms is now cached and only rebuilt when the termbase index changes
+- **Ping URL updated** – usage statistics endpoint updated to the `supervertaler.com` domain
+- **Term reader resilient to schema changes** – `ReadTermEntry` uses column name lookup instead of hardcoded positional indices
+
+---
+
 ## [4.18.19] — 2026-03-28
 
 ### Fixed

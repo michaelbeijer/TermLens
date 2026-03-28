@@ -31,6 +31,10 @@ namespace Supervertaler.Trados.Core
 
         private Dictionary<string, List<TermEntry>> _termIndex;
 
+        // Cached multi-word term list (keys containing spaces, sorted longest first).
+        // Invalidated when the index changes to avoid rebuilding on every segment.
+        private List<string> _multiWordTermsCache;
+
         /// <summary>
         /// Loads the term index for fast in-memory matching.
         /// Call this once when a termbase is loaded or changed.
@@ -38,6 +42,7 @@ namespace Supervertaler.Trados.Core
         public void LoadIndex(Dictionary<string, List<TermEntry>> termIndex)
         {
             _termIndex = termIndex ?? new Dictionary<string, List<TermEntry>>(StringComparer.OrdinalIgnoreCase);
+            _multiWordTermsCache = null;
         }
 
         /// <summary>
@@ -59,6 +64,7 @@ namespace Supervertaler.Trados.Core
                 else
                     _termIndex[kvp.Key] = new List<TermEntry>(kvp.Value);
             }
+            _multiWordTermsCache = null;
         }
 
         /// <summary>
@@ -78,6 +84,7 @@ namespace Supervertaler.Trados.Core
             }
             foreach (var key in keysToClean)
                 _termIndex.Remove(key);
+            _multiWordTermsCache = null;
         }
 
         /// <summary>
@@ -134,6 +141,7 @@ namespace Supervertaler.Trados.Core
                     abbrStrippedList.Add(entry);
                 }
             }
+            _multiWordTermsCache = null;
         }
 
         /// <summary>
@@ -153,6 +161,7 @@ namespace Supervertaler.Trados.Core
             }
             foreach (var key in keysToClean)
                 _termIndex.Remove(key);
+            _multiWordTermsCache = null;
         }
 
         /// <summary>
@@ -335,11 +344,15 @@ namespace Supervertaler.Trados.Core
         {
             if (_termIndex == null) return;
 
-            // Get multi-word terms from index (terms containing spaces), sorted longest first
-            var multiWordTerms = _termIndex.Keys
-                .Where(k => k.Contains(" "))
-                .OrderByDescending(k => k.Length)
-                .ToList();
+            // Use cached multi-word term list (rebuilt only when index changes)
+            if (_multiWordTermsCache == null)
+            {
+                _multiWordTermsCache = _termIndex.Keys
+                    .Where(k => k.Contains(" "))
+                    .OrderByDescending(k => k.Length)
+                    .ToList();
+            }
+            var multiWordTerms = _multiWordTermsCache;
 
             // Normalise subscript/superscript so "H₂O solution" matches a key of "h2o solution"
             var lineLower = NormalizeScriptChars(line.ToLowerInvariant());
@@ -492,44 +505,8 @@ namespace Supervertaler.Trados.Core
                 }
             }
 
-            // Diagnostic: log when a lookup finds multiple entries (helps track
-            // the disappearing-duplicate-entry bug). Remove once resolved.
-            if (entries.Count > 1 || filtered.Count != entries.Count)
-            {
-                DiagnosticLogLookup(word, entries, filtered);
-            }
-
             return (filtered, abbrIds);
         }
 
-        /// <summary>
-        /// Temporary diagnostic logging for the duplicate-source-term disappearing bug.
-        /// Remove once the bug is resolved.
-        /// </summary>
-        private static void DiagnosticLogLookup(string word, List<TermEntry> indexEntries, List<TermEntry> filtered)
-        {
-            try
-            {
-                var diagDir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Supervertaler.Trados");
-                if (!Directory.Exists(diagDir)) Directory.CreateDirectory(diagDir);
-                var logPath = Path.Combine(diagDir, "termlens_diag.log");
-
-                var sb = new StringBuilder();
-                sb.Append($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] LookupTerm(\"{word}\"): index={indexEntries.Count}, filtered={filtered.Count}");
-                if (filtered.Count < indexEntries.Count)
-                    sb.Append(" [ENTRIES DROPPED BY CASE FILTER]");
-                sb.AppendLine();
-                foreach (var e in indexEntries)
-                    sb.AppendLine($"  ID={e.Id} src=\"{e.SourceTerm}\" tgt=\"{e.TargetTerm}\" cs={e.CaseSensitive} tb={e.TermbaseName}");
-
-                File.AppendAllText(logPath, sb.ToString());
-            }
-            catch
-            {
-                // Never crash for diagnostic logging
-            }
-        }
     }
 }

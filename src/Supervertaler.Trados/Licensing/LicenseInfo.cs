@@ -124,9 +124,9 @@ namespace Supervertaler.Trados.Licensing
         }
 
         /// <summary>
-        /// Trial duration in days. Must match LicenseManager.TrialDays.
+        /// Trial duration in days. Single source of truth — referenced by LicenseManager.
         /// </summary>
-        private const int TrialDays = 14;
+        internal const int TrialDays = 14;
 
         // ─── Persistence ────────────────────────────────────────────
 
@@ -167,9 +167,26 @@ namespace Supervertaler.Trados.Licensing
                     return info;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Corrupted file — start fresh with a new trial
+                // File exists but is corrupt — warn the user instead of silently
+                // resetting to trial (which would lock out a paid user).
+                try
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                        "Your Supervertaler licence file appears to be corrupt and could not be read. " +
+                        "Please re-enter your licence key in Settings \u2192 Licence to restore access.\n\n" +
+                        "If you do not have a licence key, a new 14-day trial will start.\n\n" +
+                        "Technical details: " + ex.Message,
+                        "Supervertaler \u2013 Licence File Error",
+                        System.Windows.Forms.MessageBoxButtons.OK,
+                        System.Windows.Forms.MessageBoxIcon.Warning);
+                }
+                catch
+                {
+                    // UI not available yet — continue silently
+                }
+
                 var fresh = new LicenseInfo
                 {
                     TrialStartedAt = DateTime.UtcNow,

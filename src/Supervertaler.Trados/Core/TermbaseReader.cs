@@ -365,54 +365,7 @@ namespace Supervertaler.Trados.Core
                 }
             }
 
-            // Diagnostic: log source terms with multiple entries to help track
-            // the disappearing-duplicate-entry bug
-            DiagnosticLogDuplicates(index, allEntries.Count);
-
             return index;
-        }
-
-        /// <summary>
-        /// Temporary diagnostic logging for the duplicate-source-term disappearing bug.
-        /// Writes to %LocalAppData%\Supervertaler.Trados\termlens_diag.log when entries
-        /// share the same source term key. Remove once the bug is resolved.
-        /// </summary>
-        private static void DiagnosticLogDuplicates(Dictionary<string, List<TermEntry>> index, int totalLoaded)
-        {
-            try
-            {
-                var diagDir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Supervertaler.Trados");
-                if (!Directory.Exists(diagDir)) Directory.CreateDirectory(diagDir);
-                var logPath = Path.Combine(diagDir, "termlens_diag.log");
-
-                var sb = new StringBuilder();
-                sb.AppendLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] LoadAllTerms: {totalLoaded} entries loaded, {index.Count} index keys");
-
-                foreach (var kvp in index)
-                {
-                    if (kvp.Value.Count > 1)
-                    {
-                        // Only log entries where there are genuinely different IDs
-                        var distinctIds = new HashSet<long>();
-                        foreach (var e in kvp.Value) distinctIds.Add(e.Id);
-                        if (distinctIds.Count > 1)
-                        {
-                            sb.Append($"  key=\"{kvp.Key}\" has {kvp.Value.Count} entries (IDs:");
-                            foreach (var e in kvp.Value)
-                                sb.Append($" {e.Id}[{e.TargetTerm}]");
-                            sb.AppendLine(")");
-                        }
-                    }
-                }
-
-                File.AppendAllText(logPath, sb.ToString());
-            }
-            catch
-            {
-                // Never crash for diagnostic logging
-            }
         }
 
         private List<string> GetTargetSynonyms(long termId)
@@ -655,57 +608,80 @@ namespace Supervertaler.Trados.Core
 
         private static TermEntry ReadTermEntry(SqliteDataReader reader, bool hasNonTranslatableColumn = false)
         {
-            // Column positions: 0-13 base, 14 = is_nontranslatable (optional),
-            // next = term_uuid (optional). UUID column follows NT if both present.
-            int nextCol = 14;
-            bool isNt = false;
-            if (hasNonTranslatableColumn && reader.FieldCount > nextCol)
+            // Use column name lookup instead of hardcoded positions —
+            // resilient to schema changes and optional column ordering.
+            var entry = new TermEntry
             {
-                isNt = !reader.IsDBNull(nextCol) && GetBool(reader, nextCol);
-                nextCol++;
-            }
-
-            string uuid = null;
-            if (reader.FieldCount > nextCol && !reader.IsDBNull(nextCol))
-                uuid = reader.GetString(nextCol);
-            nextCol++;
-
-            // Abbreviation columns (optional, after UUID)
-            string sourceAbbr = null, targetAbbr = null;
-            if (reader.FieldCount > nextCol + 1)
-            {
-                sourceAbbr = reader.IsDBNull(nextCol) ? null : reader.GetString(nextCol);
-                targetAbbr = reader.IsDBNull(nextCol + 1) ? null : reader.GetString(nextCol + 1);
-                nextCol += 2;
-            }
-
-            // URL column (optional, after abbreviation)
-            string url = null;
-            if (reader.FieldCount > nextCol && !reader.IsDBNull(nextCol))
-                url = reader.GetString(nextCol);
-
-            return new TermEntry
-            {
-                Id = reader.GetInt64(0),
-                TermUuid = uuid,
-                SourceTerm = reader.IsDBNull(1) ? "" : reader.GetString(1),
-                TargetTerm = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                TermbaseId = reader.IsDBNull(3) ? 0 : Convert.ToInt64(reader.GetValue(3)),
-                SourceLang = reader.IsDBNull(4) ? "" : reader.GetString(4),
-                TargetLang = reader.IsDBNull(5) ? "" : reader.GetString(5),
-                Definition = reader.IsDBNull(6) ? "" : reader.GetString(6),
-                Domain = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                Notes = reader.IsDBNull(8) ? "" : reader.GetString(8),
-                Forbidden = !reader.IsDBNull(9) && GetBool(reader, 9),
-                CaseSensitive = !reader.IsDBNull(10) && GetBool(reader, 10),
-                TermbaseName = reader.IsDBNull(11) ? "" : reader.GetString(11),
-                IsProjectTermbase = !reader.IsDBNull(12) && GetBool(reader, 12),
-                Ranking = reader.IsDBNull(13) ? 99 : reader.GetInt32(13),
-                IsNonTranslatable = isNt,
-                SourceAbbreviation = sourceAbbr,
-                TargetAbbreviation = targetAbbr,
-                Url = url
+                Id = reader.GetInt64(reader.GetOrdinal("id")),
+                SourceTerm = GetStringByName(reader, "source_term"),
+                TargetTerm = GetStringByName(reader, "target_term"),
+                TermbaseId = Convert.ToInt64(reader.GetValue(reader.GetOrdinal("termbase_id"))),
+                SourceLang = GetStringByName(reader, "source_lang"),
+                TargetLang = GetStringByName(reader, "target_lang"),
+                Definition = GetStringByName(reader, "definition"),
+                Domain = GetStringByName(reader, "domain"),
+                Notes = GetStringByName(reader, "notes"),
+                Forbidden = GetBoolByName(reader, "forbidden"),
+                CaseSensitive = GetBoolByName(reader, "case_sensitive"),
+                TermbaseName = GetStringByName(reader, "termbase_name"),
+                IsProjectTermbase = GetBoolByName(reader, "is_project_termbase"),
+                Ranking = GetIntByName(reader, "ranking", 99),
             };
+
+            // Optional columns — use TryGetOrdinal to avoid exceptions
+            int ord;
+            if (hasNonTranslatableColumn && TryGetOrdinal(reader, "is_nontranslatable", out ord))
+                entry.IsNonTranslatable = !reader.IsDBNull(ord) && GetBool(reader, ord);
+
+            if (TryGetOrdinal(reader, "term_uuid", out ord) && !reader.IsDBNull(ord))
+                entry.TermUuid = reader.GetString(ord);
+
+            if (TryGetOrdinal(reader, "source_abbreviation", out ord) && !reader.IsDBNull(ord))
+                entry.SourceAbbreviation = reader.GetString(ord);
+
+            if (TryGetOrdinal(reader, "target_abbreviation", out ord) && !reader.IsDBNull(ord))
+                entry.TargetAbbreviation = reader.GetString(ord);
+
+            if (TryGetOrdinal(reader, "url", out ord) && !reader.IsDBNull(ord))
+                entry.Url = reader.GetString(ord);
+
+            return entry;
+        }
+
+        /// <summary>
+        /// Tries to find a column ordinal by name without throwing.
+        /// Returns false if the column does not exist in the result set.
+        /// </summary>
+        private static bool TryGetOrdinal(SqliteDataReader reader, string columnName, out int ordinal)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (string.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase))
+                {
+                    ordinal = i;
+                    return true;
+                }
+            }
+            ordinal = -1;
+            return false;
+        }
+
+        private static string GetStringByName(SqliteDataReader reader, string columnName)
+        {
+            var ord = reader.GetOrdinal(columnName);
+            return reader.IsDBNull(ord) ? "" : reader.GetString(ord);
+        }
+
+        private static bool GetBoolByName(SqliteDataReader reader, string columnName)
+        {
+            var ord = reader.GetOrdinal(columnName);
+            return !reader.IsDBNull(ord) && GetBool(reader, ord);
+        }
+
+        private static int GetIntByName(SqliteDataReader reader, string columnName, int defaultValue)
+        {
+            var ord = reader.GetOrdinal(columnName);
+            return reader.IsDBNull(ord) ? defaultValue : reader.GetInt32(ord);
         }
 
         /// <summary>

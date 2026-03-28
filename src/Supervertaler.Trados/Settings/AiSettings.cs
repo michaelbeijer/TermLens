@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using Supervertaler.Trados.Core;
 
 namespace Supervertaler.Trados.Settings
 {
@@ -14,22 +15,22 @@ namespace Supervertaler.Trados.Settings
         public string SelectedProvider { get; set; } = "openai";
 
         [DataMember(Name = "openaiModel")]
-        public string OpenAiModel { get; set; } = "gpt-5.4-mini";
+        public string OpenAiModel { get; set; } = LlmModels.OpenAiModels[1].Id;  // GPT-5.4 Mini (recommended)
 
         [DataMember(Name = "claudeModel")]
-        public string ClaudeModel { get; set; } = "claude-sonnet-4-6";
+        public string ClaudeModel { get; set; } = LlmModels.ClaudeModels[0].Id;
 
         [DataMember(Name = "geminiModel")]
-        public string GeminiModel { get; set; } = "gemini-2.5-flash";
+        public string GeminiModel { get; set; } = LlmModels.GeminiModels[0].Id;
 
         [DataMember(Name = "grokModel")]
-        public string GrokModel { get; set; } = "grok-4.20-0309-non-reasoning";
+        public string GrokModel { get; set; } = LlmModels.GrokModels[0].Id;
 
         [DataMember(Name = "mistralModel")]
-        public string MistralModel { get; set; } = "mistral-large-latest";
+        public string MistralModel { get; set; } = LlmModels.MistralModels[0].Id;
 
         [DataMember(Name = "ollamaModel")]
-        public string OllamaModel { get; set; } = "translategemma:12b";
+        public string OllamaModel { get; set; } = LlmModels.OllamaModels[0].Id;
 
         [DataMember(Name = "ollamaEndpoint")]
         public string OllamaEndpoint { get; set; } = "http://localhost:11434";

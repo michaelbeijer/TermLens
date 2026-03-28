@@ -515,7 +515,7 @@ namespace Supervertaler.Trados.Core
             CancellationToken ct)
         {
             var tokens = maxTokens ?? _maxTokens;
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
 
             var sb = new StringBuilder();
             sb.Append("{\"contents\":[{\"parts\":[{\"text\":").Append(JsonString(prompt)).Append("}]}]");
@@ -531,6 +531,7 @@ namespace Supervertaler.Trados.Core
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
             {
+                request.Headers.Add("x-goog-api-key", _apiKey);
                 request.Content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json");
 
                 using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
@@ -785,7 +786,7 @@ namespace Supervertaler.Trados.Core
             CancellationToken ct)
         {
             var tokens = maxTokens ?? _maxTokens;
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
 
             var sb = new StringBuilder();
             // Gemini uses "contents" array with "user" / "model" roles
@@ -822,6 +823,7 @@ namespace Supervertaler.Trados.Core
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
             {
+                request.Headers.Add("x-goog-api-key", _apiKey);
                 request.Content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json");
 
                 using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
@@ -930,9 +932,9 @@ namespace Supervertaler.Trados.Core
 
         private static string ExtractGeminiContent(string json)
         {
-            // Extract candidates[0].content.parts[0].text
+            // Extract candidates[0].content.parts[0].text — anchored to Gemini response structure
             var textMatch = Regex.Match(json,
-                @"""text""\s*:\s*""((?:[^""\\]|\\.)*)""",
+                @"""candidates""\s*:\s*\[\s*\{[^}]*""content""\s*:\s*\{[^}]*""parts""\s*:\s*\[\s*\{[^}]*""text""\s*:\s*""((?:[^""\\]|\\.)*)""",
                 RegexOptions.Singleline);
             if (textMatch.Success)
                 return UnescapeJson(textMatch.Groups[1].Value);
@@ -1080,6 +1082,17 @@ namespace Supervertaler.Trados.Core
         private static string UnescapeJson(string escaped)
         {
             if (escaped == null) return null;
+
+            // Handle \uXXXX sequences first, before simple replacements
+            if (escaped.Contains("\\u"))
+            {
+                escaped = Regex.Replace(escaped, @"\\u([0-9A-Fa-f]{4})", m =>
+                {
+                    var code = Convert.ToInt32(m.Groups[1].Value, 16);
+                    return ((char)code).ToString();
+                });
+            }
+
             return escaped
                 .Replace("\\n", "\n")
                 .Replace("\\r", "\r")

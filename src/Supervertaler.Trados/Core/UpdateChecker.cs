@@ -30,9 +30,10 @@ namespace Supervertaler.Trados.Core
         /// if an update is available, or null if the user is up to date (or if
         /// the check fails for any reason).
         /// </summary>
-        public static async Task<(string version, string url, string pluginUrl)?> CheckForUpdateAsync()
+        public static async Task<(string version, string url, string pluginUrl)?> CheckForUpdateAsync(
+            TermLensSettings settings = null)
         {
-            var settings = TermLensSettings.Load();
+            settings = settings ?? TermLensSettings.Load();
 
             // Get the latest release from GitHub (first item is newest)
             var json = await _http.GetStringAsync(ReleasesUrl + "?per_page=1");

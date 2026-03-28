@@ -94,7 +94,7 @@ namespace Supervertaler.Trados
             {
                 try
                 {
-                    var update = await UpdateChecker.CheckForUpdateAsync();
+                    var update = await UpdateChecker.CheckForUpdateAsync(_settings);
                     if (!update.HasValue) return;
 
                     // Wait for the control's window handle to be created.

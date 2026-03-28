@@ -46,13 +46,13 @@ namespace Supervertaler.Trados
             return $"Ctrl+Alt+{keyDigit}";
         }
 
-        public static void RunSlot(int slot)
+        public static void RunSlot(int slot, TermLensSettings settings = null)
         {
             // Refresh and get prompts in the same order as the Ctrl+Q menu
             _library.Refresh();
             var prompts = _library.GetQuickLauncherPrompts();
 
-            var settings = TermLensSettings.Load();
+            settings = settings ?? TermLensSettings.Load();
             var aiSettings = settings?.AiSettings;
 
             // Look up slot mapping in settings

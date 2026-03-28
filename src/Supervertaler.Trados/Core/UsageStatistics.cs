@@ -29,7 +29,7 @@ namespace Supervertaler.Trados.Core
     internal static class UsageStatistics
     {
         private static readonly HttpClient _http = new HttpClient();
-        private const string PingUrl = "https://supervertaler-stats.michaelbeijer-co-uk.workers.dev/ping";
+        private const string PingUrl = "https://supervertaler-stats.supervertaler.workers.dev/ping";
 
         static UsageStatistics()
         {
