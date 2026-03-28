@@ -101,11 +101,15 @@ When enabled, term definitions, domains, and usage notes from your termbases are
 
 ### Log prompts and responses to Reports tab
 
-When enabled, every AI API call is logged to the **Reports** tab in the Supervertaler Assistant panel. Each log entry shows:
+When enabled, AI operations are logged to the **Reports** tab in the Supervertaler Assistant panel. Each log entry shows:
 
 * The **feature and prompt name** (e.g. "QuickLauncher · Explain in Context")
 * The **model used**, estimated **token counts**, **cost**, and **duration**
 * Expandable sections for the **system prompt**, **messages**, and **response**
+
+{% hint style="info" %}
+**Batch Translate** operations appear as a single consolidated entry showing the combined token count, cost, and total duration for the entire operation — regardless of how many sub-batches were processed.
+{% endhint %}
 
 Click "Show system prompt...", "Show messages...", or "Show response..." to expand a section. Press **Escape** to collapse it. Use **Copy** to copy a single section, or **Copy all** to copy the full prompt details to your clipboard.
 
