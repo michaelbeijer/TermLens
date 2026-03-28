@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.18.19] — 2026-03-28
+
+### Fixed
+- **Line endings preserved in translation** – when the LLM emits a bare newline instead of a `<tN/>` tag placeholder, the correct line ending is now restored in the target segment: soft-return tags (DOCX `↵`) are re-inserted by cloning the source tag; for file formats where the newline is already embedded in text content (Visio, Excel, plain text), the newline is preserved as-is in the target IText node
+
+---
+
 ## [4.18.18] — 2026-03-28
 
 ### Changed

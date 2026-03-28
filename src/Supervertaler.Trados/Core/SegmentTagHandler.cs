@@ -81,6 +81,12 @@ namespace Supervertaler.Trados.Core
     /// </summary>
     public static class SegmentTagHandler
     {
+        /// <summary>
+        /// Optional diagnostic callback. When set, fires a string message when
+        /// line-break detection fails so the batch translate log can show it.
+        /// </summary>
+        public static Action<string> DiagnosticMessage { get; set; }
+
         // Regex for parsing tag placeholders in LLM output
         // Matches: <t1>, </t1>, <t2/>
         private static readonly Regex TagPlaceholderPattern =
@@ -204,17 +210,28 @@ namespace Supervertaler.Trados.Core
                 var props = placeholder.Properties;
                 if (props == null) return false;
 
-                // TextEquivalent is the most reliable indicator: soft returns have "\n" or "\r\n"
+                // TextEquivalent: soft returns typically have "\n" or "\r\n"
                 var te = props.TextEquivalent;
                 if (!string.IsNullOrEmpty(te) && (te.Contains("\n") || te.Contains("\r")))
                     return true;
 
-                // TagContent fallback: Word soft returns contain "w:br",
-                // HTML line breaks contain "<br"
+                // DisplayText: Trados displays soft returns as "↵" (U+21B5, downwards arrow with corner leftwards).
+                // This is the most reliable indicator in practice for SDLXLIFF/DOCX sources.
+                var dt = props.DisplayText;
+                if (!string.IsNullOrEmpty(dt) && dt.Contains("\u21b5"))
+                    return true;
+
+                // TagContent: raw markup from the source format.
+                // DOCX soft return: contains "w:br"
+                // HTML line break: contains "<br"
+                // SDLXLIFF ph inner content: may contain "↵" (U+21B5) or "ctype=\"lb\""
                 var tc = props.TagContent;
                 if (!string.IsNullOrEmpty(tc) &&
                     (tc.IndexOf("w:br", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                     tc.IndexOf("<br", StringComparison.OrdinalIgnoreCase) >= 0))
+                     tc.IndexOf("<br", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     tc.Contains("\u21b5") ||
+                     tc.IndexOf("ctype=\"lb\"", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     tc.IndexOf("ctype='lb'", StringComparison.OrdinalIgnoreCase) >= 0))
                     return true;
 
                 return false;
@@ -223,6 +240,38 @@ namespace Supervertaler.Trados.Core
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Returns a debug string describing a placeholder tag's key properties.
+        /// Used to diagnose IsLineBreakTag failures via the batch translate log.
+        /// </summary>
+        internal static string DescribePlaceholderTag(IPlaceholderTag placeholder)
+        {
+            try
+            {
+                var p = placeholder.Properties;
+                if (p == null) return "(null props)";
+                return $"TextEquivalent={Repr(p.TextEquivalent)} DisplayText={Repr(p.DisplayText)} TagContent={Repr(p.TagContent)}";
+            }
+            catch (Exception ex) { return $"(error: {ex.Message})"; }
+        }
+
+        private static string Repr(string s)
+        {
+            if (s == null) return "null";
+            if (s.Length == 0) return "\"\"";
+            // Show control chars and keep it short
+            var sb = new StringBuilder("\"");
+            foreach (var c in s.Length > 40 ? s.Substring(0, 40) + "…" : s)
+            {
+                if (c == '\n') sb.Append("\\n");
+                else if (c == '\r') sb.Append("\\r");
+                else if (c == '\t') sb.Append("\\t");
+                else sb.Append(c);
+            }
+            sb.Append('"');
+            return sb.ToString();
         }
 
         // ─── Reconstruction ──────────────────────────────────
@@ -505,6 +554,50 @@ namespace Supervertaler.Trados.Core
                     lineBreakInfo = kv.Value;
                     break;
                 }
+            }
+
+            if (lineBreakInfo == null)
+            {
+                // Check whether the source had any standalone tags at all.
+                bool hasAnyStandalone = false;
+                foreach (var kv in tagMap)
+                {
+                    if (kv.Value.TagType == TagType.Standalone)
+                    {
+                        hasAnyStandalone = true;
+                        break;
+                    }
+                }
+
+                if (!hasAnyStandalone)
+                {
+                    // No standalone tags exist in the source segment — the newline is
+                    // already embedded in IText content (e.g. Excel cell, plain text).
+                    // Preserve the original text with \n intact so the file type handler
+                    // can write it back correctly to the target format.
+                    var textClone = (IText)textTemplate.Clone();
+                    textClone.Properties.Text = text.Replace("\r\n", "\n").Replace("\r", "\n");
+                    container.Add(textClone);
+                    return;
+                }
+
+                // Standalone tags exist but none were identified as line breaks.
+                // Emit a diagnostic so we can tune detection, and drop the bare \n
+                // (better to lose the line break than write a \n into IText for a DOCX
+                // segment, which Trados would convert to a paragraph break).
+                var sb2 = new StringBuilder("[LineBreak diag] No IsLineBreak tag found. Standalone tags in map: ");
+                foreach (var kv in tagMap)
+                {
+                    if (kv.Value.TagType != TagType.Standalone) continue;
+                    var markup = kv.Value.OriginalMarkup;
+                    if (markup is IPlaceholderTag ph)
+                        sb2.Append($"t{kv.Key}=IPlaceholderTag({DescribePlaceholderTag(ph)}) ");
+                    else if (markup != null)
+                        sb2.Append($"t{kv.Key}={markup.GetType().Name}(no props) ");
+                    else
+                        sb2.Append($"t{kv.Key}=null ");
+                }
+                DiagnosticMessage?.Invoke(sb2.ToString());
             }
 
             // Normalise \r\n and bare \r to \n, then split

@@ -139,6 +139,10 @@ namespace Supervertaler.Trados
             // Wire prompt logging
             LlmClient.PromptCompleted += OnPromptCompleted;
 
+            // Wire tag-handler diagnostics to batch translate log
+            SegmentTagHandler.DiagnosticMessage = msg =>
+                SafeInvoke(() => _control.Value.BatchTranslateControl.AppendLog(msg, true));
+
             // Initial context update
             UpdateContextDisplay();
             UpdateProviderDisplay();
