@@ -13,11 +13,11 @@ namespace Supervertaler.Trados.Models
         public string Description { get; set; } = "";
 
         /// <summary>
-        /// Domain or category (from YAML 'category:' / 'domain:' field or folder name).
-        /// Common values: "Translate", "Proofread", "QuickLauncher".
-        /// Legacy value "quickmenu_prompts" is normalised to "QuickLauncher" on load.
+        /// Category (from YAML 'category:' field or folder name on disk).
+        /// Common values: "Translate", "Proofread", "QuickLauncher", "QuickLauncher/Default".
+        /// Legacy values "quickmenu_prompts" / "domain:" are normalised on load.
         /// </summary>
-        public string Domain { get; set; } = "";
+        public string Category { get; set; } = "";
 
         /// <summary>The actual prompt text (everything after the YAML frontmatter).</summary>
         public string Content { get; set; } = "";

@@ -932,8 +932,8 @@ namespace Supervertaler.Trados.Controls
 
             var source = prompt.IsReadOnly ? "Supervertaler" : (prompt.IsBuiltIn ? "Default" : "Custom");
             var parts = new List<string>();
-            if (!string.IsNullOrEmpty(prompt.Domain))
-                parts.Add(prompt.Domain);
+            if (!string.IsNullOrEmpty(prompt.Category))
+                parts.Add(prompt.Category);
             parts.Add(source);
             _lblPromptCategorySource.Text = string.Join(" \u2022 ", parts);
 
@@ -1032,7 +1032,7 @@ namespace Supervertaler.Trados.Controls
             {
                 Name = "System Prompt",
                 Description = "Base system instructions for AI translation",
-                Domain = "System",
+                Category = "System",
                 Content = content
             };
 
@@ -1085,13 +1085,13 @@ namespace Supervertaler.Trados.Controls
                 }
                 else if (_tvPrompts.SelectedNode.Tag is PromptTemplate pt)
                 {
-                    preFillDomain = pt.Domain;
+                    preFillDomain = pt.Category;
                 }
             }
 
             var newPrompt = new PromptTemplate();
             if (!string.IsNullOrEmpty(preFillDomain))
-                newPrompt.Domain = preFillDomain;
+                newPrompt.Category = preFillDomain;
 
             using (var dlg = new PromptEditorDialog(newPrompt))
             {

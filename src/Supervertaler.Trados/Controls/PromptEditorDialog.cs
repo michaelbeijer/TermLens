@@ -240,7 +240,7 @@ namespace Supervertaler.Trados.Controls
         {
             _txtName.Text = _prompt.Name ?? "";
             _txtDescription.Text = _prompt.Description ?? "";
-            _txtDomain.Text = _prompt.Domain ?? "";
+            _txtDomain.Text = _prompt.Category ?? "";
             _txtContent.Text = _prompt.Content ?? "";
 
             // Map App value to ComboBox selection
@@ -313,7 +313,7 @@ namespace Supervertaler.Trados.Controls
 
             _prompt.Name = name;
             _prompt.Description = _txtDescription.Text.Trim();
-            _prompt.Domain = _txtDomain.Text.Trim();
+            _prompt.Category = _txtDomain.Text.Trim();
             _prompt.Content = _txtContent.Text;
 
             // Map ComboBox selection back to App value

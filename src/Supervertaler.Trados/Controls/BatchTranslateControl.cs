@@ -473,7 +473,7 @@ namespace Supervertaler.Trados.Controls
                 {
                     // Filter by category if specified
                     if (!string.IsNullOrEmpty(categoryFilter) &&
-                        !string.Equals(p.Domain, categoryFilter, StringComparison.OrdinalIgnoreCase))
+                        !string.Equals(p.Category, categoryFilter, StringComparison.OrdinalIgnoreCase))
                         continue;
 
                     _promptList.Add(p);

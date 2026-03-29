@@ -250,7 +250,7 @@ namespace Supervertaler.Trados.Controls
             AddLink("Documentation", null, leftPad, ref y, () => HelpSystem.OpenDocsHome(),
                 tooltip: "Open the plugin documentation");
             AddLink("Support & Community", "https://supervertaler.com/trados/#support", leftPad, ref y,
-                tooltip: "Groups.io mailing list, ProZ forum, and GitHub Issues");
+                tooltip: "Supervertaler forum and GitHub Issues");
             AddLink("Privacy Policy", "https://supervertaler.com/privacy/", leftPad, ref y,
                 tooltip: "How Supervertaler handles your data");
 

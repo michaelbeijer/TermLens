@@ -6,16 +6,14 @@ There are several ways to get help with Supervertaler for Trados.
 
 ---
 
-## Supervertaler Forum
+## TranslationTech Forum
 
-The [Supervertaler Forum](https://github.com/orgs/Supervertaler/discussions) is the main community hub for both Supervertaler Workbench and Supervertaler for Trados. Use it to:
+The [Supervertaler category on TranslationTech](https://translationtech.io/c/cat-ai-tools/supervertaler/6) is the main community hub for both Supervertaler Workbench and Supervertaler for Trados. Use it to:
 
 - Ask questions and get help from other users
 - Share tips, workflows, and best practices
 - Suggest features and improvements
 - Discuss anything related to Supervertaler
-
-You'll need a free [GitHub account](https://github.com/signup) to post.
 
 ---
 
@@ -27,18 +25,6 @@ Use [GitHub Issues](https://github.com/Supervertaler/Supervertaler-for-Trados/is
 - The Supervertaler plugin version
 - Steps to reproduce the problem
 - Any error messages or screenshots
-
----
-
-## Mailing List
-
-The [Supervertaler mailing list](https://groups.io/g/Supervertaler) on Groups.io is an email-based discussion list for Supervertaler users.
-
----
-
-## ProZ Forum
-
-There is also a [Supervertaler forum on ProZ.com](https://www.proz.com/forum/supervertaler-2293.html) where translators discuss the tool.
 
 ---
 

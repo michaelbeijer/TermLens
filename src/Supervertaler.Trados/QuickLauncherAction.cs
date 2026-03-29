@@ -135,129 +135,176 @@ namespace Supervertaler.Trados
             var hasCustomSlots = settings?.AiSettings?.QuickLauncherSlots != null
                                  && settings.AiSettings.QuickLauncherSlots.Count > 0;
 
-            // Separate prompts into default (built-in) and custom groups
-            var defaultPrompts = new List<PromptTemplate>();
-            var customPrompts = new List<PromptTemplate>();
-            foreach (var p in prompts)
+            // Build a position map for keyboard shortcut numbering (flat order).
+            // This keeps Ctrl+Alt+1..0 consistent with QuickLauncherSlotRunner.
+            var slotPositions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < prompts.Count; i++)
             {
-                if (p.IsBuiltIn)
-                    defaultPrompts.Add(p);
-                else
-                    customPrompts.Add(p);
+                if (!string.IsNullOrEmpty(prompts[i].FilePath))
+                    slotPositions[prompts[i].FilePath] = i + 1; // 1-based
             }
 
-            // Build the combined list: default first, then custom
-            var orderedPrompts = new List<PromptTemplate>();
-            orderedPrompts.AddRange(defaultPrompts);
-            orderedPrompts.AddRange(customPrompts);
+            // Build folder tree and populate the menu recursively
+            var folderTree = _library.GetQuickLauncherFolderStructure();
 
-            // Add section headers
-            if (defaultPrompts.Count > 0)
+            // Add subfolders first (Default pinned first by GetQuickLauncherFolderStructure)
+            foreach (var child in folderTree.Children)
             {
-                var defaultHeader = new ToolStripMenuItem("Default");
-                defaultHeader.Enabled = false;
-                defaultHeader.Font = new System.Drawing.Font(defaultHeader.Font, System.Drawing.FontStyle.Italic);
-                menu.Items.Add(defaultHeader);
+                var subMenu = new ToolStripMenuItem(child.Name);
+                PopulateFolderMenu(subMenu.DropDownItems, child, slotPositions,
+                    hasCustomSlots, settings, doc, sourceText, targetText, selection,
+                    sourceLang, targetLang, projectName, documentName, surroundingCount);
+
+                // Only add non-empty submenus
+                if (subMenu.DropDownItems.Count > 0)
+                    menu.Items.Add(subMenu);
             }
 
-            int customHeaderInserted = -1; // track where to insert custom header
-
-            for (int idx = 0; idx < orderedPrompts.Count; idx++)
+            // Add top-level prompts (not in any subfolder)
+            if (folderTree.Prompts.Count > 0)
             {
-                // Insert "Custom" section header before the first custom prompt
-                if (customPrompts.Count > 0 && idx == defaultPrompts.Count && customHeaderInserted < 0)
+                if (folderTree.Children.Count > 0)
+                    menu.Items.Add(new ToolStripSeparator());
+
+                foreach (var p in folderTree.Prompts)
                 {
-                    customHeaderInserted = idx;
-                    if (defaultPrompts.Count > 0)
-                        menu.Items.Add(new ToolStripSeparator());
-                    var customHeader = new ToolStripMenuItem("Custom");
-                    customHeader.Enabled = false;
-                    customHeader.Font = new System.Drawing.Font(customHeader.Font, System.Drawing.FontStyle.Italic);
-                    menu.Items.Add(customHeader);
+                    slotPositions.TryGetValue(p.FilePath ?? "", out var slotNum);
+                    menu.Items.Add(CreatePromptMenuItem(p, slotNum, hasCustomSlots, settings,
+                        doc, sourceText, targetText, selection,
+                        sourceLang, targetLang, projectName, documentName, surroundingCount));
                 }
+            }
 
-                var capturedPrompt = orderedPrompts[idx];
-                var capturedSourceText = sourceText;
-                var capturedTargetText = targetText;
-                var capturedSelection = selection;
-                var capturedSourceLang = sourceLang;
-                var capturedTargetLang = targetLang;
-                var capturedProjectName = projectName;
-                var capturedDocumentName = documentName;
-                var capturedDoc = doc;
-                var capturedSurroundingCount = surroundingCount;
+            menu.Show(Cursor.Position);
+        }
 
-                var slotNum = idx + 1;
-                var label = capturedPrompt.MenuLabel;
-                var item = new ToolStripMenuItem(label);
+        /// <summary>
+        /// Recursively populates a menu/submenu from a PromptFolderNode.
+        /// </summary>
+        private void PopulateFolderMenu(
+            ToolStripItemCollection parent,
+            PromptFolderNode folder,
+            Dictionary<string, int> slotPositions,
+            bool hasCustomSlots,
+            TermLensSettings settings,
+            Sdl.TranslationStudioAutomation.IntegrationApi.IStudioDocument doc,
+            string sourceText, string targetText, string selection,
+            string sourceLang, string targetLang,
+            string projectName, string documentName, int surroundingCount)
+        {
+            // Add child subfolders first
+            foreach (var child in folder.Children)
+            {
+                var subMenu = new ToolStripMenuItem(child.Name);
+                PopulateFolderMenu(subMenu.DropDownItems, child, slotPositions,
+                    hasCustomSlots, settings, doc, sourceText, targetText, selection,
+                    sourceLang, targetLang, projectName, documentName, surroundingCount);
 
-                if (hasCustomSlots)
+                if (subMenu.DropDownItems.Count > 0)
+                    parent.Add(subMenu);
+            }
+
+            // Separator between subfolders and prompts
+            if (folder.Children.Count > 0 && folder.Prompts.Count > 0)
+                parent.Add(new ToolStripSeparator());
+
+            // Add prompts in this folder
+            foreach (var p in folder.Prompts)
+            {
+                slotPositions.TryGetValue(p.FilePath ?? "", out var slotNum);
+                parent.Add(CreatePromptMenuItem(p, slotNum, hasCustomSlots, settings,
+                    doc, sourceText, targetText, selection,
+                    sourceLang, targetLang, projectName, documentName, surroundingCount));
+            }
+        }
+
+        /// <summary>
+        /// Creates a single ToolStripMenuItem for a QuickLauncher prompt,
+        /// including shortcut display and click handler.
+        /// </summary>
+        private ToolStripMenuItem CreatePromptMenuItem(
+            PromptTemplate prompt, int slotNum,
+            bool hasCustomSlots, TermLensSettings settings,
+            Sdl.TranslationStudioAutomation.IntegrationApi.IStudioDocument doc,
+            string sourceText, string targetText, string selection,
+            string sourceLang, string targetLang,
+            string projectName, string documentName, int surroundingCount)
+        {
+            var item = new ToolStripMenuItem(prompt.MenuLabel);
+
+            if (hasCustomSlots)
+            {
+                var shortcutDisplay = QuickLauncherSlotRunner.GetShortcutDisplay(
+                    prompt.FilePath, settings?.AiSettings);
+                if (shortcutDisplay != null)
+                    item.ShortcutKeyDisplayString = shortcutDisplay;
+            }
+            else if (slotNum >= 1 && slotNum <= 10)
+            {
+                var keyDigit = slotNum == 10 ? "0" : slotNum.ToString();
+                item.ShortcutKeyDisplayString = $"Ctrl+Alt+{keyDigit}";
+            }
+
+            if (!string.IsNullOrEmpty(prompt.Description))
+                item.ToolTipText = prompt.Description;
+
+            // Capture for closure
+            var capturedPrompt = prompt;
+            var capturedDoc = doc;
+            var capturedSourceText = sourceText;
+            var capturedTargetText = targetText;
+            var capturedSelection = selection;
+            var capturedSourceLang = sourceLang;
+            var capturedTargetLang = targetLang;
+            var capturedProjectName = projectName;
+            var capturedDocumentName = documentName;
+            var capturedSurroundingCount = surroundingCount;
+
+            item.Click += (s, e) =>
+            {
+                var content = capturedPrompt.Content;
+
+                // Lazily gather expensive context only if the prompt actually uses it
+                var surroundingSegments = content.Contains("{{SURROUNDING_SEGMENTS}}")
+                    ? DocumentContextHelper.FormatSurroundingSegments(capturedDoc, capturedSurroundingCount)
+                    : null;
+
+                var projectText = content.Contains("{{PROJECT}}")
+                    ? DocumentContextHelper.FormatProjectText(capturedDoc)
+                    : null;
+
+                var tmMatchesText = content.Contains("{{TM_MATCHES}}")
+                    ? PromptLibrary.FormatTmMatches(
+                        DocumentContextHelper.GetTmMatches(capturedDoc), 70)
+                    : null;
+
+                var expanded = PromptLibrary.ApplyVariables(
+                    content,
+                    capturedSourceLang, capturedTargetLang,
+                    capturedSourceText, capturedTargetText, capturedSelection,
+                    capturedProjectName, capturedDocumentName,
+                    surroundingSegments, projectText, tmMatchesText);
+
+                string displayExpanded = null;
+                if (projectText != null)
                 {
-                    // Show only custom slot assignments (no position-based fallback)
-                    var shortcutDisplay = QuickLauncherSlotRunner.GetShortcutDisplay(
-                        capturedPrompt.FilePath, settings?.AiSettings);
-                    if (shortcutDisplay != null)
-                        item.ShortcutKeyDisplayString = shortcutDisplay;
-                }
-                else if (slotNum <= 10)
-                {
-                    // No custom slots configured — auto-assign by position
-                    var keyDigit = slotNum == 10 ? "0" : slotNum.ToString();
-                    item.ShortcutKeyDisplayString = $"Ctrl+Alt+{keyDigit}";
-                }
-                if (!string.IsNullOrEmpty(capturedPrompt.Description))
-                    item.ToolTipText = capturedPrompt.Description;
+                    var segCount = 0;
+                    foreach (var line in projectText.Split('\n'))
+                        if (line.TrimStart().StartsWith("[")) segCount++;
 
-                item.Click += (s, e) =>
-                {
-                    var content = capturedPrompt.Content;
-
-                    // Lazily gather expensive context only if the prompt actually uses it
-                    var surroundingSegments = content.Contains("{{SURROUNDING_SEGMENTS}}")
-                        ? DocumentContextHelper.FormatSurroundingSegments(capturedDoc, capturedSurroundingCount)
-                        : null;
-
-                    var projectText = content.Contains("{{PROJECT}}")
-                        ? DocumentContextHelper.FormatProjectText(capturedDoc)
-                        : null;
-
-                    var tmMatchesText = content.Contains("{{TM_MATCHES}}")
-                        ? PromptLibrary.FormatTmMatches(
-                            DocumentContextHelper.GetTmMatches(capturedDoc), 70)
-                        : null;
-
-                    var expanded = PromptLibrary.ApplyVariables(
+                    var placeholder = $"[source document \u2014 {segCount} segment{(segCount == 1 ? "" : "s")}]";
+                    displayExpanded = PromptLibrary.ApplyVariables(
                         content,
                         capturedSourceLang, capturedTargetLang,
                         capturedSourceText, capturedTargetText, capturedSelection,
                         capturedProjectName, capturedDocumentName,
-                        surroundingSegments, projectText, tmMatchesText);
+                        surroundingSegments, placeholder, tmMatchesText);
+                }
 
-                    // Build a compact display version for the chat bubble when {{PROJECT}} is used.
-                    // The full expanded text is still sent to the AI — only the bubble is shortened.
-                    string displayExpanded = null;
-                    if (projectText != null)
-                    {
-                        var segCount = 0;
-                        foreach (var line in projectText.Split('\n'))
-                            if (line.TrimStart().StartsWith("[")) segCount++;
+                AiAssistantViewPart.RunQuickLauncherPrompt(expanded, displayExpanded, capturedPrompt.Name);
+            };
 
-                        var placeholder = $"[source document \u2014 {segCount} segment{(segCount == 1 ? "" : "s")}]";
-                        displayExpanded = PromptLibrary.ApplyVariables(
-                            content,
-                            capturedSourceLang, capturedTargetLang,
-                            capturedSourceText, capturedTargetText, capturedSelection,
-                            capturedProjectName, capturedDocumentName,
-                            surroundingSegments, placeholder, tmMatchesText);
-                    }
-
-                    AiAssistantViewPart.RunQuickLauncherPrompt(expanded, displayExpanded, capturedPrompt.Name);
-                };
-
-                menu.Items.Add(item);
-            }
-
-            menu.Show(Cursor.Position);
+            return item;
         }
     }
 }

@@ -53,18 +53,18 @@ namespace Supervertaler.Trados.Core
             // matches the built-in domain exactly) to avoid marking user clones.
             var builtInLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var b in GetBuiltInPromptDefinitions())
-                builtInLookup[b.Name] = b.Domain ?? "";
+                builtInLookup[b.Name] = b.Category ?? "";
             foreach (var p in _cache)
             {
-                string builtInDomain;
-                if (builtInLookup.TryGetValue(p.Name, out builtInDomain))
+                string builtInCategory;
+                if (builtInLookup.TryGetValue(p.Name, out builtInCategory))
                 {
                     // Match if the prompt is in the expected Default domain,
                     // or if its file is inside a "Default" or legacy "Built-in" folder
-                    var pDomain = p.Domain ?? "";
-                    if (pDomain.Equals(builtInDomain, StringComparison.OrdinalIgnoreCase) ||
-                        pDomain.IndexOf("Default", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        pDomain.IndexOf("Built-in", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    var pCategory = p.Category ?? "";
+                    if (pCategory.Equals(builtInCategory, StringComparison.OrdinalIgnoreCase) ||
+                        pCategory.IndexOf("Default", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        pCategory.IndexOf("Built-in", StringComparison.OrdinalIgnoreCase) >= 0 ||
                         (p.FilePath ?? "").IndexOf(Path.DirectorySeparatorChar + "Default" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) >= 0 ||
                         (p.FilePath ?? "").IndexOf(Path.DirectorySeparatorChar + "Built-in" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
@@ -199,6 +199,109 @@ namespace Supervertaler.Trados.Core
         }
 
         /// <summary>
+        /// Returns QuickLauncher prompts organised into a folder tree for submenu rendering.
+        /// Uses the actual file path on disk (RelativePath) to determine folder placement,
+        /// so moving a file to a new folder takes effect immediately without editing YAML.
+        /// Top-level prompts (directly in QuickLauncher/) go in root.Prompts;
+        /// subfolder prompts go into child PromptFolderNodes.
+        /// "Default" is pinned first among children. Empty folders are pruned.
+        /// </summary>
+        public PromptFolderNode GetQuickLauncherFolderStructure()
+        {
+            var prompts = GetQuickLauncherPrompts();
+
+            var root = new PromptFolderNode { Name = "", RelativePath = "" };
+            var folderMap = new Dictionary<string, PromptFolderNode>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var p in prompts)
+            {
+                // Use the actual file path to determine subfolder placement.
+                // RelativePath examples:
+                //   "QuickLauncher/Make it sound better.md" → root (file directly in QuickLauncher/)
+                //   "QuickLauncher/Default/Define.md"       → "Default" subfolder
+                //   "QuickLauncher/Research/Deep/foo.md"     → "Research/Deep" subfolder
+                var relPath = (p.RelativePath ?? "").Replace('\\', '/');
+                var sub = "";
+
+                // Strip "QuickLauncher/" prefix from the directory portion
+                var relDir = "";
+                var lastSlash = relPath.LastIndexOf('/');
+                if (lastSlash >= 0)
+                    relDir = relPath.Substring(0, lastSlash);
+
+                var qlPrefix = "QuickLauncher/";
+                if (relDir.StartsWith(qlPrefix, StringComparison.OrdinalIgnoreCase))
+                    sub = relDir.Substring(qlPrefix.Length);
+                else if (relDir.Equals("QuickLauncher", StringComparison.OrdinalIgnoreCase))
+                    sub = "";
+
+                if (string.IsNullOrEmpty(sub))
+                {
+                    root.Prompts.Add(p);
+                }
+                else
+                {
+                    if (!folderMap.TryGetValue(sub, out var folder))
+                    {
+                        folder = new PromptFolderNode
+                        {
+                            Name = sub.Contains("/") ? sub.Substring(sub.LastIndexOf('/') + 1) : sub,
+                            RelativePath = sub
+                        };
+                        folderMap[sub] = folder;
+
+                        // Build parent chain for nested folders (e.g. "Research/Deep")
+                        var parts = sub.Split('/');
+                        if (parts.Length > 1)
+                        {
+                            var parentPath = string.Join("/", parts, 0, parts.Length - 1);
+                            if (!folderMap.TryGetValue(parentPath, out var parent))
+                            {
+                                parent = new PromptFolderNode
+                                {
+                                    Name = parts[parts.Length - 2],
+                                    RelativePath = parentPath
+                                };
+                                folderMap[parentPath] = parent;
+                                root.Children.Add(parent);
+                            }
+                            parent.Children.Add(folder);
+                        }
+                        else
+                        {
+                            root.Children.Add(folder);
+                        }
+                    }
+                    folder.Prompts.Add(p);
+                }
+            }
+
+            // Sort children: pin "Default" first, then alphabetical
+            root.Children.Sort((a, b) =>
+            {
+                bool aDefault = a.Name.Equals("Default", StringComparison.OrdinalIgnoreCase);
+                bool bDefault = b.Name.Equals("Default", StringComparison.OrdinalIgnoreCase);
+                if (aDefault && !bDefault) return -1;
+                if (!aDefault && bDefault) return 1;
+                return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            });
+
+            // Recursively sort nested children
+            foreach (var child in root.Children)
+                SortFolderChildren(child);
+
+            return root;
+        }
+
+        private static void SortFolderChildren(PromptFolderNode node)
+        {
+            node.Children.Sort((a, b) =>
+                string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+            foreach (var child in node.Children)
+                SortFolderChildren(child);
+        }
+
+        /// <summary>
         /// Saves a prompt template to disk as a Markdown file with YAML frontmatter.
         /// Creates directories as needed.
         /// </summary>
@@ -236,16 +339,16 @@ namespace Supervertaler.Trados.Core
             else
             {
                 // New prompt: build path from domain + name
-                // Domain may contain forward slashes for nested folders (e.g. "QuickLauncher/Trados-specific")
+                // Category may contain forward slashes for nested folders (e.g. "QuickLauncher/Trados-specific")
                 // — sanitise each path segment individually to preserve the directory structure
                 string folder;
-                if (string.IsNullOrEmpty(prompt.Domain))
+                if (string.IsNullOrEmpty(prompt.Category))
                 {
                     folder = PromptsDir;
                 }
                 else
                 {
-                    var parts = prompt.Domain.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                    var parts = prompt.Category.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
                     folder = PromptsDir;
                     foreach (var part in parts)
                         folder = Path.Combine(folder, SanitizeFileName(part));
@@ -260,8 +363,8 @@ namespace Supervertaler.Trados.Core
             sb.AppendLine("name: \"" + EscapeYamlString(prompt.Name) + "\"");
             if (!string.IsNullOrEmpty(prompt.Description))
                 sb.AppendLine("description: \"" + EscapeYamlString(prompt.Description) + "\"");
-            if (!string.IsNullOrEmpty(prompt.Domain))
-                sb.AppendLine("category: \"" + EscapeYamlString(prompt.Domain) + "\"");
+            if (!string.IsNullOrEmpty(prompt.Category))
+                sb.AppendLine("category: \"" + EscapeYamlString(prompt.Category) + "\"");
             if (!string.IsNullOrEmpty(prompt.App) &&
                 !prompt.App.Equals("both", StringComparison.OrdinalIgnoreCase))
                 sb.AppendLine("app: \"" + EscapeYamlString(prompt.App) + "\"");
@@ -334,10 +437,10 @@ namespace Supervertaler.Trados.Core
 
             foreach (var builtin in GetBuiltInPromptDefinitions())
             {
-                // builtin.Domain is now e.g. "QuickLauncher/Default"
-                var folder = string.IsNullOrEmpty(builtin.Domain)
+                // builtin.Category is now e.g. "QuickLauncher/Default"
+                var folder = string.IsNullOrEmpty(builtin.Category)
                     ? PromptsDir
-                    : Path.Combine(PromptsDir, builtin.Domain.Replace('/', Path.DirectorySeparatorChar));
+                    : Path.Combine(PromptsDir, builtin.Category.Replace('/', Path.DirectorySeparatorChar));
                 Directory.CreateDirectory(folder);
 
                 var sanitisedName = SanitizeFileName(builtin.Name);
@@ -345,7 +448,7 @@ namespace Supervertaler.Trados.Core
                 // ─── Migration: move files from old locations to Default subfolder ───
                 // Handles both the original flat layout (e.g. "QuickLauncher/Define.md")
                 // and the intermediate "Built-in" subfolder (e.g. "QuickLauncher/Built-in/Define.md").
-                var domainParts = builtin.Domain.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                var domainParts = builtin.Category.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
                 if (domainParts.Length >= 2 && domainParts[domainParts.Length - 1].Equals("Default", StringComparison.OrdinalIgnoreCase))
                 {
                     var newMdPath = Path.Combine(folder, sanitisedName + ".md");
@@ -404,8 +507,8 @@ namespace Supervertaler.Trados.Core
                     sb.AppendLine("name: \"" + EscapeYamlString(builtin.Name) + "\"");
                     if (!string.IsNullOrEmpty(builtin.Description))
                         sb.AppendLine("description: \"" + EscapeYamlString(builtin.Description) + "\"");
-                    if (!string.IsNullOrEmpty(builtin.Domain))
-                        sb.AppendLine("category: \"" + EscapeYamlString(builtin.Domain) + "\"");
+                    if (!string.IsNullOrEmpty(builtin.Category))
+                        sb.AppendLine("category: \"" + EscapeYamlString(builtin.Category) + "\"");
                     sb.AppendLine("built_in: true");
                     sb.AppendLine("---");
                     sb.AppendLine();
@@ -439,22 +542,44 @@ namespace Supervertaler.Trados.Core
             };
 
             var translateDir = Path.Combine(PromptsDir, "Translate");
-            if (!Directory.Exists(translateDir)) return;
-
-            foreach (var name in retiredNames)
+            if (Directory.Exists(translateDir))
             {
-                var filePath = Path.Combine(translateDir, SanitizeFileName(name) + ".svprompt");
-                if (File.Exists(filePath))
+                foreach (var name in retiredNames)
+                {
+                    var filePath = Path.Combine(translateDir, SanitizeFileName(name) + ".svprompt");
+                    if (File.Exists(filePath))
+                    {
+                        try
+                        {
+                            var content = File.ReadAllText(filePath);
+                            if (content.Contains("built_in: true"))
+                                File.Delete(filePath);
+                        }
+                        catch { /* ignore */ }
+                    }
+                }
+            }
+
+            // Old explain prompts replaced in v4.18.22 by the "Explain selection (...)" variants
+            // in the QuickLauncher/Default/Explain subfolder.
+            var retiredExplainPaths = new[]
+            {
+                Path.Combine(PromptsDir, "QuickLauncher", "Default", "Explain (in general).md"),
+                Path.Combine(PromptsDir, "QuickLauncher", "Default", "Explain (within project context).md"),
+                Path.Combine(PromptsDir, "QuickLauncher", "Default", "Explain", "Explain (in general).md"),
+                Path.Combine(PromptsDir, "QuickLauncher", "Default", "Explain", "Explain (within project context).md"),
+            };
+            foreach (var path in retiredExplainPaths)
+            {
+                if (File.Exists(path))
                 {
                     try
                     {
-                        var content = File.ReadAllText(filePath);
+                        var content = File.ReadAllText(path);
                         if (content.Contains("built_in: true"))
-                        {
-                            File.Delete(filePath);
-                        }
+                            File.Delete(path);
                     }
-                    catch { /* ignore — file locked or permissions */ }
+                    catch { /* ignore */ }
                 }
             }
         }
@@ -492,9 +617,9 @@ namespace Supervertaler.Trados.Core
         {
             foreach (var builtin in GetBuiltInPromptDefinitions())
             {
-                var folder = string.IsNullOrEmpty(builtin.Domain)
+                var folder = string.IsNullOrEmpty(builtin.Category)
                     ? PromptsDir
-                    : Path.Combine(PromptsDir, builtin.Domain.Replace('/', Path.DirectorySeparatorChar));
+                    : Path.Combine(PromptsDir, builtin.Category.Replace('/', Path.DirectorySeparatorChar));
                 Directory.CreateDirectory(folder);
 
                 var sanitisedName = SanitizeFileName(builtin.Name);
@@ -514,8 +639,8 @@ namespace Supervertaler.Trados.Core
                 sb.AppendLine("name: \"" + EscapeYamlString(builtin.Name) + "\"");
                 if (!string.IsNullOrEmpty(builtin.Description))
                     sb.AppendLine("description: \"" + EscapeYamlString(builtin.Description) + "\"");
-                if (!string.IsNullOrEmpty(builtin.Domain))
-                    sb.AppendLine("category: \"" + EscapeYamlString(builtin.Domain) + "\"");
+                if (!string.IsNullOrEmpty(builtin.Category))
+                    sb.AppendLine("category: \"" + EscapeYamlString(builtin.Category) + "\"");
                 sb.AppendLine("built_in: true");
                 sb.AppendLine("---");
                 sb.AppendLine();
@@ -629,15 +754,15 @@ namespace Supervertaler.Trados.Core
                 prompt.Name = Path.GetFileNameWithoutExtension(filePath);
 
             // Fallback: use folder name as domain if not specified in YAML
-            if (string.IsNullOrEmpty(prompt.Domain))
+            if (string.IsNullOrEmpty(prompt.Category))
             {
                 var relDir = Path.GetDirectoryName(prompt.RelativePath);
                 if (!string.IsNullOrEmpty(relDir))
-                    prompt.Domain = relDir;
+                    prompt.Category = relDir;
             }
 
             // Normalise domain regardless of whether it came from YAML or folder name
-            NormaliseDomain(prompt);
+            NormaliseCategory(prompt);
 
             return prompt;
         }
@@ -652,26 +777,26 @@ namespace Supervertaler.Trados.Core
         }
 
         /// <summary>
-        /// Applies canonical normalisation to prompt.Domain and sets IsQuickLauncher.
+        /// Applies canonical normalisation to prompt.Category and sets IsQuickLauncher.
         /// Called after both YAML parsing and the folder-name fallback so the logic
         /// is consistent regardless of how the domain was determined.
         /// </summary>
-        private static void NormaliseDomain(PromptTemplate prompt)
+        private static void NormaliseCategory(PromptTemplate prompt)
         {
-            if (string.IsNullOrEmpty(prompt.Domain)) return;
+            if (string.IsNullOrEmpty(prompt.Category)) return;
 
             // Normalise legacy names → canonical "QuickLauncher"
-            if (prompt.Domain.Equals("quickmenu_prompts", StringComparison.OrdinalIgnoreCase) ||
-                prompt.Domain.Equals("quicklauncher_prompts", StringComparison.OrdinalIgnoreCase))
+            if (prompt.Category.Equals("quickmenu_prompts", StringComparison.OrdinalIgnoreCase) ||
+                prompt.Category.Equals("quicklauncher_prompts", StringComparison.OrdinalIgnoreCase))
             {
-                prompt.Domain = "QuickLauncher";
+                prompt.Category = "QuickLauncher";
             }
 
             // Mark as QuickLauncher if the domain is "QuickLauncher" or starts with "QuickLauncher/"
             // (e.g. "QuickLauncher/Default")
-            if (prompt.Domain.Equals("QuickLauncher", StringComparison.OrdinalIgnoreCase) ||
-                prompt.Domain.StartsWith("QuickLauncher/", StringComparison.OrdinalIgnoreCase) ||
-                prompt.Domain.StartsWith("QuickLauncher\\", StringComparison.OrdinalIgnoreCase))
+            if (prompt.Category.Equals("QuickLauncher", StringComparison.OrdinalIgnoreCase) ||
+                prompt.Category.StartsWith("QuickLauncher/", StringComparison.OrdinalIgnoreCase) ||
+                prompt.Category.StartsWith("QuickLauncher\\", StringComparison.OrdinalIgnoreCase))
                 prompt.IsQuickLauncher = true;
         }
 
@@ -712,9 +837,9 @@ namespace Supervertaler.Trados.Core
                         break;
                     case "category":
                     case "domain": // backward compatibility
-                        prompt.Domain = value;
+                        prompt.Category = value;
                         // Full normalisation (legacy names → QuickLauncher, IsQuickLauncher flag)
-                        // runs after all YAML is parsed, in NormaliseDomain().
+                        // runs after all YAML is parsed, in NormaliseCategory().
                         break;
                     case "app":
                         // Unified schema: "workbench", "trados", or "both"
@@ -797,7 +922,7 @@ namespace Supervertaler.Trados.Core
                 {
                     Name = "Default Translation Prompt",
                     Description = "General-purpose translation prompt — use as-is or as a starting point for your own prompts",
-                    Domain = "Translate/Default",
+                    Category = "Translate/Default",
                     IsBuiltIn = true,
                     Content = @"You are a professional translator working from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}}. Translate the source text accurately and naturally, following these guidelines:
 
@@ -823,7 +948,7 @@ namespace Supervertaler.Trados.Core
                 {
                     Name = "Default Proofreading Prompt",
                     Description = "Reviews translations for accuracy, completeness, terminology, grammar, and style issues",
-                    Domain = "Proofread/Default",
+                    Category = "Proofread/Default",
                     IsBuiltIn = true,
                     Content = @"You are a professional translation proofreader. Your task is to review {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}} translation pairs and identify issues. You must check EVERY segment provided — do not skip any.
 
@@ -896,7 +1021,7 @@ IMPORTANT RULES:
                 {
                     Name = "UK to US English Localization",
                     Description = "Flags British English spelling, vocabulary, and conventions that need changing to American English",
-                    Domain = "Proofread/Default",
+                    Category = "Proofread/Default",
                     IsBuiltIn = true,
                     Content = @"You are a professional English localizer specializing in adapting British English (BrE) text to American English (AmE). Your task is to review each segment and flag any British English forms that should be changed to their American English equivalents.
 
@@ -988,7 +1113,7 @@ IMPORTANT RULES:
                 {
                     Name = "Assess how I translated the current segment",
                     Description = "Reviews your translation of the active segment and suggests improvements",
-                    Domain = "QuickLauncher/Default",
+                    Category = "QuickLauncher/Default",
                     IsBuiltIn = true,
                     Content = @"Source ({{SOURCE_LANGUAGE}}):
 {{SOURCE_TEXT}}
@@ -1002,23 +1127,36 @@ Assess how I translated the current segment. Point out any inaccuracies, awkward
                 {
                     Name = "Define",
                     Description = "Defines the selected term and provides usage examples",
-                    Domain = "QuickLauncher/Default",
+                    Category = "QuickLauncher/Default",
                     IsBuiltIn = true,
                     Content = @"Define ""{{SELECTION}}"" and give practical examples showing how it's used."
                 },
                 new PromptTemplate
                 {
-                    Name = "Explain (in general)",
-                    Description = "Explains the selected term in simple, clear language",
-                    Domain = "QuickLauncher/Default",
+                    Name = "Explain selection (in general)",
+                    Category = "QuickLauncher/Default/Explain",
                     IsBuiltIn = true,
                     Content = @"Explain ""{{SELECTION}}"" in simple, clear language. Include a practical example if helpful."
                 },
                 new PromptTemplate
                 {
-                    Name = "Explain (within project context)",
-                    Description = "Explains the selected term using the full document as context",
-                    Domain = "QuickLauncher/Default",
+                    Name = "Explain selection (within context of surrounding segments)",
+                    Description = "This is a much lighter version than the original, which sends the entire document source text.",
+                    Category = "QuickLauncher/Default/Explain",
+                    IsBuiltIn = true,
+                    Content = @"PROJECT CONTEXT - The surrounding segments from the current translation project:
+
+{{SURROUNDING_SEGMENTS}}
+
+---
+
+Explain ""{{SELECTION}}"" in simple, clear language. If the project context above provides relevant information about how it is used in this specific document, reference those segments in your explanation."
+                },
+                new PromptTemplate
+                {
+                    Name = "Explain selection (within full project context)",
+                    Description = "Explains the selection using the full document as context",
+                    Category = "QuickLauncher/Default/Explain",
                     IsBuiltIn = true,
                     Content = @"PROJECT CONTEXT - The complete source text from the current translation project:
 
@@ -1026,13 +1164,36 @@ Assess how I translated the current segment. Point out any inaccuracies, awkward
 
 ---
 
-Explain the term ""{{SELECTION}}"" in simple, clear language. If the project context above provides relevant information about how this term is used in this specific document, reference those segments in your explanation."
+Explain ""{{SELECTION}}"" in simple, clear language. If the project context above provides relevant information about how it is used in this specific document, reference those segments in your explanation."
+                },
+                new PromptTemplate
+                {
+                    Name = "Show current filename",
+                    Description = "Displays the filename of the file you are currently translating",
+                    Category = "QuickLauncher/Default/Files",
+                    IsBuiltIn = true,
+                    Content = @"Simply reply with the filename below and nothing else:
+
+{{DOCUMENT_NAME}}"
+                },
+                new PromptTemplate
+                {
+                    Name = "What file is this segment from?",
+                    Description = "Shows the filename and project context for the current segment",
+                    Category = "QuickLauncher/Default/Files",
+                    IsBuiltIn = true,
+                    Content = @"The current segment is from the file ""{{DOCUMENT_NAME}}"" in the project ""{{PROJECT_NAME}}"".
+
+Source ({{SOURCE_LANGUAGE}}):
+{{SOURCE_TEXT}}
+
+What type of file is this, and what can you tell me about it based on the filename and segment content?"
                 },
                 new PromptTemplate
                 {
                     Name = "Translate segment using fuzzy matches as reference",
                     Description = "Translates the active segment, using TM fuzzy matches and surrounding context",
-                    Domain = "QuickLauncher/Default",
+                    Category = "QuickLauncher/Default",
                     IsBuiltIn = true,
                     Content = @"Translate the following from {{SOURCE_LANGUAGE}} to {{TARGET_LANGUAGE}}.
 
@@ -1050,7 +1211,7 @@ Use the fuzzy matches and surrounding context as reference, but produce a fresh,
                 {
                     Name = "Translate selection in context of current project",
                     Description = "Suggests the best translation for a selected term using full document context",
-                    Domain = "QuickLauncher/Default",
+                    Category = "QuickLauncher/Default",
                     IsBuiltIn = true,
                     Content = @"PROJECT CONTEXT - The complete source text of the current translation project:
 
@@ -1064,7 +1225,7 @@ Using the project context above, suggest the best translation for ""{{SELECTION}
                 {
                     Name = "Generate project brief",
                     Description = "Generates a comprehensive project summary in Markdown that you can paste into any AI tool for context while translating",
-                    Domain = "QuickLauncher/Default",
+                    Category = "QuickLauncher/Default",
                     IsBuiltIn = true,
                     Content = @"You are a senior translation project analyst. Your job is to produce a comprehensive briefing document that a professional translator (or an AI assistant helping a translator) can use as reference material throughout an entire translation project.
 
