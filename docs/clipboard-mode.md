@@ -53,17 +53,19 @@ Each segment is formatted as a numbered bilingual block:
 
 ```
 Segment 1 [new]:
-Dutch (Netherlands): Polyvision breidt de mogelijkheden uit.
-English (United States):
+Dutch: Polyvision breidt de mogelijkheden uit.
+English:
 
 Segment 2 [fuzzy, 85%]:
-Dutch (Netherlands): Nieuwe toepassingen in onderwijs.
-English (United States): New applications in education.
+Dutch: Nieuwe toepassingen in onderwijs.
+English: New applications in education.
 
 Segment 3 [translated, 100%]:
-Dutch (Netherlands): Doelstelling lange termijn.
-English (United States): Long-term objective.
+Dutch: Doelstelling lange termijn.
+English: Long-term objective.
 ```
+
+The per-segment labels use short language names (e.g. "Dutch", "English") to save tokens. The full language names with regional variants (e.g. "Dutch (Netherlands)", "English (United Kingdom)") are stated once in the system prompt at the top.
 
 ### Status Annotations
 
@@ -147,6 +149,10 @@ Before clicking Paste from Clipboard, glance at the AI's response to make sure i
 ### Combine with Terminology
 
 Clipboard Mode includes your termbase terms in the prompt, just like API mode. Make sure your termbases are set up and enabled in AI Settings for the best results.
+
+### Name Prompts After Your Projects
+
+If you save a custom prompt with the same name as your Trados project (e.g. "HAYNESPRO" for a project called HAYNESPRO), the prompt dropdown will auto-select it whenever you open that project. This works for both Translate and Proofread modes and saves you from having to reselect the correct prompt each time.
 
 ### Process in Batches
 

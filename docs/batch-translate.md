@@ -36,6 +36,10 @@ Choose a prompt to guide the AI translation style and domain. The prompt selecto
 * **Default Translation Prompt** – a general-purpose prompt that works well for most content types. Use it as-is or duplicate it in the Prompt Manager and customise it for your domain.
 * **Custom prompts** – your own prompts created in the Prompt Manager
 
+{% hint style="success" %}
+**Tip:** If you save a prompt with the same name as your Trados project, the dropdown will auto-select it whenever you open that project. For example, a prompt called "HAYNESPRO" will be auto-selected when working in a project called HAYNESPRO.
+{% endhint %}
+
 {% hint style="info" %}
 For specialised fields (medical, legal, patent, etc.), create a custom prompt with domain-specific terminology rules and instructions. A tailored prompt is the single most effective way to improve translation quality.
 {% endhint %}
