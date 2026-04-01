@@ -138,8 +138,8 @@ namespace Supervertaler.Trados.Settings
             BuildGeneralTab(generalPage);
             _tabControl.TabPages.Add(generalPage);
 
-            // --- TermLens tab ---
-            var termLensPage = new TabPage("TermLens") { BackColor = Color.White };
+            // --- Termbases tab ---
+            var termLensPage = new TabPage("Termbases") { BackColor = Color.White };
             BuildTermLensTab(termLensPage);
             _tabControl.TabPages.Add(termLensPage);
 

@@ -34,10 +34,10 @@ namespace Supervertaler.Trados.Controls
             // Settings gear button — floats at top-right
             _btnSettings = new Button
             {
-                Text = "\u2699\uFE0E",  // gear character + text presentation selector
+                Text = "\uE713",  // Settings gear from Segoe MDL2 Assets
                 Size = new Size(UiScale.Pixels(26), UiScale.Pixels(22)),
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI Symbol", UiScale.FontSize(10f)),
+                Font = new Font("Segoe MDL2 Assets", UiScale.FontSize(8f)),
                 ForeColor = Color.FromArgb(100, 100, 100),
                 BackColor = Color.Transparent,
                 Cursor = Cursors.Hand,
