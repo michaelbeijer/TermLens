@@ -12,13 +12,14 @@ No sign-up or credit card is required to start the trial. The remaining days are
 
 ## Plans
 
-| Plan | Price | What's included |
-|------|-------|-----------------|
-| **TermLens** | €10/month | TermLens panel, termbases, MultiTerm support, Term Picker, quick-add shortcuts, non-translatable management, Termbase Editor, TSV import/export |
-| **TermLens + Supervertaler Assistant** | €15/month | Everything in TermLens, plus AI Assistant chat panel, Batch Translate, Prompt Library, multimodal image support, TM match injection |
+| Plan | Monthly | Annual | What's included |
+|------|---------|--------|-----------------|
+| **TermLens** | €10/month | €100/year | TermLens panel, termbases, MultiTerm support, Term Picker, quick-add shortcuts, non-translatable management, Termbase Editor, TSV import/export |
+| **Supervertaler Assistant** | €15/month | €150/year | AI Assistant chat panel, Batch Translate, Prompt Library, multimodal image support, TM match injection, termbases for AI context |
+| **TermLens + Supervertaler Assistant** | €20/month | €200/year | Everything in both plans — full terminology + AI features |
 
 {% hint style="info" %}
-Both plans include all future updates and new features within their tier.
+All plans include future updates and new features within their tier. Annual plans include **2 months free** compared to monthly billing.
 {% endhint %}
 
 ## Purchasing a Licence
@@ -58,12 +59,14 @@ After activation, the plugin caches your licence status locally. You can work of
 
 ## What Happens When the Trial Expires
 
-After the 14-day trial ends, features are locked based on tier:
+After the 14-day trial ends, features are locked based on your plan:
 
-- **TermLens panel** — shows a "licence required" overlay. Terminology keyboard shortcuts show a message asking you to purchase a licence.
-- **Supervertaler Assistant** — shows an "upgrade required" overlay if you have a TermLens-only licence, or a "licence required" overlay if you have no licence.
+- **No licence** — both TermLens and Supervertaler Assistant show a "licence required" overlay
+- **TermLens plan** — TermLens panel is fully functional; Supervertaler Assistant shows an "upgrade required" overlay
+- **Supervertaler Assistant plan** — AI features are fully functional (including termbases for AI context); TermLens panel shows a "licence required" overlay
+- **TermLens + Supervertaler Assistant plan** — all features unlocked
 
-Your termbases, settings, and prompt library are preserved. Activating a licence immediately unlocks the features again.
+Your termbases, settings, and prompt library are preserved regardless of plan. Activating or upgrading a licence immediately unlocks the corresponding features.
 
 ## Changing Machines
 

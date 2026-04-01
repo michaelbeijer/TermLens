@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.18.33] — 2026-04-01
+
+### Added
+- **Supervertaler Assistant licensing tier** – new standalone plan for AI-only users (€15/month or €150/year); grants access to AI Assistant, Batch Translate, QuickLauncher, and Ctrl+T without requiring TermLens; termbases (including MultiTerm) are still loaded for AI prompt context
+- **Three-tier pricing** – TermLens (€10/month), Supervertaler Assistant (€15/month), TermLens + Supervertaler Assistant (€20/month); annual plans include 2 months free
+
+### Improved
+- **Settings gear icon** – switched from ⚙ (Segoe UI Symbol) to the native Windows 11 gear icon (Segoe MDL2 Assets) on both panels
+- **Settings tab renamed** – "TermLens" tab in Settings renamed to "Termbases" so it makes sense for all tiers
+
+---
+
 ## [4.18.32] — 2026-04-01
 
 ### Improved
