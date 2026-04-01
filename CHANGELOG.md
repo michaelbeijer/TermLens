@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.18.32] — 2026-04-01
+
+### Improved
+- **Clipboard Mode uses shorter per-segment language labels** – segment lines now use "Dutch:" / "English:" instead of "Dutch (Netherlands):" / "English (United Kingdom):", saving roughly 2,000 tokens on a 500-segment document; the full language names with variants are still stated once in the system prompt
+- **Prompt dropdown auto-selects by project name** – when switching to Batch Operations or changing between Translate and Proofread, the prompt dropdown automatically selects the first prompt whose name contains the current Trados project name (e.g. opening the HAYNESPRO project auto-selects the "HAYNESPRO" prompt)
+
+### Fixed
+- **Clipboard Mode now uses the selected prompt** – "Copy to Clipboard" was reading a stale prompt selection from settings instead of the current dropdown value, causing it to use the previous prompt; the dropdown selection is now persisted before building the clipboard prompt
+
+---
+
 ## [4.18.31] — 2026-04-01
 
 ### Fixed

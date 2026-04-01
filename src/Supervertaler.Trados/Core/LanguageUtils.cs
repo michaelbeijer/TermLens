@@ -72,6 +72,44 @@ namespace Supervertaler.Trados.Core
         }
 
         /// <summary>
+        /// Returns just the base language name, stripping any parenthesised
+        /// region/variant suffix.
+        /// <para>Examples:</para>
+        /// <list type="bullet">
+        /// <item>"Dutch (Netherlands)" → "Dutch"</item>
+        /// <item>"English (United Kingdom)" → "English"</item>
+        /// <item>"Chinese (Simplified)" → "Chinese (Simplified)" (kept — not a region)</item>
+        /// <item>"Dutch" → "Dutch" (unchanged)</item>
+        /// </list>
+        /// </summary>
+        public static string GetBaseLanguageName(string langName)
+        {
+            if (string.IsNullOrWhiteSpace(langName))
+                return langName;
+
+            langName = langName.Trim();
+
+            var match = ParenthesizedRegion.Match(langName);
+            if (!match.Success)
+                return langName;
+
+            var language = match.Groups[1].Value;
+            var parenthesised = match.Groups[2].Value;
+
+            // Keep the parenthesised part for script variants (Simplified/Traditional)
+            // that are essential for disambiguation — strip country/region names only.
+            if (parenthesised.Equals("Simplified", StringComparison.OrdinalIgnoreCase)
+                || parenthesised.Equals("Traditional", StringComparison.OrdinalIgnoreCase)
+                || parenthesised.Equals("Latin", StringComparison.OrdinalIgnoreCase)
+                || parenthesised.Equals("Cyrillic", StringComparison.OrdinalIgnoreCase))
+            {
+                return langName;
+            }
+
+            return language;
+        }
+
+        /// <summary>
         /// Finds the 2-letter ISO 3166-1 country code for a country name.
         /// Searches all specific cultures' RegionInfo for a match.
         /// </summary>

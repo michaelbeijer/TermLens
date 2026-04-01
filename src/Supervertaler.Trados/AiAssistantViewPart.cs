@@ -904,7 +904,9 @@ namespace Supervertaler.Trados
                 var selectedPath = _settings?.AiSettings?.SelectedPromptPath ?? "";
                 var mode = _control.Value.BatchTranslateControl.CurrentMode;
                 var categoryFilter = mode == BatchMode.Proofread ? "Proofread" : "Translate";
-                _control.Value.BatchTranslateControl.SetPrompts(prompts, selectedPath, categoryFilter);
+                var projectName = TermLensEditorViewPart.GetCurrentProjectName();
+                _control.Value.BatchTranslateControl.SetPrompts(
+                    prompts, selectedPath, categoryFilter, projectName);
             });
         }
 
@@ -1220,6 +1222,12 @@ namespace Supervertaler.Trados
                 var termbaseTerms = batchDisabledIds.Count > 0
                     ? allTerms.Where(t => !batchDisabledIds.Contains(t.TermbaseId)).ToList()
                     : allTerms;
+
+                // Persist the prompt dropdown selection before resolving
+                var selectedPromptPath = batchControl.GetSelectedPromptPath();
+                if (aiSettings != null)
+                    aiSettings.SelectedPromptPath = selectedPromptPath;
+                _settings.Save();
 
                 // Resolve custom prompt
                 var customPromptContent = ResolveCustomPromptContent(sourceLang, targetLang);

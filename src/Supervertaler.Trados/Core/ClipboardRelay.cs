@@ -44,11 +44,16 @@ namespace Supervertaler.Trados.Core
             sb.AppendLine("---");
             sb.AppendLine();
 
+            // Use short language labels for per-segment lines to save tokens.
+            // The full names (with region) are already stated in the system prompt.
+            var srcLabel = LanguageUtils.GetBaseLanguageName(sourceLang);
+            var tgtLabel = LanguageUtils.GetBaseLanguageName(targetLang);
+
             // Instructions for the bilingual format
             sb.Append("Translate the following segments from ").Append(sourceLang)
               .Append(" into ").Append(targetLang).AppendLine(".");
             sb.AppendLine("Return each segment in EXACTLY the same format, filling in the "
-                + targetLang + " line.");
+                + tgtLabel + " line.");
             sb.AppendLine("Do NOT add commentary, explanations, or notes.");
             sb.AppendLine("Preserve ALL tag placeholders (<t1>, </t1>, <t2/>, etc.) exactly as they appear.");
             sb.AppendLine();
@@ -64,8 +69,8 @@ namespace Supervertaler.Trados.Core
                     sb.Append(" [").Append(status).Append("]");
                 sb.AppendLine(":");
 
-                sb.Append(sourceLang).Append(": ").AppendLine(seg.SourceText);
-                sb.Append(targetLang).Append(": ");
+                sb.Append(srcLabel).Append(": ").AppendLine(seg.SourceText);
+                sb.Append(tgtLabel).Append(": ");
 
                 // Include existing target for fuzzy/translated segments
                 if (!string.IsNullOrWhiteSpace(seg.ExistingTarget))
@@ -121,14 +126,18 @@ namespace Supervertaler.Trados.Core
             sb.AppendLine("  Suggestion: [corrected translation]");
             sb.AppendLine();
 
+            // Use short language labels for per-segment lines to save tokens
+            var srcLabel = LanguageUtils.GetBaseLanguageName(sourceLang);
+            var tgtLabel = LanguageUtils.GetBaseLanguageName(targetLang);
+
             // Numbered bilingual segments with both source and target
             for (int i = 0; i < segments.Count; i++)
             {
                 var seg = segments[i];
 
                 sb.Append("Segment ").Append(i + 1).AppendLine(":");
-                sb.Append(sourceLang).Append(": ").AppendLine(seg.SourceText);
-                sb.Append(targetLang).Append(": ").AppendLine(seg.ExistingTarget ?? "");
+                sb.Append(srcLabel).Append(": ").AppendLine(seg.SourceText);
+                sb.Append(tgtLabel).Append(": ").AppendLine(seg.ExistingTarget ?? "");
                 sb.AppendLine();
             }
 
@@ -181,9 +190,11 @@ namespace Supervertaler.Trados.Core
             if (matches.Count == 0)
                 return results;
 
-            // Build a target language prefix pattern (e.g., "English: ")
+            // Build a target language prefix pattern that matches both the short
+            // label ("English:") and the full label ("English (United Kingdom):").
+            var baseLang = LanguageUtils.GetBaseLanguageName(targetLang);
             var targetPrefix = new Regex(
-                @"^\s*" + Regex.Escape(targetLang) + @"\s*:\s*(.*)",
+                @"^\s*" + Regex.Escape(baseLang) + @"(?:\s*\([^)]*\))?\s*:\s*(.*)",
                 RegexOptions.IgnoreCase);
 
             for (int i = 0; i < matches.Count; i++)

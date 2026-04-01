@@ -559,14 +559,18 @@ namespace Supervertaler.Trados.Controls
         /// <summary>
         /// Populates the prompt dropdown with available prompts and selects the specified one.
         /// When categoryFilter is provided, only prompts whose Domain matches are shown.
+        /// If no prompt matches selectedRelativePath and a projectName is provided,
+        /// the dropdown auto-selects the first prompt whose name contains the project name.
         /// </summary>
-        public void SetPrompts(List<PromptTemplate> prompts, string selectedRelativePath, string categoryFilter = null)
+        public void SetPrompts(List<PromptTemplate> prompts, string selectedRelativePath,
+            string categoryFilter = null, string projectName = null)
         {
             _cmbPrompt.Items.Clear();
             _cmbPrompt.Items.Add("(None \u2014 default)");
             _promptList.Clear();
 
             int selectedIdx = 0;
+            int projectMatchIdx = 0;
             if (prompts != null)
             {
                 foreach (var p in prompts)
@@ -584,8 +588,19 @@ namespace Supervertaler.Trados.Controls
                     {
                         selectedIdx = _cmbPrompt.Items.Count - 1;
                     }
+
+                    // Track first prompt whose name contains the project name (fallback)
+                    if (projectMatchIdx == 0 && !string.IsNullOrEmpty(projectName) &&
+                        p.Name.IndexOf(projectName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        projectMatchIdx = _cmbPrompt.Items.Count - 1;
+                    }
                 }
             }
+
+            // Fall back to project-name match if no prompt was matched by path
+            if (selectedIdx == 0 && projectMatchIdx > 0)
+                selectedIdx = projectMatchIdx;
 
             _cmbPrompt.SelectedIndex = selectedIdx;
         }
