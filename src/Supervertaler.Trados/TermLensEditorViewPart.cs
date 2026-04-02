@@ -154,6 +154,7 @@ namespace Supervertaler.Trados
                 {
                     _activeDocument = _editorController.ActiveDocument;
                     _activeDocument.ActiveSegmentChanged += OnActiveSegmentChanged;
+                    _activeDocument.ActiveFilePropertiesChanged += OnActiveFilePropertiesChanged;
 
                     // Apply per-project settings if available
                     ApplyProjectSettingsFromDocument(_activeDocument);
@@ -165,6 +166,10 @@ namespace Supervertaler.Trados
 
             // Load MultiTerm termbases from the active Trados project (if any)
             LoadMultiTermTermbases();
+
+            // Start periodic check for MultiTerm config changes (e.g. user
+            // toggles Enabled in Project Settings → Termbases mid-session)
+            StartMultiTermConfigTimer();
 
             if (!LicenseManager.Instance.HasTier1Access)
             {
@@ -259,7 +264,7 @@ namespace Supervertaler.Trados
                 }
                 System.Diagnostics.Debug.WriteLine($"[TermLens] Detected {_multiTermConfigs.Count} MultiTerm termbase(s)");
 
-                // Filter out disabled MultiTerm termbases
+                // Filter out termbases disabled in Supervertaler settings
                 var disabledMtIds = _settings.DisabledMultiTermIds ?? new List<long>();
 
                 var mergedIndex = new Dictionary<string, List<TermEntry>>(StringComparer.OrdinalIgnoreCase);
@@ -914,6 +919,7 @@ namespace Supervertaler.Trados
             if (_activeDocument != null)
             {
                 _activeDocument.ActiveSegmentChanged -= OnActiveSegmentChanged;
+                _activeDocument.ActiveFilePropertiesChanged -= OnActiveFilePropertiesChanged;
             }
 
             _activeDocument = _editorController?.ActiveDocument;
@@ -921,6 +927,7 @@ namespace Supervertaler.Trados
             if (_activeDocument != null)
             {
                 _activeDocument.ActiveSegmentChanged += OnActiveSegmentChanged;
+                _activeDocument.ActiveFilePropertiesChanged += OnActiveFilePropertiesChanged;
 
                 // Check if the project has changed — if so, save outgoing and load incoming settings
                 ApplyProjectSettingsFromDocument(_activeDocument);
@@ -1041,11 +1048,60 @@ namespace Supervertaler.Trados
             return _currentInstance?._currentProjectName;
         }
 
+        private void OnActiveFilePropertiesChanged(object sender, EventArgs e)
+        {
+            // Fired when file/project properties change — reload MultiTerm
+            // termbases in case the user toggled termbases in Project Settings.
+            if (HasMultiTermConfigChanged())
+            {
+                LoadMultiTermTermbases();
+                UpdateFromActiveSegment();
+            }
+        }
+
+        // ─── Periodic MultiTerm config check ─────────────────────
+
+        private System.Windows.Forms.Timer _multiTermConfigTimer;
+
+        /// <summary>
+        /// Starts a lightweight timer that checks every 2 seconds whether the
+        /// set of enabled MultiTerm termbases in the Trados project has changed
+        /// (e.g. user toggled the Enabled checkbox in Project Settings → Termbases).
+        /// DetectTermbases() reads an in-memory object — no file I/O or DB access.
+        /// </summary>
+        private void StartMultiTermConfigTimer()
+        {
+            if (_multiTermConfigTimer != null) return;
+            _multiTermConfigTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+            _multiTermConfigTimer.Tick += OnMultiTermConfigTimerTick;
+            _multiTermConfigTimer.Start();
+        }
+
+        private void StopMultiTermConfigTimer()
+        {
+            if (_multiTermConfigTimer == null) return;
+            _multiTermConfigTimer.Stop();
+            _multiTermConfigTimer.Dispose();
+            _multiTermConfigTimer = null;
+        }
+
+        private void OnMultiTermConfigTimerTick(object sender, EventArgs e)
+        {
+            if (_activeDocument == null) return;
+
+            if (HasMultiTermConfigChanged())
+            {
+                LoadMultiTermTermbases();
+                UpdateFromActiveSegment();
+            }
+        }
+
         private void OnActiveSegmentChanged(object sender, EventArgs e)
         {
             // Reload MultiTerm terms if any .sdltb file has been modified since last load
             // (e.g., user added terms via Trados's native MultiTerm interface)
-            if (HasMultiTermFileChanged())
+            // or if the user toggled termbases in Trados Project Settings
+            if (HasMultiTermFileChanged() || HasMultiTermConfigChanged())
                 LoadMultiTermTermbases();
 
             UpdateFromActiveSegment();
@@ -1072,6 +1128,42 @@ namespace Supervertaler.Trados
                 catch { /* ignore errors checking file times */ }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Checks whether the set of enabled MultiTerm termbases in the Trados project
+        /// settings has changed since we last loaded (e.g., user toggled the Enabled
+        /// checkbox in Project Settings → Termbases). Lightweight — reads only the
+        /// project config, no database access.
+        /// </summary>
+        private bool HasMultiTermConfigChanged()
+        {
+            try
+            {
+                var current = MultiTermProjectDetector.DetectTermbases(_activeDocument);
+                var loaded = _multiTermConfigs;
+
+                // Both null/empty → no change
+                var currentCount = current?.Count ?? 0;
+                var loadedCount = loaded?.Count ?? 0;
+                if (currentCount == 0 && loadedCount == 0) return false;
+
+                // Different count → changed
+                if (currentCount != loadedCount) return true;
+
+                // Same count — compare file paths (order-sensitive)
+                for (int i = 0; i < currentCount; i++)
+                {
+                    if (!string.Equals(current[i].FilePath, loaded[i].FilePath, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void UpdateFromActiveSegment()
@@ -1742,11 +1834,13 @@ namespace Supervertaler.Trados
                 _currentInstance = null;
 
             StopChordTimer();
+            StopMultiTermConfigTimer();
             DisposeFallbackProviders();
 
             if (_activeDocument != null)
             {
                 _activeDocument.ActiveSegmentChanged -= OnActiveSegmentChanged;
+                _activeDocument.ActiveFilePropertiesChanged -= OnActiveFilePropertiesChanged;
             }
 
             if (_editorController != null)

@@ -107,6 +107,9 @@ namespace Supervertaler.Trados.Core
                         }
                         catch { }
 
+                        // Skip termbases disabled in Trados Project Settings
+                        if (!tb.Enabled) continue;
+
                         var localTb = tb as LocalTermbase;
                         if (localTb == null) continue;
 
@@ -131,6 +134,7 @@ namespace Supervertaler.Trados.Core
                             SourceIndexName = sourceIndexName,
                             TargetIndexName = targetIndexName,
                             SyntheticId = syntheticId,
+                            TradosEnabled = tb.Enabled,
                             SettingsXml = settingsXml
                         });
 

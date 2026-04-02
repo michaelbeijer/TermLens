@@ -38,6 +38,11 @@ namespace Supervertaler.Trados.Models
         public long SyntheticId { get; set; }
 
         /// <summary>
+        /// Whether this termbase is enabled in Trados Project Settings → Termbases.
+        /// </summary>
+        public bool TradosEnabled { get; set; } = true;
+
+        /// <summary>
         /// Raw settings XML from the project's TermbaseConfiguration.
         /// Used to extract the correct provider URI for the API fallback.
         /// </summary>

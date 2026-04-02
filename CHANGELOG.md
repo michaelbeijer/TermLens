@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.18.36] — 2026-04-02
+
+### Improved
+- **Respect Trados "Enabled" checkbox for MultiTerm termbases** – MultiTerm termbases disabled in Trados Project Settings → Termbases are now excluded from TermLens; previously all attached termbases were loaded regardless of the Enabled flag
+- **Instant refresh when toggling termbases in Project Settings** – a lightweight 2-second polling timer detects changes to the Trados termbase configuration so enabling or disabling a MultiTerm termbase takes effect immediately without needing to change segments
+
+---
+
 ## [4.18.35] — 2026-04-02
 
 ### Fixed
