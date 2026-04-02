@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.18.34] — 2026-04-02
+
+### Improved
+- **Batch Operations provider/model selector** – the provider label in Batch Operations is now clickable and shows the same cascading flyout menu as the Chat tab, allowing quick model switching without opening AI Settings
+
+---
+
 ## [4.18.33] — 2026-04-01
 
 ### Added

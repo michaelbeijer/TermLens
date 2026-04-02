@@ -29,7 +29,7 @@ namespace Supervertaler.Trados.Controls
         private Label _lblScopeLabel;
         private ComboBox _cmbPrompt;
         private Label _lblPromptLabel;
-        private Label _lblProvider;
+        private LinkLabel _lblProvider;
         private Label _lblProviderLabel;
         private Label _lblSegmentCount;
         private LinkLabel _lnkAiSettings;
@@ -57,6 +57,8 @@ namespace Supervertaler.Trados.Controls
 
         // State
         private bool _isRunning;
+        private string _currentProvider;
+        private string _currentModel;
 
         /// <summary>Fired when user clicks "Translate".</summary>
         public event EventHandler TranslateRequested;
@@ -78,6 +80,12 @@ namespace Supervertaler.Trados.Controls
 
         /// <summary>Fired when user clicks "AutoPrompt".</summary>
         public event EventHandler GeneratePromptRequested;
+
+        /// <summary>
+        /// Raised when the user selects a different model from the provider dropdown.
+        /// Args: (providerKey, modelId).
+        /// </summary>
+        public event Action<string, string> ModelChangeRequested;
 
         /// <summary>Fired when user clicks "Copy to Clipboard" in Clipboard Mode.</summary>
         public event EventHandler CopyToClipboardRequested;
@@ -250,14 +258,17 @@ namespace Supervertaler.Trados.Controls
                 Font = bodyFont,
                 ForeColor = labelColor
             };
-            _lblProvider = new Label
+            _lblProvider = new LinkLabel
             {
                 Text = "Not configured",
                 Location = new Point(100, y + 1),
                 AutoSize = true,
                 Font = bodyFont,
-                ForeColor = Color.FromArgb(50, 50, 50)
+                LinkColor = Color.FromArgb(50, 50, 50),
+                ActiveLinkColor = Color.FromArgb(0, 102, 204),
+                VisitedLinkColor = Color.FromArgb(50, 50, 50)
             };
+            _lblProvider.LinkClicked += OnProviderSelectorClicked;
             Controls.Add(_lblProviderLabel);
             Controls.Add(_lblProvider);
             y += 22;
@@ -540,7 +551,65 @@ namespace Supervertaler.Trados.Controls
         /// </summary>
         public void UpdateProviderDisplay(string providerName, string modelName)
         {
-            _lblProvider.Text = providerName + " / " + modelName;
+            _currentProvider = providerName;
+            _currentModel = modelName;
+            _lblProvider.Text = !string.IsNullOrEmpty(providerName) && !string.IsNullOrEmpty(modelName)
+                ? providerName + " / " + modelName
+                : "Not configured";
+        }
+
+        // ─── Provider/model selector menu ──────────────────────
+
+        private void OnProviderSelectorClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            var menu = new ContextMenuStrip { Font = new Font("Segoe UI", UiScale.FontSize(8.5f)) };
+
+            foreach (var providerKey in LlmModels.AllProviderKeys)
+            {
+                var models = LlmModels.GetModelsForProvider(providerKey);
+
+                // Custom OpenAI profiles are handled separately
+                if (providerKey == LlmModels.ProviderCustomOpenAi)
+                    continue;
+
+                if (models.Length == 0) continue;
+
+                var providerName = LlmModels.GetProviderDisplayName(providerKey);
+                var providerItem = new ToolStripMenuItem(providerName);
+
+                foreach (var model in models)
+                {
+                    var modelItem = new ToolStripMenuItem(model.DisplayName)
+                    {
+                        ToolTipText = model.Description,
+                        Tag = new[] { providerKey, model.Id }
+                    };
+
+                    // Checkmark for current selection
+                    if (providerKey == _currentProvider && model.Id == _currentModel)
+                        modelItem.Checked = true;
+
+                    modelItem.Click += OnModelMenuItemClicked;
+                    providerItem.DropDownItems.Add(modelItem);
+                }
+
+                // Bold the provider submenu if it's the active one
+                if (providerKey == _currentProvider)
+                    providerItem.Font = new Font(providerItem.Font, FontStyle.Bold);
+
+                menu.Items.Add(providerItem);
+            }
+
+            menu.Show(_lblProvider, new Point(0, -menu.PreferredSize.Height));
+        }
+
+        private void OnModelMenuItemClicked(object sender, EventArgs e)
+        {
+            var item = sender as ToolStripMenuItem;
+            var tag = item?.Tag as string[];
+            if (tag == null || tag.Length != 2) return;
+
+            ModelChangeRequested?.Invoke(tag[0], tag[1]);
         }
 
         /// <summary>

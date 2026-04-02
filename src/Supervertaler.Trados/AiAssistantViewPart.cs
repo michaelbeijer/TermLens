@@ -141,6 +141,7 @@ namespace Supervertaler.Trados
             batchControl.GeneratePromptRequested += OnGeneratePromptRequested;
             batchControl.CopyToClipboardRequested += OnCopyToClipboardRequested;
             batchControl.PasteFromClipboardRequested += OnPasteFromClipboardRequested;
+            batchControl.ModelChangeRequested += OnModelChangeRequested;
 
             // Wire reports control events
             var reportsControl = _control.Value.ReportsControl;
