@@ -46,7 +46,7 @@ For specialised fields (medical, legal, patent, etc.), create a custom prompt wi
 
 ## Provider and Model
 
-The current AI provider and model are displayed below the prompt selector. To change them, open the settings dialog (gear icon in the TermLens header) and go to the **AI Settings** tab.
+The current AI provider and model are displayed below the prompt selector. Click the provider/model label to open a flyout menu where you can switch models instantly — the same menu available in the Chat tab. Alternatively, open the settings dialog (gear icon in the TermLens header) and go to the **AI Settings** tab.
 
 ## Progress and Logging
 

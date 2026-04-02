@@ -8,7 +8,7 @@ TermLens automatically detects MultiTerm termbases (`.sdltb` files) attached to 
 
 When you open a project in Trados Studio that has MultiTerm termbases attached, TermLens reads those `.sdltb` files and loads all term pairs into its matching engine. MultiTerm terms appear as **green chips** in the TermLens panel, right next to the blue, pink, and yellow chips from your Supervertaler termbases.
 
-There is nothing to configure. If your Trados project has MultiTerm termbases attached (via **Project Settings > Language Pairs > Termbases**), TermLens picks them up automatically.
+There is nothing to configure. If your Trados project has MultiTerm termbases attached and **enabled** (via **Project Settings > Language Pairs > Termbases**), TermLens picks them up automatically. Termbases with the **Enabled** checkbox unchecked in Trados are ignored.
 
 ### Colour coding
 
@@ -32,7 +32,10 @@ When you right-click a green MultiTerm chip, the Edit, Delete, and "Mark as Non-
 
 ## Auto-Refresh
 
-When you add or edit terms in a MultiTerm termbase using Trados's native interface, TermLens detects the file change automatically. The next time you navigate to a different segment, the updated terms appear in the panel –no manual refresh needed.
+TermLens monitors your MultiTerm termbases for changes:
+
+* **Term changes** –when you add or edit terms using Trados's native MultiTerm interface, TermLens detects the file change on the next segment navigation and reloads automatically.
+* **Config changes** –when you enable or disable a MultiTerm termbase in **Project Settings > Termbases**, TermLens detects the change within a few seconds and updates the panel automatically — no segment change needed.
 
 ## MultiTerm Termbases in Settings
 
@@ -56,7 +59,7 @@ Because the access is read-only, there is no risk of data corruption. TermLens o
 
 ### MultiTerm terms not appearing
 
-1. **Check your Trados project** –verify that MultiTerm termbases are attached via **Project Settings > Language Pairs > Termbases**
+1. **Check the Trados Enabled checkbox** –open **Project Settings > Language Pairs > Termbases** and make sure the termbase's **Enabled** checkbox is ticked
 2. **Check the Read toggle** –open Supervertaler Settings and make sure the MultiTerm termbase's Read checkbox is enabled
 3. **Check languages** –the termbase's source and target languages must match the current project's language pair
 
