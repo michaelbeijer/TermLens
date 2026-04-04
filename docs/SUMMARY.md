@@ -23,6 +23,7 @@
   * [AI Proofreader](ai-proofreader.md)
   * [Clipboard Mode](clipboard-mode.md)
   * [AutoPrompt](generate-prompt.md)
+* [SuperMemory](supermemory.md)
 
 ## Terminology
 

@@ -53,6 +53,7 @@ namespace Supervertaler.Trados.Core
             public const string ProjectSettings    = "settings/project-settings";
             public const string KeyboardShortcuts  = "reference/keyboard-shortcuts";
             public const string Troubleshooting    = "reference/troubleshooting";
+            public const string SuperMemory        = "features/supermemory";
         }
 
         /// <summary>

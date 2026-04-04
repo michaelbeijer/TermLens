@@ -32,6 +32,7 @@ These are the topic constants defined in `HelpSystem.Topics` and the documentati
 | `ProjectSettings` | [/trados/settings/project-settings](https://supervertaler.gitbook.io/trados/settings/project-settings) | — (not yet used in UI) |
 | `KeyboardShortcuts` | [/trados/reference/keyboard-shortcuts](https://supervertaler.gitbook.io/trados/reference/keyboard-shortcuts) | — (not yet used in UI) |
 | `Troubleshooting` | [/trados/reference/troubleshooting](https://supervertaler.gitbook.io/trados/reference/troubleshooting) | — (not yet used in UI) |
+| `SuperMemory` | [/trados/features/supermemory](https://supervertaler.gitbook.io/trados/features/supermemory) | — (not yet used in UI) |
 
 ## Other links in the plugin
 
