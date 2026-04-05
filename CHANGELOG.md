@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.18.49] — 2026-04-06
+
+### Changed
+- **Single-tier licensing** — replaced the three-tier pricing model (TermLens / Supervertaler Assistant / Bundle) with a single plan: **Supervertaler for Trados** at €20/month or €200/year. All features are now included in every paid licence. Existing subscribers on older plans are automatically upgraded to full access
+
+### Improved
+- **Licence panel** — simplified UI with a single purchase link; removed the "Upgrade" link (no longer applicable)
+- **About dialogue** — licence status now shows "Licence: Active" instead of tier-specific names
+- **Licence overlay** — the AI Assistant panel now shows a generic "A licence is required" message instead of the old tier-specific "upgrade required" text
+- **Licensing documentation** — rewritten for the single-tier model
+
+---
+
 ## [4.18.48] — 2026-04-05
 
 ### Added
