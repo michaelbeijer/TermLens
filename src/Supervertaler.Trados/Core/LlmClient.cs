@@ -1241,13 +1241,33 @@ namespace Supervertaler.Trados.Core
         public delegate string ToolExecutor(string toolName, string inputJson);
 
         /// <summary>
-        /// Sends a multi-turn chat to Claude with tool definitions.
-        /// When Claude returns a tool_use response, the executor callback is invoked
-        /// and the result is sent back automatically. This loops until Claude returns
+        /// Returns true if the given provider supports tool use / function calling.
+        /// </summary>
+        public static bool SupportsToolUse(string provider)
+        {
+            switch (provider)
+            {
+                case LlmModels.ProviderClaude:
+                case LlmModels.ProviderOpenAi:
+                case LlmModels.ProviderGemini:
+                case LlmModels.ProviderGrok:
+                case LlmModels.ProviderMistral:
+                case LlmModels.ProviderOpenRouter:
+                case LlmModels.ProviderCustomOpenAi:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends a multi-turn chat with tool definitions.
+        /// When the LLM requests a tool call, the executor callback is invoked
+        /// and the result is sent back automatically. This loops until the LLM returns
         /// a final text response (max 5 tool rounds to prevent infinite loops).
         ///
-        /// Only supported for the Claude provider — other providers fall back to
-        /// regular SendChatAsync (no tool use).
+        /// Supported for Claude, OpenAI, Gemini, Grok, Mistral, OpenRouter, and
+        /// custom OpenAI-compatible endpoints. Ollama falls back to plain chat.
         /// </summary>
         /// <param name="toolStatusCallback">Optional callback invoked on the UI thread
         /// when a tool is being called, with the tool name as argument.</param>
@@ -1262,8 +1282,8 @@ namespace Supervertaler.Trados.Core
             string promptName = null,
             Action<string> toolStatusCallback = null)
         {
-            // Tool use is only supported for Claude
-            if (_provider != LlmModels.ProviderClaude)
+            // Providers without tool support fall back to plain chat
+            if (!SupportsToolUse(_provider))
                 return await SendChatAsync(messages, systemPrompt, maxTokens, cancellationToken, feature, promptName);
 
             var sw = Stopwatch.StartNew();
@@ -1272,9 +1292,25 @@ namespace Supervertaler.Trados.Core
 
             try
             {
-                result = await CallClaudeChatWithToolsAsync(
-                    messages, systemPrompt, toolDefinitionsJson, executor,
-                    maxTokens, cancellationToken, toolStatusCallback);
+                switch (_provider)
+                {
+                    case LlmModels.ProviderClaude:
+                        result = await CallClaudeChatWithToolsAsync(
+                            messages, systemPrompt, toolDefinitionsJson, executor,
+                            maxTokens, cancellationToken, toolStatusCallback);
+                        break;
+                    case LlmModels.ProviderGemini:
+                        result = await CallGeminiChatWithToolsAsync(
+                            messages, systemPrompt, toolDefinitionsJson, executor,
+                            maxTokens, cancellationToken, toolStatusCallback);
+                        break;
+                    default:
+                        // OpenAI-compatible: OpenAI, Grok, Mistral, OpenRouter, Custom
+                        result = await CallOpenAiChatWithToolsAsync(
+                            messages, systemPrompt, toolDefinitionsJson, executor,
+                            maxTokens, cancellationToken, toolStatusCallback);
+                        break;
+                }
                 return result;
             }
             catch (Exception ex)
@@ -1421,6 +1457,497 @@ namespace Supervertaler.Trados.Core
             }
 
             throw new InvalidOperationException("Tool use loop exceeded maximum rounds.");
+        }
+
+        // ─── OpenAI-compatible Tool Use ─────────────────────────────
+
+        /// <summary>
+        /// Conversation turn for OpenAI tool loop. Stores raw JSON fragments
+        /// so we can replay the exact assistant messages (including tool_calls).
+        /// </summary>
+        private class OpenAiTurn
+        {
+            public string Role;
+            /// <summary>Raw JSON of the "content" value (string literal, null, or array).</summary>
+            public string ContentJson;
+            /// <summary>For assistant turns with tool calls: raw JSON array of tool_calls.</summary>
+            public string ToolCallsJson;
+            /// <summary>For tool result turns: the tool_call_id.</summary>
+            public string ToolCallId;
+        }
+
+        private async Task<string> CallOpenAiChatWithToolsAsync(
+            List<ChatMessage> messages,
+            string systemPrompt,
+            string toolDefinitionsJson,
+            ToolExecutor executor,
+            int? maxTokens,
+            CancellationToken ct,
+            Action<string> toolStatusCallback)
+        {
+            var baseUrl = ResolveOpenAiBaseUrl();
+            var url = $"{baseUrl}/chat/completions";
+            var tokens = maxTokens ?? _maxTokens;
+            var timeoutMs = _isReasoningModel ? 600_000 : _defaultTimeoutMs;
+            const int maxToolRounds = 5;
+
+            // Build mutable conversation
+            var conversation = new List<OpenAiTurn>();
+
+            // System prompt
+            if (!string.IsNullOrEmpty(systemPrompt))
+            {
+                conversation.Add(new OpenAiTurn
+                {
+                    Role = "system",
+                    ContentJson = JsonString(systemPrompt)
+                });
+            }
+
+            foreach (var m in messages)
+            {
+                var role = m.Role == ChatRole.User ? "user" : "assistant";
+                string contentJson;
+                if (m.HasImages && m.Role == ChatRole.User)
+                {
+                    // Multimodal content array
+                    var csb = new StringBuilder("[");
+                    csb.Append("{\"type\":\"text\",\"text\":").Append(JsonString(m.Content)).Append("}");
+                    foreach (var img in m.Images)
+                    {
+                        csb.Append(",{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:")
+                           .Append(img.MimeType).Append(";base64,").Append(ToBase64(img.Data)).Append("\"}}");
+                    }
+                    csb.Append("]");
+                    contentJson = csb.ToString();
+                }
+                else
+                {
+                    contentJson = JsonString(m.Content);
+                }
+
+                conversation.Add(new OpenAiTurn { Role = role, ContentJson = contentJson });
+            }
+
+            for (int round = 0; round < maxToolRounds; round++)
+            {
+                var sb = new StringBuilder(4096);
+                sb.Append("{\"model\":").Append(JsonString(_model));
+                sb.Append(",\"messages\":[");
+
+                for (int i = 0; i < conversation.Count; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    var turn = conversation[i];
+                    sb.Append("{\"role\":").Append(JsonString(turn.Role));
+
+                    if (turn.Role == "assistant" && turn.ToolCallsJson != null)
+                    {
+                        // Assistant message with tool_calls — content may be null
+                        sb.Append(",\"content\":").Append(turn.ContentJson ?? "null");
+                        sb.Append(",\"tool_calls\":").Append(turn.ToolCallsJson);
+                    }
+                    else if (turn.Role == "tool")
+                    {
+                        sb.Append(",\"tool_call_id\":").Append(JsonString(turn.ToolCallId));
+                        sb.Append(",\"content\":").Append(turn.ContentJson);
+                    }
+                    else
+                    {
+                        sb.Append(",\"content\":").Append(turn.ContentJson);
+                    }
+
+                    sb.Append("}");
+                }
+
+                sb.Append("]");
+
+                // Tools
+                sb.Append(",\"tools\":").Append(toolDefinitionsJson);
+
+                if (UsesMaxCompletionTokens(_model))
+                {
+                    sb.Append(",\"max_completion_tokens\":").Append(tokens);
+                    if (!_isReasoningModel)
+                        sb.Append(",\"temperature\":0.3");
+                }
+                else
+                {
+                    sb.Append(",\"max_tokens\":").Append(tokens);
+                    sb.Append(",\"temperature\":0.3");
+                }
+
+                sb.Append("}");
+
+                string body;
+                using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+                {
+                    request.Content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json");
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                    AddOpenRouterHeaders(request);
+
+                    using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                    {
+                        cts.CancelAfter(Math.Max(timeoutMs, 120_000));
+                        var response = await Http.SendAsync(request, cts.Token);
+                        body = await response.Content.ReadAsStringAsync();
+
+                        if (!response.IsSuccessStatusCode)
+                            throw new HttpRequestException(EnrichErrorMessage(OpenAiProviderLabel(), (int)response.StatusCode, body, _model));
+                    }
+                }
+
+                // Check finish_reason — "tool_calls" means function calling
+                var finishReason = ExtractOpenAiFinishReason(body);
+
+                if (finishReason == "tool_calls")
+                {
+                    // Extract tool_calls array from choices[0].message
+                    var toolCalls = ExtractOpenAiToolCalls(body);
+                    if (toolCalls.Count == 0)
+                        throw new InvalidOperationException("OpenAI indicated tool_calls but no calls found in response.");
+
+                    // Extract content text (may be null when only tool calls)
+                    var assistantText = ExtractOpenAiAssistantContent(body);
+                    var toolCallsArrayJson = ExtractOpenAiToolCallsArrayJson(body);
+
+                    // Add assistant turn with tool_calls
+                    conversation.Add(new OpenAiTurn
+                    {
+                        Role = "assistant",
+                        ContentJson = assistantText != null ? JsonString(assistantText) : "null",
+                        ToolCallsJson = toolCallsArrayJson
+                    });
+
+                    // Execute each tool and add tool result messages
+                    foreach (var tc in toolCalls)
+                    {
+                        toolStatusCallback?.Invoke(tc.Name);
+                        var toolResult = executor(tc.Name, tc.InputJson);
+
+                        conversation.Add(new OpenAiTurn
+                        {
+                            Role = "tool",
+                            ToolCallId = tc.Id,
+                            ContentJson = JsonString(toolResult ?? "")
+                        });
+                    }
+
+                    continue;
+                }
+
+                // Final response — extract text
+                return ExtractOpenAiContent(body);
+            }
+
+            throw new InvalidOperationException("Tool use loop exceeded maximum rounds.");
+        }
+
+        /// <summary>
+        /// Extracts finish_reason from OpenAI response: choices[0].finish_reason.
+        /// </summary>
+        private static string ExtractOpenAiFinishReason(string json)
+        {
+            // Look for finish_reason inside the first choice
+            var match = Regex.Match(json, @"""finish_reason""\s*:\s*""([^""]+)""");
+            return match.Success ? match.Groups[1].Value : null;
+        }
+
+        /// <summary>
+        /// Extracts tool calls from OpenAI choices[0].message.tool_calls array.
+        /// Each tool call has: {id, type:"function", function:{name, arguments}}.
+        /// </summary>
+        private static List<ToolCall> ExtractOpenAiToolCalls(string json)
+        {
+            var calls = new List<ToolCall>();
+
+            // Find "tool_calls" array
+            var toolCallsIdx = json.IndexOf("\"tool_calls\"");
+            if (toolCallsIdx < 0) return calls;
+
+            var bracketStart = json.IndexOf('[', toolCallsIdx);
+            if (bracketStart < 0) return calls;
+
+            // Extract the array using bracket counting
+            var arrayJson = ExtractBracketedBlock(json, bracketStart, '[', ']');
+            if (arrayJson == null) return calls;
+
+            // Parse each object in the array
+            var objects = ExtractTopLevelObjects(arrayJson);
+            foreach (var obj in objects)
+            {
+                var id = ExtractJsonFieldStatic(obj, "id");
+                var funcObj = ExtractJsonObject(obj, "function");
+                if (funcObj == null) continue;
+
+                var name = ExtractJsonFieldStatic(funcObj, "name");
+                var arguments = ExtractJsonFieldStatic(funcObj, "arguments");
+
+                if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(name))
+                {
+                    calls.Add(new ToolCall
+                    {
+                        Id = id,
+                        Name = name,
+                        InputJson = arguments != null ? UnescapeJson(arguments) : "{}"
+                    });
+                }
+            }
+
+            return calls;
+        }
+
+        /// <summary>
+        /// Extracts the raw tool_calls JSON array string from an OpenAI response.
+        /// This is needed to replay the assistant message in the conversation.
+        /// </summary>
+        private static string ExtractOpenAiToolCallsArrayJson(string json)
+        {
+            var idx = json.IndexOf("\"tool_calls\"");
+            if (idx < 0) return "[]";
+
+            var bracketStart = json.IndexOf('[', idx);
+            if (bracketStart < 0) return "[]";
+
+            return ExtractBracketedBlock(json, bracketStart, '[', ']') ?? "[]";
+        }
+
+        /// <summary>
+        /// Extracts the content string from the assistant message in an OpenAI response.
+        /// Returns null if content is null (common when only tool_calls are present).
+        /// </summary>
+        private static string ExtractOpenAiAssistantContent(string json)
+        {
+            // Find "message" object inside first choice
+            var msgIdx = json.IndexOf("\"message\"");
+            if (msgIdx < 0) return null;
+
+            // Find content field after message
+            var contentIdx = json.IndexOf("\"content\"", msgIdx);
+            if (contentIdx < 0) return null;
+
+            // Check if content is null
+            var afterContent = json.Substring(contentIdx + 9).TrimStart(':', ' ', '\t');
+            if (afterContent.StartsWith("null")) return null;
+
+            // It's a string — extract it
+            return ExtractJsonFieldStatic(json.Substring(msgIdx), "content");
+        }
+
+        // ─── Gemini Tool Use ─────────────────────────────────────────
+
+        /// <summary>
+        /// Conversation turn for Gemini tool loop.
+        /// Stores role and parts JSON for replaying the conversation.
+        /// </summary>
+        private class GeminiTurn
+        {
+            public string Role;
+            /// <summary>Raw JSON of the "parts" array.</summary>
+            public string PartsJson;
+        }
+
+        private async Task<string> CallGeminiChatWithToolsAsync(
+            List<ChatMessage> messages,
+            string systemPrompt,
+            string toolDefinitionsJson,
+            ToolExecutor executor,
+            int? maxTokens,
+            CancellationToken ct,
+            Action<string> toolStatusCallback)
+        {
+            var tokens = maxTokens ?? _maxTokens;
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
+            const int maxToolRounds = 5;
+
+            // Build mutable conversation
+            var conversation = new List<GeminiTurn>();
+
+            foreach (var m in messages)
+            {
+                var role = m.Role == ChatRole.User ? "user" : "model";
+                var partsSb = new StringBuilder("[");
+
+                if (m.HasImages && m.Role == ChatRole.User)
+                {
+                    foreach (var img in m.Images)
+                    {
+                        partsSb.Append("{\"inline_data\":{\"mime_type\":")
+                               .Append(JsonString(img.MimeType))
+                               .Append(",\"data\":\"").Append(ToBase64(img.Data)).Append("\"}},");
+                    }
+                }
+
+                partsSb.Append("{\"text\":").Append(JsonString(m.Content)).Append("}");
+                partsSb.Append("]");
+
+                conversation.Add(new GeminiTurn { Role = role, PartsJson = partsSb.ToString() });
+            }
+
+            for (int round = 0; round < maxToolRounds; round++)
+            {
+                var sb = new StringBuilder(4096);
+                sb.Append("{\"contents\":[");
+
+                for (int i = 0; i < conversation.Count; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append("{\"role\":").Append(JsonString(conversation[i].Role));
+                    sb.Append(",\"parts\":").Append(conversation[i].PartsJson);
+                    sb.Append("}");
+                }
+
+                sb.Append("]");
+
+                // Tools
+                sb.Append(",\"tools\":").Append(toolDefinitionsJson);
+
+                if (!string.IsNullOrEmpty(systemPrompt))
+                    sb.Append(",\"systemInstruction\":{\"parts\":[{\"text\":").Append(JsonString(systemPrompt)).Append("}]}");
+
+                sb.Append(",\"generationConfig\":{\"maxOutputTokens\":").Append(tokens);
+                sb.Append(",\"temperature\":0.3}");
+                sb.Append("}");
+
+                string body;
+                using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+                {
+                    request.Headers.Add("x-goog-api-key", _apiKey);
+                    request.Content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json");
+
+                    using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                    {
+                        cts.CancelAfter(Math.Max(_defaultTimeoutMs, 120_000));
+                        var response = await Http.SendAsync(request, cts.Token);
+                        body = await response.Content.ReadAsStringAsync();
+
+                        if (!response.IsSuccessStatusCode)
+                            throw new HttpRequestException(EnrichErrorMessage("Gemini", (int)response.StatusCode, body, _model));
+                    }
+                }
+
+                // Check if response contains functionCall parts
+                var functionCalls = ExtractGeminiFunctionCalls(body);
+
+                if (functionCalls.Count > 0)
+                {
+                    // Add model turn with the functionCall parts
+                    var modelPartsJson = ExtractGeminiResponseParts(body);
+                    conversation.Add(new GeminiTurn { Role = "model", PartsJson = modelPartsJson });
+
+                    // Execute each function call and build functionResponse parts
+                    var responseParts = new StringBuilder("[");
+                    bool first = true;
+
+                    foreach (var fc in functionCalls)
+                    {
+                        toolStatusCallback?.Invoke(fc.Name);
+                        var toolResult = executor(fc.Name, fc.InputJson);
+
+                        if (!first) responseParts.Append(",");
+                        first = false;
+                        responseParts.Append("{\"functionResponse\":{\"name\":")
+                                     .Append(JsonString(fc.Name))
+                                     .Append(",\"response\":{\"result\":")
+                                     .Append(JsonString(toolResult ?? ""))
+                                     .Append("}}}");
+                    }
+
+                    responseParts.Append("]");
+
+                    conversation.Add(new GeminiTurn
+                    {
+                        Role = "function",
+                        PartsJson = responseParts.ToString()
+                    });
+
+                    continue;
+                }
+
+                // No function calls — extract final text
+                return ExtractGeminiContent(body);
+            }
+
+            throw new InvalidOperationException("Tool use loop exceeded maximum rounds.");
+        }
+
+        /// <summary>
+        /// Extracts functionCall entries from Gemini response parts.
+        /// Gemini puts functionCall objects in candidates[0].content.parts.
+        /// </summary>
+        private static List<ToolCall> ExtractGeminiFunctionCalls(string json)
+        {
+            var calls = new List<ToolCall>();
+
+            // Find all functionCall objects
+            int searchFrom = 0;
+            while (true)
+            {
+                var idx = json.IndexOf("\"functionCall\"", searchFrom);
+                if (idx < 0) break;
+
+                var funcCallObj = ExtractJsonObject(json.Substring(idx - 1), "functionCall");
+                if (funcCallObj == null) { searchFrom = idx + 14; continue; }
+
+                var name = ExtractJsonFieldStatic(funcCallObj, "name");
+                var argsObj = ExtractJsonObject(funcCallObj, "args");
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    calls.Add(new ToolCall
+                    {
+                        Id = name, // Gemini uses function name as ID
+                        Name = name,
+                        InputJson = argsObj ?? "{}"
+                    });
+                }
+
+                searchFrom = idx + 14;
+            }
+
+            return calls;
+        }
+
+        /// <summary>
+        /// Extracts the raw parts JSON array from a Gemini response.
+        /// Located at candidates[0].content.parts.
+        /// </summary>
+        private static string ExtractGeminiResponseParts(string json)
+        {
+            // Find candidates[0].content.parts
+            var partsIdx = json.IndexOf("\"parts\"");
+            if (partsIdx < 0) return "[]";
+
+            var bracketStart = json.IndexOf('[', partsIdx);
+            if (bracketStart < 0) return "[]";
+
+            return ExtractBracketedBlock(json, bracketStart, '[', ']') ?? "[]";
+        }
+
+        /// <summary>
+        /// Extracts a bracketed block (array or object) from a JSON string starting
+        /// at the given position. Uses bracket counting to handle nesting.
+        /// </summary>
+        private static string ExtractBracketedBlock(string json, int start, char open, char close)
+        {
+            int depth = 0;
+            bool inString = false;
+            bool escaped = false;
+
+            for (int i = start; i < json.Length; i++)
+            {
+                var c = json[i];
+                if (escaped) { escaped = false; continue; }
+                if (c == '\\') { escaped = true; continue; }
+                if (c == '"') { inString = !inString; continue; }
+                if (inString) continue;
+                if (c == open) depth++;
+                else if (c == close) depth--;
+                if (depth == 0)
+                    return json.Substring(start, i - start + 1);
+            }
+
+            return null;
         }
 
         /// <summary>

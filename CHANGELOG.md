@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.18.46] — 2026-04-05
+
+### Added
+- **Multi-provider Studio Tools** — Studio Tools now works with all major AI providers: OpenAI, Gemini, Grok, and Mistral, in addition to Claude. Each provider uses its native function calling API (OpenAI `tools`, Gemini `functionDeclarations`, Claude `tool_use`). Ollama remains chat-only as local models have inconsistent tool support
+
+### Improved
+- **AI Assistant help** — restructured into sub-pages: Context Awareness, File Attachments, Studio Tools, and Providers and Models (matching the SuperMemory help structure)
+
+---
+
 ## [4.18.45] — 2026-04-05
 
 ### Added

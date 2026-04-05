@@ -15,18 +15,45 @@ namespace Supervertaler.Trados.Core
     /// </summary>
     public static class TradosTools
     {
-        // ─── Tool Definitions (JSON for Claude API) ──────────────────
+        // ─── Tool Definitions ────────────────────────────────────────
 
         /// <summary>
-        /// Returns the tool definitions array as a JSON string for the Claude API.
+        /// Returns tool definitions JSON formatted for the given AI provider.
+        /// Claude uses "input_schema"; OpenAI wraps in {type:"function",function:{...}} with "parameters";
+        /// Gemini wraps in [{functionDeclarations:[...]}] with "parameters".
         /// </summary>
-        public static string GetToolDefinitionsJson()
+        public static string GetToolDefinitionsJson(string provider)
+        {
+            var core = GetCoreToolDefinitions();
+
+            if (provider == "claude")
+            {
+                // Claude: uses "input_schema" instead of "parameters"
+                return core.Replace("\"parameters\":", "\"input_schema\":");
+            }
+
+            if (provider == "gemini")
+            {
+                // Gemini: wrap all tools in a single functionDeclarations object
+                return "[{\"functionDeclarations\":" + core + "}]";
+            }
+
+            // OpenAI-compatible (OpenAI, Grok, Mistral, OpenRouter, Custom):
+            // wrap each tool in {"type":"function","function":{...}}
+            return WrapAsOpenAiTools(core);
+        }
+
+        /// <summary>
+        /// Returns the core tool definitions array using "parameters" as the schema key.
+        /// This is the canonical format — provider-specific methods transform it.
+        /// </summary>
+        private static string GetCoreToolDefinitions()
         {
             return @"[
   {
     ""name"": ""studio_list_projects"",
     ""description"": ""Lists all projects registered in Trados Studio with their name, status, creation date, and file path. Use this when the user asks about their projects, project status, or wants an overview of their work."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {
         ""status_filter"": {
@@ -41,7 +68,7 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_get_project"",
     ""description"": ""Gets detailed information about a specific Trados Studio project by name, including source/target languages, files, and status. Use when the user asks about a specific project."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {
         ""project_name"": {
@@ -55,7 +82,7 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_get_project_statistics"",
     ""description"": ""Gets word count and analysis statistics for a Trados Studio project, broken down by match category (perfect, context, exact, fuzzy, new, repetitions). Use when the user asks about project statistics, word counts, analysis results, or how much work remains."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {
         ""project_name"": {
@@ -69,7 +96,7 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_get_file_status"",
     ""description"": ""Gets the confirmation/translation status of all files in a Trados Studio project, showing how many segments and words are in each status (not started, draft, translated, approved, signed off). Use when the user asks about file progress, translation status, or completion."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {
         ""project_name"": {
@@ -83,7 +110,7 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_list_project_termbases"",
     ""description"": ""Lists termbases attached to a specific Trados Studio project, with their file paths and language index mappings. Use when the user asks about terminology resources in a project."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {
         ""project_name"": {
@@ -97,7 +124,7 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_get_tm_info"",
     ""description"": ""Gets detailed information about a specific translation memory (.sdltm file), including language pair, segment count, creation date, and description. Use when the user asks about a specific TM's details."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {
         ""tm_name"": {
@@ -111,7 +138,7 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_search_tm"",
     ""description"": ""Searches a translation memory for segments containing specific text in the source or target. Returns matching translation units with source, target, and usage info. Use when the user wants to find how something was translated before, or check TM content."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {
         ""tm_name"": {
@@ -133,7 +160,7 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_list_tms"",
     ""description"": ""Lists all translation memories (TMs) found in the Trados Studio TM folder. Use when the user asks about their translation memories or TM setup."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {},
       ""required"": []
@@ -142,13 +169,57 @@ namespace Supervertaler.Trados.Core
   {
     ""name"": ""studio_list_project_templates"",
     ""description"": ""Lists all project templates available in Trados Studio. Use when the user asks about their templates or wants to know which templates are available."",
-    ""input_schema"": {
+    ""parameters"": {
       ""type"": ""object"",
       ""properties"": {},
       ""required"": []
     }
   }
 ]";
+        }
+
+        /// <summary>
+        /// Wraps core tool definitions into OpenAI's {type:"function",function:{...}} format.
+        /// </summary>
+        private static string WrapAsOpenAiTools(string coreJson)
+        {
+            var sb = new StringBuilder("[");
+            int depth = 0;
+            int objStart = -1;
+            bool inString = false;
+            bool escaped = false;
+            bool first = true;
+
+            for (int i = 0; i < coreJson.Length; i++)
+            {
+                var c = coreJson[i];
+                if (escaped) { escaped = false; continue; }
+                if (c == '\\') { escaped = true; continue; }
+                if (c == '"') { inString = !inString; continue; }
+                if (inString) continue;
+
+                if (c == '{')
+                {
+                    if (depth == 0) objStart = i;
+                    depth++;
+                }
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0 && objStart >= 0)
+                    {
+                        if (!first) sb.Append(",");
+                        first = false;
+                        sb.Append("{\"type\":\"function\",\"function\":");
+                        sb.Append(coreJson, objStart, i - objStart + 1);
+                        sb.Append("}");
+                        objStart = -1;
+                    }
+                }
+            }
+
+            sb.Append("]");
+            return sb.ToString();
         }
 
         // ─── Tool Dispatch ──────────────────────────────────────────

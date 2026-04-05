@@ -580,9 +580,9 @@ namespace Supervertaler.Trados
                 }
             }
 
-            // Capture tool settings — only Claude supports tool use
-            var useTools = capturedProvider == LlmModels.ProviderClaude;
-            var toolDefsJson = useTools ? TradosTools.GetToolDefinitionsJson() : null;
+            // Capture tool settings — Claude, OpenAI, Gemini, Grok, Mistral all support tool use
+            var useTools = LlmClient.SupportsToolUse(capturedProvider);
+            var toolDefsJson = useTools ? TradosTools.GetToolDefinitionsJson(capturedProvider) : null;
 
             Task.Run(async () =>
             {

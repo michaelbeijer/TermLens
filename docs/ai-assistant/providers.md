@@ -37,7 +37,7 @@ Some features are provider-specific:
 
 | Feature | Availability |
 | ------- | ------------ |
-| [Studio Tools](studio-tools.md) | Claude only (tool use API) |
+| [Studio Tools](studio-tools.md) | All providers except Ollama |
 | Image attachments | All providers with vision support |
 | Document attachments | All providers |
 | [SuperMemory](../supermemory/ai-integration.md) context | All providers |
