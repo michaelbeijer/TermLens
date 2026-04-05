@@ -35,6 +35,9 @@ namespace Supervertaler.Trados.Core
 
         // SuperMemory KB context (pre-formatted prompt section, or null)
         public string KbContext;
+
+        // Demo mode: AI anonymises all personal/project data in responses
+        public bool DemoMode;
     }
 
     /// <summary>
@@ -74,6 +77,33 @@ namespace Supervertaler.Trados.Core
             sb.AppendLine("|----------|----------|");
             sb.AppendLine("| Cell 1   | Cell 2   |");
             sb.AppendLine("Use bullet lists (- item), bold (**text**), and headings (##) where appropriate.");
+
+            // ── Incognito mode (data anonymisation) ───────────────────
+            if (ctx.DemoMode)
+            {
+                sb.AppendLine();
+                sb.AppendLine("# INCOGNITO MODE — DATA ANONYMISATION");
+                sb.AppendLine("This is a demo session. All personal and organisational data MUST be anonymised");
+                sb.AppendLine("in every response you write. This applies to:");
+                sb.AppendLine("- User names, display names, and email addresses");
+                sb.AppendLine("- Organisation, client, and customer names");
+                sb.AppendLine("- Project names that contain client or personal identifiers");
+                sb.AppendLine("- File names and file paths");
+                sb.AppendLine("- TM names and termbase names that contain client identifiers");
+                sb.AppendLine("- Server URLs, tenant IDs, and credential references");
+                sb.AppendLine();
+                sb.AppendLine("Replace real values with plausible anonymised equivalents:");
+                sb.AppendLine("- \"Acme Corp\" → \"Client Alpha\", \"Jane Smith\" → \"User A\"");
+                sb.AppendLine("- \"D:\\Jobs\\ACME\\...\" → \"D:\\Projects\\Client Alpha\\...\"");
+                sb.AppendLine("- \"ACME_translation_Q1.docx\" → \"Project_Alpha_document.docx\"");
+                sb.AppendLine("Use consistent replacements within the conversation so references remain trackable.");
+                sb.AppendLine();
+                sb.AppendLine("Do NOT anonymise:");
+                sb.AppendLine("- Language codes (en-GB, nl-NL, etc.)");
+                sb.AppendLine("- Technical identifiers (status values, tool names)");
+                sb.AppendLine("- Counts, statistics, word counts, and structural metadata");
+                sb.AppendLine("- The source and target text of the segment being translated");
+            }
 
             // ── Project context ──────────────────────────────────────
             var hasLangPair = !string.IsNullOrEmpty(ctx.SourceLang) && !string.IsNullOrEmpty(ctx.TargetLang);

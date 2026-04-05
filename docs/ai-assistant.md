@@ -62,7 +62,8 @@ If you select text within a bubble before right-clicking, **Copy** and **Apply t
 |---------|-------------|
 | **[Context Awareness](ai-assistant/context-awareness.md)** | Automatic project, segment, terminology, TM, and document context in every request |
 | **[File Attachments](ai-assistant/file-attachments.md)** | Attach images and documents (PDF, DOCX, XLSX, TMX, etc.) for additional context |
-| **[Studio Tools](ai-assistant/studio-tools.md)** | Query your Trados Studio projects, TMs, termbases, and statistics using natural language (Claude only) |
+| **[Studio Tools](ai-assistant/studio-tools.md)** | Query your Trados Studio projects, TMs, termbases, and statistics using natural language |
+| **[Incognito Mode](ai-assistant/incognito-mode.md)** | Anonymise project names, file paths, and personal data in AI responses for safe sharing |
 | **[Providers and Models](ai-assistant/providers.md)** | Supports 7 AI providers including OpenAI, Claude, Gemini, Grok, Mistral, Ollama, and custom endpoints |
 
 ## See Also

@@ -175,6 +175,15 @@ namespace Supervertaler.Trados.Settings
         public bool IncludeSuperMemoryInAutoPrompt { get; set; } = true;
 
         /// <summary>
+        /// Incognito mode: when enabled, the AI anonymises all personal and project
+        /// data in its responses — project names, file paths, TM names, user names,
+        /// etc. are replaced with plausible placeholders. Useful for screen sharing,
+        /// recording demos, and posting screenshots without exposing client data.
+        /// </summary>
+        [DataMember(Name = "demoMode")]
+        public bool DemoMode { get; set; }
+
+        /// <summary>
         /// When enabled, every AI API call is logged to the Reports tab with
         /// the full prompt, response, estimated token counts, and cost.
         /// </summary>

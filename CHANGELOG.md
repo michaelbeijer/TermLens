@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.18.47] — 2026-04-05
+
+### Added
+- **Incognito Mode** — new toggle in AI Settings that tells the AI to anonymise all personal and project data in its responses. Project names, file paths, TM names, user names, and other identifying information are replaced with plausible placeholders. Useful for screen sharing, recording demos, posting screenshots in forums, or any situation where client data should remain confidential
+
+### Fixed
+- **TM discovery** — the "List TMs" and "Find TM" tools now scan all `.sdlproj` files for TM references, correctly resolving `sdltm.file:///` URIs and relative paths. This fixes the issue where TMs stored in project folders or custom locations (outside the default `Translation Memories` folder) were not found
+- **Studio Tools help** — removed outdated Claude-only language; added active-development notice with support contact
+
+---
+
 ## [4.18.46] — 2026-04-05
 
 ### Added

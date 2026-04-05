@@ -61,6 +61,7 @@ namespace Supervertaler.Trados.Controls
         private Label _lblChatContextHeader;
         private Label _lblChatContextNote;
         private CheckBox _chkIncludeTmMatches;
+        private CheckBox _chkDemoMode;
         private Label _lblSurroundingSegments;
         private NumericUpDown _nudSurroundingSegments;
 
@@ -658,6 +659,23 @@ namespace Supervertaler.Trados.Controls
                 "Only applies to Chat and QuickLauncher \u2013 not to Batch Operations.");
             Controls.Add(_chkIncludeTmMatches);
 
+            _chkDemoMode = new CheckBox
+            {
+                Text = "Incognito mode \u2014 anonymise project names, paths, and personal data in AI responses",
+                Location = new Point(16, 0), // positioned dynamically
+                AutoSize = true,
+                ForeColor = labelColor,
+                Checked = false
+            };
+            var demoTip = new ToolTip { AutoPopDelay = 10000, InitialDelay = 300 };
+            demoTip.SetToolTip(_chkDemoMode,
+                "When enabled, the AI replaces all project names, file paths, TM names,\r\n" +
+                "and other identifying data with anonymised placeholders in its responses.\r\n" +
+                "Useful for screen sharing, recording demos, posting screenshots in forums,\r\n" +
+                "or any situation where you need to keep client data confidential.\r\n" +
+                "Toggle on before sharing, toggle off when done.");
+            Controls.Add(_chkDemoMode);
+
             _lblSurroundingSegments = new Label
             {
                 Text = "Surrounding segments:",
@@ -771,6 +789,9 @@ namespace Supervertaler.Trados.Controls
             _chkIncludeTmMatches.Location = new Point(16, y);
             y += 24;
 
+            _chkDemoMode.Location = new Point(16, y);
+            y += 24;
+
             _lblSurroundingSegments.Location = new Point(36, y + 3);
             _nudSurroundingSegments.Location = new Point(210, y);
             y += 34;
@@ -861,6 +882,7 @@ namespace Supervertaler.Trados.Controls
 
             // AI Context
             _chkIncludeTmMatches.Checked = settings.IncludeTmMatches;
+            _chkDemoMode.Checked = settings.DemoMode;
             _chkIncludeDocumentContext.Checked = settings.IncludeDocumentContext;
             _nudMaxSegments.Value = Math.Max(_nudMaxSegments.Minimum,
                 Math.Min(_nudMaxSegments.Maximum, settings.DocumentContextMaxSegments));
@@ -968,6 +990,7 @@ namespace Supervertaler.Trados.Controls
 
             // AI Context
             settings.IncludeTmMatches = _chkIncludeTmMatches.Checked;
+            settings.DemoMode = _chkDemoMode.Checked;
             settings.IncludeDocumentContext = _chkIncludeDocumentContext.Checked;
             settings.DocumentContextMaxSegments = (int)_nudMaxSegments.Value;
             settings.QuickLauncherSurroundingSegments = (int)_nudSurroundingSegments.Value;

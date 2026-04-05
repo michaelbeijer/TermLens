@@ -440,7 +440,6 @@ namespace Supervertaler.Trados.Core
 
         private static string ListTranslationMemories()
         {
-            // TMs are listed in the Studio settings: ProgramData or user profile
             // Primary location: Documents\Studio 2024\Translation Memories\
             var docsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             var tmFolders = new[]
@@ -454,34 +453,66 @@ namespace Supervertaler.Trados.Core
             {
                 if (Directory.Exists(folder))
                 {
-                    tmFiles.AddRange(Directory.GetFiles(folder, "*.sdltm", SearchOption.AllDirectories));
+                    try { tmFiles.AddRange(Directory.GetFiles(folder, "*.sdltm", SearchOption.AllDirectories)); }
+                    catch { }
                 }
             }
 
-            // Also check projects.xml for TMs referenced in projects
+            // Scan all .sdlproj files for TM references and project TM folders
             var xmlPath = GetProjectsXmlPath();
             if (xmlPath != null && File.Exists(xmlPath))
             {
                 var doc = XDocument.Load(xmlPath);
-                var tmPaths = doc.Descendants()
-                    .Where(e => e.Name.LocalName == "TranslationProviderConfiguration"
-                             || e.Name.LocalName == "MainTranslationProvider")
-                    .SelectMany(e => e.Descendants())
-                    .Where(e => e.Attribute("Uri")?.Value?.EndsWith(".sdltm") == true)
-                    .Select(e => e.Attribute("Uri")?.Value)
-                    .Where(u => u != null)
-                    .Distinct();
+                var projectDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                foreach (var tmUri in tmPaths)
+                foreach (var item in doc.Descendants("ProjectListItem"))
                 {
-                    var path = tmUri.Replace("file:///", "").Replace("file://", "");
-                    if (File.Exists(path) && !tmFiles.Contains(path))
-                        tmFiles.Add(path);
+                    var pfp = item.Attribute("ProjectFilePath")?.Value;
+                    var projPath = ResolveProjectPath(pfp, xmlPath);
+                    if (projPath == null || !File.Exists(projPath)) continue;
+
+                    var projDir = Path.GetDirectoryName(projPath);
+                    if (projDir == null) continue;
+
+                    // Scan .sdlproj for TM URIs (sdltm.file:/// prefix)
+                    try
+                    {
+                        var projDoc = XDocument.Load(projPath);
+                        var tmUris = projDoc.Descendants()
+                            .Where(e => e.Name.LocalName == "MainTranslationProviderItem"
+                                     || e.Name.LocalName == "ProjectTranslationProviderItem")
+                            .Select(e => e.Attribute("Uri")?.Value)
+                            .Where(u => u != null && u.Contains(".sdltm"))
+                            .Distinct();
+
+                        foreach (var uri in tmUris)
+                        {
+                            var path = ResolveTmUri(uri, projDir);
+                            if (path != null && File.Exists(path))
+                                tmFiles.Add(path);
+                        }
+                    }
+                    catch { }
+
+                    // Also scan project's Tm subfolder for any .sdltm files
+                    if (!projectDirs.Contains(projDir))
+                    {
+                        projectDirs.Add(projDir);
+                        var tmSubDir = Path.Combine(projDir, "Tm");
+                        if (Directory.Exists(tmSubDir))
+                        {
+                            try { tmFiles.AddRange(Directory.GetFiles(tmSubDir, "*.sdltm", SearchOption.AllDirectories)); }
+                            catch { }
+                        }
+                    }
                 }
             }
 
             // Deduplicate by full path
-            tmFiles = tmFiles.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            tmFiles = tmFiles
+                .Select(f => { try { return Path.GetFullPath(f); } catch { return f; } })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             var sb = new StringBuilder();
             sb.Append("{\"translationMemories\":[");
@@ -946,56 +977,118 @@ namespace Supervertaler.Trados.Core
 
         /// <summary>
         /// Finds a .sdltm file by TM name (partial match).
-        /// Searches the TM folder and project-referenced TMs.
+        /// Extracts TM paths from .sdlproj files (the authoritative source),
+        /// also scans the central TM folder and project Tm/ subfolders.
+        /// Works regardless of where users store their TMs.
         /// </summary>
         private static string FindTmFile(string tmName)
         {
             if (string.IsNullOrWhiteSpace(tmName)) return null;
             var searchLower = tmName.ToLowerInvariant();
 
+            // Collect all known TM file paths
+            var candidates = new List<string>();
+
+            // 1. Central TM folders (may be empty if user moved TMs elsewhere)
             var docsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             var tmFolders = new[]
             {
                 Path.Combine(docsFolder, "Studio 2024", "Translation Memories"),
                 Path.Combine(docsFolder, "Studio 2022", "Translation Memories")
             };
-
-            // Also search project folders
-            var xmlPath = GetProjectsXmlPath();
-            var projectDirs = new List<string>();
-            if (xmlPath != null && File.Exists(xmlPath))
-            {
-                var doc = XDocument.Load(xmlPath);
-                foreach (var item in doc.Descendants("ProjectListItem"))
-                {
-                    var pfp = item.Attribute("ProjectFilePath")?.Value;
-                    var resolved = ResolveProjectPath(pfp, xmlPath);
-                    if (resolved != null)
-                    {
-                        var dir = Path.GetDirectoryName(resolved);
-                        if (dir != null && Directory.Exists(dir) && !projectDirs.Contains(dir))
-                            projectDirs.Add(dir);
-                    }
-                }
-            }
-
-            var allFolders = tmFolders.Concat(projectDirs);
-            foreach (var folder in allFolders)
+            foreach (var folder in tmFolders)
             {
                 if (!Directory.Exists(folder)) continue;
-                try
-                {
-                    foreach (var file in Directory.GetFiles(folder, "*.sdltm", SearchOption.AllDirectories))
-                    {
-                        var fileName = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                        if (fileName.Contains(searchLower))
-                            return file;
-                    }
-                }
+                try { candidates.AddRange(Directory.GetFiles(folder, "*.sdltm", SearchOption.AllDirectories)); }
                 catch { }
             }
 
+            // 2. Extract TM paths from all .sdlproj files (handles custom locations)
+            var xmlPath = GetProjectsXmlPath();
+            if (xmlPath != null && File.Exists(xmlPath))
+            {
+                var doc = XDocument.Load(xmlPath);
+                var scannedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var item in doc.Descendants("ProjectListItem"))
+                {
+                    var pfp = item.Attribute("ProjectFilePath")?.Value;
+                    var projPath = ResolveProjectPath(pfp, xmlPath);
+                    if (projPath == null || !File.Exists(projPath)) continue;
+
+                    var projDir = Path.GetDirectoryName(projPath);
+                    if (projDir == null) continue;
+
+                    // Extract TM URIs from the .sdlproj
+                    try
+                    {
+                        var projDoc = XDocument.Load(projPath);
+                        var tmUris = projDoc.Descendants()
+                            .Where(e => e.Name.LocalName == "MainTranslationProviderItem"
+                                     || e.Name.LocalName == "ProjectTranslationProviderItem")
+                            .Select(e => e.Attribute("Uri")?.Value)
+                            .Where(u => u != null && u.Contains(".sdltm"))
+                            .Distinct();
+
+                        foreach (var uri in tmUris)
+                        {
+                            var path = ResolveTmUri(uri, projDir);
+                            if (path != null && File.Exists(path))
+                                candidates.Add(path);
+                        }
+                    }
+                    catch { }
+
+                    // Also scan project's Tm subfolder
+                    if (scannedDirs.Add(projDir))
+                    {
+                        var tmSubDir = Path.Combine(projDir, "Tm");
+                        if (Directory.Exists(tmSubDir))
+                        {
+                            try { candidates.AddRange(Directory.GetFiles(tmSubDir, "*.sdltm", SearchOption.AllDirectories)); }
+                            catch { }
+                        }
+                    }
+                }
+            }
+
+            // Deduplicate and search by name
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in candidates)
+            {
+                string fullPath;
+                try { fullPath = Path.GetFullPath(file); } catch { continue; }
+                if (!seen.Add(fullPath)) continue;
+
+                var fileName = Path.GetFileNameWithoutExtension(fullPath).ToLowerInvariant();
+                if (fileName.Contains(searchLower))
+                    return fullPath;
+            }
+
             return null;
+        }
+
+        /// <summary>
+        /// Resolves a TM URI from an .sdlproj file to an absolute file path.
+        /// Handles sdltm.file:/// and file:/// prefixes, and relative paths.
+        /// </summary>
+        private static string ResolveTmUri(string uri, string projectDir)
+        {
+            if (string.IsNullOrEmpty(uri)) return null;
+
+            var path = uri;
+            if (path.StartsWith("sdltm.file:///"))
+                path = path.Substring("sdltm.file:///".Length);
+            else if (path.StartsWith("file:///"))
+                path = path.Substring("file:///".Length);
+
+            // URI-decode (e.g. %20 → space)
+            try { path = Uri.UnescapeDataString(path); } catch { }
+
+            if (!Path.IsPathRooted(path))
+                path = Path.Combine(projectDir, path);
+
+            try { return Path.GetFullPath(path); } catch { return path; }
         }
 
         private static string GetProjectsXmlPath()

@@ -19,6 +19,7 @@
   * [Context Awareness](ai-assistant/context-awareness.md)
   * [File Attachments](ai-assistant/file-attachments.md)
   * [Studio Tools](ai-assistant/studio-tools.md)
+  * [Incognito Mode](ai-assistant/incognito-mode.md)
   * [Providers and Models](ai-assistant/providers.md)
 * [QuickLauncher](quicklauncher.md)
 * [Text Transforms](text-transforms.md)

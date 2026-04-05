@@ -467,7 +467,8 @@ namespace Supervertaler.Trados
                 MaxDocumentSegments = _settings?.AiSettings?.DocumentContextMaxSegments ?? 500,
                 SurroundingSegments = surroundingSegments,
                 IncludeTermMetadata = _settings?.AiSettings?.IncludeTermMetadata != false,
-                KbContext = kbPromptSection
+                KbContext = kbPromptSection,
+                DemoMode = _settings?.AiSettings?.DemoMode ?? false
             };
             var systemPrompt = ChatPrompt.BuildSystemPrompt(chatCtx);
 

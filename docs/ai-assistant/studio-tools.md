@@ -10,9 +10,13 @@ Studio Tools lets you query your Trados Studio installation using natural langua
 Studio Tools works with all major AI providers: **Claude**, **OpenAI**, **Gemini**, **Grok**, and **Mistral**. Only Ollama (local models) does not support tool use and will work as before -- plain chat without Trados queries.
 {% endhint %}
 
+{% hint style="warning" %}
+Studio Tools is under active development and some commands might not yet work as expected. If something doesn't work, please contact [support@supervertaler.com](mailto:support@supervertaler.com) and I'll get it working as fast as I can.
+{% endhint %}
+
 ## How It Works
 
-When you send a message in the Supervertaler Assistant, Claude automatically decides whether it needs to query Trados Studio to answer your question. If it does, it calls the appropriate tool behind the scenes, reads the result, and presents the information in a clear format.
+When you send a message in the Supervertaler Assistant, the AI automatically decides whether it needs to query Trados Studio to answer your question. If it does, it calls the appropriate tool behind the scenes, reads the result, and presents the information in a clear format.
 
 You do not need to use any special syntax or commands. Just ask your question naturally.
 
@@ -98,7 +102,7 @@ Studio Tools reads data directly from your local Trados Studio installation. Spe
 * **Translation memories** are found by scanning the `Translation Memories` folder and project folders. TM metadata and search use direct SQLite read-only access to the `.sdltm` files.
 * **Project templates** are found in the `Project Templates` folder.
 
-No data is sent to external services other than the AI provider. The tool results are passed to Claude as part of the conversation so it can format and present them to you.
+No data is sent to external services other than the AI provider. The tool results are passed to the AI as part of the conversation so it can format and present them to you.
 
 {% hint style="info" %}
 Studio Tools currently provides **read-only** access to your Trados data. It cannot create, modify, or delete projects, TMs, or templates.
@@ -107,4 +111,4 @@ Studio Tools currently provides **read-only** access to your Trados data. It can
 ## See Also
 
 * [Supervertaler Assistant](../ai-assistant.md) -- The chat interface where Studio Tools is available
-* [AI Settings](../settings/ai-settings.md) -- Configure your AI provider (must be set to Claude for tool use)
+* [AI Settings](../settings/ai-settings.md) -- Configure your AI provider
