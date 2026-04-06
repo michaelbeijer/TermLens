@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.18.51] — 2026-04-06
+
+### Fixed
+- **Proofreading false positives for inline tags** — source segments were sent to the AI with raw Trados tag markup (e.g. `<field name="Seq" value="2"/>`) while target segments had tags stripped to plain text, causing the AI to flag every auto-numbering field and inline tag as "removed from the target". Both source and target now use the same plain-text extraction so tag markup never reaches the proofreader
+
+---
+
 ## [4.18.50] — 2026-04-06
 
 ### Fixed

@@ -2650,7 +2650,8 @@ date: <today's date YYYY-MM-DD>
                         continue;
                     }
 
-                    var sourceText = pair.Source?.ToString() ?? "";
+                    var sourceText = pair.Source != null
+                        ? SegmentTagHandler.GetFinalText(pair.Source) : "";
                     // Strip Unicode line/paragraph separators — see comment in SendChatMessage
                     sourceText = sourceText.Replace("\u2028", " ").Replace("\u2029", " ");
                     if (string.IsNullOrWhiteSpace(sourceText))
