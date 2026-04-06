@@ -51,6 +51,8 @@ These are estimates for a representative document. Actual usage varies with segm
 | **Gemini 2.5 Flash** (recommended) | $0.06     | $0.06     | $0.01      |
 | **Gemini 2.5 Pro**                 | $0.24     | $0.26     | $0.03      |
 | **Gemini 3.1 Pro** (preview)       | $0.35     | $0.38     | $0.04      |
+| **Gemma 4 31B**                    | $0.02     | $0.05     | < $0.01    |
+| **Gemma 4 26B MoE**               | $0.02     | $0.05     | < $0.01    |
 
 #### Grok (xAI)
 
@@ -80,6 +82,8 @@ These are estimates for a representative document. Actual usage varies with segm
 | **GPT-5.4 Mini**                     | ~$0.14    | ~$0.16    | ~$0.02     |
 | **Gemini 3.1 Pro**                   | ~$0.37    | ~$0.40    | ~$0.04     |
 | **Gemini 3 Flash**                   | ~$0.06    | ~$0.07    | ~$0.01     |
+| **Gemma 4 31B**                      | ~$0.02    | ~$0.05    | < $0.01    |
+| **Gemma 4 26B MoE**                 | ~$0.02    | ~$0.05    | < $0.01    |
 | **Mistral Small 4**                  | ~$0.01    | ~$0.01    | < $0.01    |
 | **Qwen 3.6 Plus (Free)**            | Free      | Free      | Free       |
 
@@ -122,6 +126,8 @@ For reference, these are the per-token rates used in the calculations above:
 | Gemini 2.5 Flash         | $0.30                 | $2.50                  |
 | Gemini 2.5 Pro           | $1.25                 | $10.00                 |
 | Gemini 3.1 Pro (Preview) | $2.00                 | $12.00                 |
+| Gemma 4 31B              | $0.14                 | $0.40                  |
+| Gemma 4 26B MoE          | $0.13                 | $0.40                  |
 | Grok 4.20                | $2.00                 | $6.00                  |
 | Grok 4.1 Fast            | $0.20                 | $0.50                  |
 | Grok 4.20 (Reasoning)    | $2.00                 | $6.00                  |

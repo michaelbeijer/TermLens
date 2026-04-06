@@ -16,7 +16,7 @@ Choose one of the supported AI providers:
 |----------|-------------|
 | **OpenAI** | GPT-5.4, GPT-5.4 Mini |
 | **Claude (Anthropic)** | Claude Sonnet 4.6, Claude Haiku 4.5, Claude Opus 4.6 |
-| **Gemini (Google)** | Gemini 2.5 Flash, Gemini 2.5 Pro, Gemini 3.1 Pro (Preview) |
+| **Gemini (Google)** | Gemini 2.5 Flash, Gemini 2.5 Pro, Gemini 3.1 Pro (Preview), Gemma 4 31B, Gemma 4 26B MoE |
 | **Grok (xAI)** | Grok 4.20, Grok 4.1 Fast, Grok 4.20 (Reasoning) |
 | **Mistral AI** | Mistral Large, Mistral Small, Mistral Nemo |
 | **[OpenRouter](#openrouter)** | Access 200+ models from all major providers with a single API key |
@@ -78,6 +78,8 @@ The model dropdown includes a curated selection of the best models for translati
 | **GPT-5.4 Mini** | Fast, affordable, and high quality for everyday translation |
 | **Gemini 3.1 Pro** | Google's most advanced model, large context |
 | **Gemini 3 Flash** | Fast and affordable – great for large batch jobs |
+| **Gemma 4 31B** | Open-source – strong multilingual quality, 256K context |
+| **Gemma 4 26B MoE** | Open-source – near-31B quality at a fraction of the cost |
 | **Mistral Small 4** | Very fast and cheap – good multilingual support |
 | **Qwen 3.6 Plus (Free)** | Free – no API costs, good general-purpose quality |
 
