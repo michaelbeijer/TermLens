@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.18.52] — 2026-04-06
+
+### Added
+- **Gemma 4 models** — added Google's new open-source Gemma 4 31B and Gemma 4 26B MoE models to the Gemini provider. These use the same API key and endpoint, offer strong multilingual quality, and have a 256K context window
+
+---
+
 ## [4.18.51] — 2026-04-06
 
 ### Fixed

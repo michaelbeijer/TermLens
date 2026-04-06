@@ -99,6 +99,18 @@ namespace Supervertaler.Trados.Core
                 Id = "gemini-3.1-pro-preview", DisplayName = "Gemini 3.1 Pro (Preview)",
                 Description = "Newest model (preview) — Google's most advanced, 1M context",
                 Provider = LlmProvider.Gemini
+            },
+            new LlmModelInfo
+            {
+                Id = "gemma-4-31b-it", DisplayName = "Gemma 4 31B",
+                Description = "Open-source — strong multilingual quality, 256K context",
+                Provider = LlmProvider.Gemini
+            },
+            new LlmModelInfo
+            {
+                Id = "gemma-4-26b-a4b-it", DisplayName = "Gemma 4 26B MoE",
+                Description = "Open-source — lightweight MoE variant, 256K context",
+                Provider = LlmProvider.Gemini
             }
         };
 
