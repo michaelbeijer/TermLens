@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.18.57] — 2026-04-07
+
+### Changed
+- **Shorter panel names** — docking tabs and ribbon buttons now show "TermLens" and "SuperSearch" instead of "Supervertaler TermLens" and "Supervertaler SuperSearch"; "Supervertaler Assistant" is unchanged
+
+### Docs
+- **SuperSearch screencast** — embedded the new SuperSearch demo video at the top of the SuperSearch help page
+- **Updated help, README, and website** with video links and playlist
+
+---
+
 ## [4.18.56] — 2026-04-06
 
 ### Added
