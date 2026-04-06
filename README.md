@@ -2,18 +2,19 @@
 
 **Terminology insight, AI translation, and knowledge management for Trados Studio**
 
-Supervertaler for Trados is a Trados Studio plugin (.sdlplugin) that brings key features from [Supervertaler Workbench](https://supervertaler.com/workbench/) into the Trados ecosystem. It includes the **TermLens** glossary panel, **AI-powered batch and single-segment translation** using OpenAI, Anthropic, and Google LLMs, **Clipboard Mode** for using any web-based AI without an API key, and **SuperMemory** – a self-organising, AI-maintained translation knowledge base. It relates to Supervertaler Workbench as follows:
+Supervertaler for Trados is a Trados Studio plugin (.sdlplugin) that brings terminology management, AI-powered translation, cross-file search, and a translation knowledge base directly into Trados Studio. It includes **TermLens** (inline terminology), **SuperSearch** (cross-file search & replace), **AI Assistant** (project-aware chat), **Batch Translate & Proofread**, **SuperMemory** (AI-maintained knowledge base), and **Clipboard Mode** (use any web-based AI without an API key). It relates to Supervertaler Workbench as follows:
 
 - Supervertaler Workbench – free, open-source, standalone tool (Windows/Mac/Linux)
 - Supervertaler for Trados – paid plugin (Windows-based, but can run on Mac/Linux via virtualisation, e.g., using Parallels Desktop)
+
+**Screencasts:** [Supervertaler for Trados playlist on YouTube](https://www.youtube.com/playlist?list=PLKzCjqTaOj20o4zyXAWmOR-e3ZHG4_NLU)
 
 ## Pricing
 
 | Plan | Price | Features |
 |------|-------|----------|
 | **Free trial** | 14 days – no credit card required | Full access to all features |
-| **TermLens** | €10/month | Terminology management, termbases, MultiTerm support, Term Picker, quick-add shortcuts |
-| **TermLens + Supervertaler Assistant** | €15/month | All TermLens features plus AI Assistant, Batch Translate, Prompt Library, multimodal support |
+| **Supervertaler for Trados** | €20/month or €200/year (2 months free) | All features included |
 
 Purchase a licence at [supervertaler.com/trados](https://supervertaler.com/trados/).
 
@@ -75,6 +76,27 @@ As you navigate between segments in the Trados Studio editor, the TermLens panel
 ---
 
 <img width="1411" height="1015" alt="4_TermLens-in-Trados-Studio-2024-Settings-KBS" src="https://github.com/user-attachments/assets/ee14c3ae-43f3-4f76-8ec2-871a9c18e10b" />
+
+## SuperSearch – cross-file search & replace
+
+SuperSearch lets you search across **all SDLXLIFF files** in your Trados project – not just the file you have open. Find & replace in target text, with regex support, match highlighting, a preview pane, and click-to-navigate.
+
+📺 [Watch the SuperSearch demo](https://youtu.be/549Ulc92FiU) (3 min)
+
+### Features
+
+- **Cross-file search** – searches all SDLXLIFF files in your project at once
+- **Source, target, or both** – choose which columns to search
+- **Match highlighting** – matching text is highlighted in yellow in the results grid
+- **Preview pane** – click a result to see the full source and target text in a resizable preview below the grid
+- **Click-to-navigate** – double-click any result to jump to that segment in the editor
+- **Find & Replace** – replace matches in target text across files, with confirmation
+- **Regex support** – use .NET regular expressions with capture group replacement
+- **Case-sensitive** – optional case-sensitive search
+- **File selection** – include or exclude specific files from the search
+- **Keyboard shortcut** – press **Alt+S** to open; select text first to search for it instantly
+
+---
 
 ## QuickLauncher – one-click AI prompts
 
