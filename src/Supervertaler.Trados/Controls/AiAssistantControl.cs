@@ -117,6 +117,14 @@ namespace Supervertaler.Trados.Controls
         public event EventHandler SuperMemoryRefreshRequested;
 
         /// <summary>
+        /// Raised when the user picks a different memory bank from the dropdown
+        /// in the SuperMemory toolbar. The ViewPart handler is responsible for
+        /// persisting the new active bank to settings and invalidating any
+        /// cached readers.
+        /// </summary>
+        public event EventHandler<MemoryBankChangedEventArgs> MemoryBankChanged;
+
+        /// <summary>
         /// Fired when the user changes chat font size via the A+/A- buttons.
         /// The ViewPart should persist the new size.
         /// </summary>
@@ -313,6 +321,8 @@ namespace Supervertaler.Trados.Controls
                 DistillRequested?.Invoke(this, EventArgs.Empty);
             _superMemoryToolbar.RefreshRequested += (s, e) =>
                 SuperMemoryRefreshRequested?.Invoke(this, EventArgs.Empty);
+            _superMemoryToolbar.MemoryBankChanged += (s, e) =>
+                MemoryBankChanged?.Invoke(this, e);
 
             // ─── Input panel (bottom) ─────────────────────────────
             _inputPanel = new Panel

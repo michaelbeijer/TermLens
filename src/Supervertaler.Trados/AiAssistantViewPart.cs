@@ -196,6 +196,7 @@ namespace Supervertaler.Trados
             _control.Value.HealthCheckRequested += OnHealthCheck;
             _control.Value.DistillRequested += OnDistill;
             _control.Value.SuperMemoryRefreshRequested += (s, e) => RefreshSuperMemoryInboxCount();
+            _control.Value.MemoryBankChanged += OnMemoryBankChanged;
 
             // Initial context update
             UpdateContextDisplay();
@@ -203,6 +204,7 @@ namespace Supervertaler.Trados
             UpdateBatchProviderDisplay();
             UpdateBatchSegmentCounts();
             PopulateBatchPromptDropdown();
+            RefreshMemoryBankDropdown();
             RefreshSuperMemoryInboxCount();
             StartInboxWatcher();
 
@@ -1079,6 +1081,91 @@ namespace Supervertaler.Trados
             catch
             {
                 return null; // KB is optional — never block translation
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  Memory-bank dropdown: populate + live switching
+        // ══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Rebuilds the Memory Bank dropdown in the SuperMemory toolbar from
+        /// the current on-disk bank list, pre-selecting the active bank. Safe
+        /// to call repeatedly — the toolbar suppresses its own change event
+        /// while the combo is being repopulated, so no accidental switch fires.
+        /// </summary>
+        private void RefreshMemoryBankDropdown()
+        {
+            try
+            {
+                var banks = UserDataPath.ListMemoryBanks();
+                var activeName = ActiveMemoryBankName;
+
+                // Make sure the active bank is always visible in the list, even
+                // if the on-disk directory hasn't been created yet (e.g. just
+                // after a fresh install before the default bank's sub-folders
+                // are written). This keeps the combo from looking empty on day one.
+                if (!string.IsNullOrWhiteSpace(activeName) &&
+                    !banks.Contains(activeName, StringComparer.Ordinal))
+                {
+                    banks.Insert(0, activeName);
+                }
+
+                _control.Value.SuperMemoryToolbar?.SetMemoryBanks(banks, activeName);
+            }
+            catch
+            {
+                // Non-critical — the rest of the AI Assistant still works
+                // against the active bank via ActiveMemoryBankDir.
+            }
+        }
+
+        /// <summary>
+        /// Handles the user picking a different bank from the toolbar dropdown.
+        /// Persists the new active bank, invalidates the cached <see cref="MemoryBankReader"/>,
+        /// restarts the inbox watcher against the new bank, and drops a system
+        /// banner into the chat so the user sees confirmation of the switch.
+        /// </summary>
+        private void OnMemoryBankChanged(object sender, MemoryBankChangedEventArgs e)
+        {
+            if (e == null || string.IsNullOrWhiteSpace(e.BankName)) return;
+
+            var newName = e.BankName;
+            var oldName = ActiveMemoryBankName;
+            if (string.Equals(newName, oldName, StringComparison.Ordinal))
+                return;
+
+            try
+            {
+                // 1. Persist the new active bank to settings
+                if (_settings == null) _settings = TermLensSettings.Load();
+                if (_settings.AiSettings == null) _settings.AiSettings = new AiSettings();
+                _settings.AiSettings.ActiveMemoryBankName = newName;
+                _settings.Save();
+
+                // 2. Invalidate the cached reader — the next LoadKbContextForPrompt
+                //    call will lazily recreate it against the new bank directory.
+                _kbReader = null;
+                _kbReaderBankName = null;
+
+                // 3. Restart the inbox watcher against the new bank
+                try { _inboxWatcher?.Dispose(); } catch { }
+                _inboxWatcher = null;
+                StartInboxWatcher();
+
+                // 4. Refresh the inbox count display (now reading from the new bank)
+                RefreshSuperMemoryInboxCount();
+
+                // 5. User-visible confirmation in the chat history
+                _control.Value.AddMessage(new ChatMessage
+                {
+                    Role = ChatRole.Assistant,
+                    Content = $"Switched to memory bank **{newName}**. The next chat turn will read from this bank."
+                });
+            }
+            catch (Exception ex)
+            {
+                AddErrorMessage($"Could not switch memory bank: {ex.Message}");
             }
         }
 
@@ -3883,6 +3970,10 @@ date: <today's date YYYY-MM-DD>
             instance._settings = TermLensSettings.Load();
             instance.UpdateProviderDisplay();
             instance.UpdateBatchProviderDisplay();
+            // Pick up any bank-list changes (new bank added via settings dialog,
+            // rename, etc.) and re-select the active bank without firing the
+            // toolbar's change event.
+            instance.RefreshMemoryBankDropdown();
         }
 
         /// <summary>

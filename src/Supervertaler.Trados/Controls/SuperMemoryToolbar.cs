@@ -13,12 +13,20 @@ namespace Supervertaler.Trados.Controls
     public class SuperMemoryToolbar : Panel
     {
         private Label _lblHeading;
+        private ComboBox _cmbMemoryBank;
         private LinkLabel _lnkHelp;
         private Button _btnProcessInbox;
         private Button _btnHealthCheck;
         private Button _btnDistill;
         private Button _btnRefresh;
         private Label _lblInboxCount;
+
+        /// <summary>
+        /// Suppresses <see cref="MemoryBankChanged"/> while the dropdown is being
+        /// populated programmatically. Mirrors the <c>_suppress_combo_change</c>
+        /// flag in the Python Supervertaler Assistant.
+        /// </summary>
+        private bool _suppressComboChange;
 
         /// <summary>Raised when the user clicks "Process Inbox".</summary>
         public event EventHandler ProcessInboxRequested;
@@ -31,6 +39,12 @@ namespace Supervertaler.Trados.Controls
 
         /// <summary>Raised when the user clicks the refresh button.</summary>
         public event EventHandler RefreshRequested;
+
+        /// <summary>
+        /// Raised when the user picks a different memory bank from the dropdown.
+        /// Suppressed while <see cref="SetMemoryBanks"/> is repopulating the list.
+        /// </summary>
+        public event EventHandler<MemoryBankChangedEventArgs> MemoryBankChanged;
 
         public SuperMemoryToolbar()
         {
@@ -56,6 +70,21 @@ namespace Supervertaler.Trados.Controls
                 AutoSize = true,
                 TextAlign = ContentAlignment.MiddleLeft
             };
+
+            // ─── Memory bank dropdown ───────────────────────────────
+            // Populated by the parent view part via SetMemoryBanks().
+            // Switching is immediate: the next chat turn reads from the
+            // new bank, chat history is preserved.
+            _cmbMemoryBank = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", UiScale.FontSize(8f)),
+                FlatStyle = FlatStyle.Flat,
+                Width = UiScale.Pixels(180),
+                Height = UiScale.Pixels(22),
+                TabStop = false
+            };
+            _cmbMemoryBank.SelectedIndexChanged += OnMemoryBankComboChanged;
 
             // ─── Help link ──────────────────────────────────────────
             _lnkHelp = new LinkLabel
@@ -92,6 +121,10 @@ namespace Supervertaler.Trados.Controls
 
             // Tooltip explaining what this does
             var tip = new ToolTip { AutoPopDelay = 8000 };
+            tip.SetToolTip(_cmbMemoryBank,
+                "Active memory bank.\n" +
+                "Switching is immediate - the next chat turn reads from\n" +
+                "the new bank; chat history is preserved.");
             tip.SetToolTip(_btnProcessInbox,
                 "Reads new files from your SuperMemory inbox and uses AI\n" +
                 "to organise them into structured knowledge base articles\n" +
@@ -190,6 +223,7 @@ namespace Supervertaler.Trados.Controls
             Controls.Add(_btnHealthCheck);
             Controls.Add(_btnProcessInbox);
             Controls.Add(_lnkHelp);
+            Controls.Add(_cmbMemoryBank);
             Controls.Add(_lblHeading);
 
             // Manual layout — position controls left to right
@@ -206,7 +240,11 @@ namespace Supervertaler.Trados.Controls
 
             _lblHeading.Location = new Point(x,
                 (Height - _lblHeading.Height) / 2);
-            x += _lblHeading.Width + UiScale.Pixels(2);
+            x += _lblHeading.Width + UiScale.Pixels(4);
+
+            _cmbMemoryBank.Location = new Point(x,
+                (Height - _cmbMemoryBank.Height) / 2);
+            x += _cmbMemoryBank.Width + UiScale.Pixels(4);
 
             _lnkHelp.Location = new Point(x,
                 (Height - _lnkHelp.Height) / 2);
@@ -266,6 +304,90 @@ namespace Supervertaler.Trados.Controls
                 _btnHealthCheck.ForeColor = Color.FromArgb(170, 170, 170);
                 _btnDistill.ForeColor = Color.FromArgb(170, 170, 170);
             }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  Memory bank dropdown
+        // ══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Replaces the memory bank dropdown contents with the given list and
+        /// selects <paramref name="activeBank"/> if present. Does not raise
+        /// <see cref="MemoryBankChanged"/> — callers drive that side effect
+        /// themselves so repopulation after a user switch is silent.
+        /// </summary>
+        /// <param name="banks">Bank names from <c>UserDataPath.ListMemoryBanks()</c>.</param>
+        /// <param name="activeBank">The bank that should appear selected, or null.</param>
+        public void SetMemoryBanks(System.Collections.Generic.IList<string> banks, string activeBank)
+        {
+            if (_cmbMemoryBank == null) return;
+
+            _suppressComboChange = true;
+            try
+            {
+                _cmbMemoryBank.Items.Clear();
+
+                if (banks == null || banks.Count == 0)
+                {
+                    _cmbMemoryBank.Items.Add("(no memory banks)");
+                    _cmbMemoryBank.SelectedIndex = 0;
+                    _cmbMemoryBank.Enabled = false;
+                    LayoutControls();
+                    return;
+                }
+
+                _cmbMemoryBank.Enabled = true;
+
+                int selected = 0;
+                for (int i = 0; i < banks.Count; i++)
+                {
+                    _cmbMemoryBank.Items.Add(banks[i]);
+                    if (string.Equals(banks[i], activeBank, System.StringComparison.Ordinal))
+                        selected = i;
+                }
+                _cmbMemoryBank.SelectedIndex = selected;
+            }
+            finally
+            {
+                _suppressComboChange = false;
+            }
+
+            LayoutControls();
+        }
+
+        /// <summary>Returns the currently selected bank name, or null if none.</summary>
+        public string SelectedMemoryBank
+        {
+            get
+            {
+                if (_cmbMemoryBank == null) return null;
+                var item = _cmbMemoryBank.SelectedItem as string;
+                if (string.IsNullOrEmpty(item)) return null;
+                if (item == "(no memory banks)") return null;
+                return item;
+            }
+        }
+
+        private void OnMemoryBankComboChanged(object sender, EventArgs e)
+        {
+            if (_suppressComboChange) return;
+            var name = SelectedMemoryBank;
+            if (string.IsNullOrEmpty(name)) return;
+            MemoryBankChanged?.Invoke(this, new MemoryBankChangedEventArgs(name));
+        }
+    }
+
+    /// <summary>
+    /// Event args for <see cref="SuperMemoryToolbar.MemoryBankChanged"/>.
+    /// Carries the name of the bank the user just selected.
+    /// </summary>
+    public class MemoryBankChangedEventArgs : EventArgs
+    {
+        public string BankName { get; }
+
+        public MemoryBankChangedEventArgs(string bankName)
+        {
+            BankName = bankName;
         }
     }
 }
