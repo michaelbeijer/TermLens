@@ -2107,13 +2107,22 @@ namespace Supervertaler.Trados
             if (currentPath != null)
                 WriteVaultFileTracked(vaultDir, currentPath, currentContent.ToString().Trim(), fileResults);
 
+            // Always append a completion summary at the end, regardless of
+            // whether the AI produced any "### FILE:" markers to auto-fix.
+            // Without this the user sees the tail of the report but has no
+            // clear "done" indicator — the Stop button reverts to Send and
+            // the thinking bubble disappears, but there is no chat message
+            // marking the transition, which is confusing especially after
+            // a long-running Health Check where the user may have scrolled
+            // away during the wait.
+            var summary = new System.Text.StringBuilder();
+
             if (fileResults.Count > 0)
             {
                 int newCount = 0, updatedCount = 0;
                 foreach (var r in fileResults)
                     if (r.Item2) newCount++; else updatedCount++;
 
-                var summary = new System.Text.StringBuilder();
                 summary.AppendLine($"**Health Check: applied {fileResults.Count} change{(fileResults.Count != 1 ? "s" : "")}**\n");
 
                 if (updatedCount > 0)
@@ -2132,12 +2141,22 @@ namespace Supervertaler.Trados
                 }
 
                 summary.AppendLine("Scroll up for the full report. Open Obsidian to review the changes.");
-
-                var msg = new ChatMessage { Role = ChatRole.Assistant, Content = summary.ToString() };
-                _chatHistory.Add(msg);
-                _control.Value.AddMessage(msg);
-                SaveChatHistory();
             }
+            else
+            {
+                // No files auto-fixed — the AI's response was purely a
+                // report with findings flagged for human review, or the
+                // parser did not recognise the AI's fix format. Either way,
+                // the user needs an explicit "done" marker.
+                summary.AppendLine("**Health Check complete \u2014 no changes applied**\n");
+                summary.AppendLine("The AI scanned the active memory bank and wrote its report above, but did not auto-fix any files. Any issues it flagged are for your review.\n");
+                summary.AppendLine("Scroll up to read the full report, and open Obsidian if you want to inspect the flagged files.");
+            }
+
+            var msg = new ChatMessage { Role = ChatRole.Assistant, Content = summary.ToString() };
+            _chatHistory.Add(msg);
+            _control.Value.AddMessage(msg);
+            SaveChatHistory();
         }
 
         private void WriteVaultFileTracked(string vaultDir, string relativePath,
