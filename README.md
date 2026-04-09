@@ -2,7 +2,7 @@
 
 **Terminology insight, AI translation, and knowledge management for Trados Studio**
 
-Supervertaler for Trados is a Trados Studio plugin (.sdlplugin) that brings terminology management, AI-powered translation, cross-file search, and a translation knowledge base directly into Trados Studio. It includes **TermLens** (inline terminology), **SuperSearch** (cross-file search & replace), **AI Assistant** (project-aware chat), **Batch Translate & Proofread**, **Memory banks** (AI-maintained translation knowledge bases), and **Clipboard Mode** (use any web-based AI without an API key). It relates to Supervertaler Workbench as follows:
+Supervertaler for Trados is a Trados Studio plugin (.sdlplugin) that brings terminology management, AI-powered translation, cross-file search, and a translation knowledge base directly into Trados Studio. It includes **TermLens** (inline terminology), **SuperSearch** (cross-file search & replace), **AI Assistant** (project-aware chat), **Batch Translate & Proofread**, **SuperMemory** (self-organising translation knowledge base), and **Clipboard Mode** (use any web-based AI without an API key). It relates to Supervertaler Workbench as follows:
 
 - Supervertaler Workbench – free, open-source, standalone tool (Windows/Mac/Linux)
 - Supervertaler for Trados – paid plugin (Windows-based, but can run on Mac/Linux via virtualisation, e.g., using Parallels Desktop)
@@ -182,13 +182,15 @@ Clipboard Mode lets you translate or proofread segments using **any web-based AI
 - **Works in both modes** – available for both Translate and Proofread workflows
 - **Same quality controls** – uses the same prompts, terminology injection, document context, and tag handling as API-based batch operations
 
-## Memory banks – AI-maintained translation knowledge bases
+## SuperMemory – self-organising translation knowledge bases
 
-A **memory bank** is a self-organising translation knowledge base – a living, AI-maintained wiki of everything the assistant should know about a client, a domain, or a project. It captures the things a translation memory cannot: why a term was picked, what alternatives were rejected, what a client prefers, what the domain's common pitfalls are, how the style guide wants things phrased.
+**SuperMemory** is Supervertaler's self-organising translation knowledge base system – a [Karpathy-inspired](https://venturebeat.com/data/karpathy-shares-llm-knowledge-base-architecture-that-bypasses-rag-with-an) feature that captures the reasoning behind your translation decisions and makes it available to the AI on every translation. Where a translation memory gives the AI previous wordings and a termbase gives it approved term pairs, SuperMemory gives it the _why_: client preferences, rejected alternatives, domain conventions, style rules, and the accumulated institutional knowledge for each piece of work.
 
-Memory banks are one of several context sources the Supervertaler Assistant consults before every translation, chat message, and AutoPrompt run. Unlike termbases and TMs – which give the AI dense pairs of source and target text – memory banks give it the **reasoning** behind those pairs. They are complementary, not a replacement.
+Knowledge inside SuperMemory is organised into one or more **memory banks** – self-contained folders that each act as an Obsidian-compatible vault. You can keep a single default bank, or several side by side (one per client, one per domain, one per language pair) and switch between them in one click from the Supervertaler Assistant toolbar.
 
-Each bank is built on [Obsidian](https://obsidian.md/) and stored as interlinked Markdown files on disk, so it is human-readable, portable, and future-proof.
+SuperMemory is one of several context sources the Supervertaler Assistant consults before every translation, chat message, and AutoPrompt run. Unlike termbases and TMs – which give the AI dense pairs of source and target text – SuperMemory gives it the **reasoning** behind those pairs. It is complementary to your existing TM and termbase, not a replacement.
+
+Each memory bank is built on [Obsidian](https://obsidian.md/) and stored as interlinked Markdown files on disk, so it is human-readable, portable, and future-proof.
 
 <img alt="Memory bank knowledge graph in Obsidian showing interconnected clients, terminology, and domain knowledge" src="screenshots/Sv_SuperMemory-Graph.png" />
 

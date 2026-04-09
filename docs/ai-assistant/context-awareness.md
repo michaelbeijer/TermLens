@@ -48,18 +48,18 @@ Both Supervertaler termbases and MultiTerm .sdltb termbases attached to the Trad
 
 **Toggles:** AI Settings → *Include termbase terms* / *Include term metadata* / per-termbase contribution list.
 
-### 7. Memory bank context
+### 7. SuperMemory context
 
-If a [memory bank](memory-banks.md) is active, the assistant loads the most relevant articles from it before every AI call:
+[**SuperMemory**](memory-banks.md) is Supervertaler's self-organising translation knowledge base system. If a memory bank is active, the assistant loads the most relevant articles from it before every AI call:
 
 - the **client profile** matching the current Trados project name, from `01_CLIENTS/`
 - the **domain article** matching the document type the AI just detected, from `03_DOMAINS/`
 - the most relevant **style guide** from `04_STYLE/`, preferring client-specific guides over general ones
 - matching **terminology articles** from `02_TERMINOLOGY/`, which include not just approved translations but also rejected alternatives and the reasoning behind each decision
 
-Unlike a termbase – which gives the AI flat pairs of source and target terms – a memory bank gives it the **reasoning** behind those pairs: the decisions, the caveats, and the client-specific overrides. The two are complementary, not competitive.
+Unlike a termbase – which gives the AI flat pairs of source and target terms – SuperMemory gives it the **reasoning** behind those pairs: the decisions, the caveats, and the client-specific overrides. The two are complementary, not competitive.
 
-Only articles from the **active** memory bank are loaded. If you keep separate banks per client or domain, switch to the relevant one from the Memory Bank dropdown in the toolbar before translating. See [Memory banks → AI Integration](memory-banks/ai-integration.md) for the full loading algorithm and token budget.
+Only articles from the **active** memory bank are loaded. If you keep separate banks per client or domain, switch to the relevant one from the Memory Bank dropdown in the toolbar before translating. See [SuperMemory → AI Integration](memory-banks/ai-integration.md) for the full loading algorithm and token budget.
 
 **Toggles:** AI Settings → *Include memory bank context* / *Use memory bank in AutoPrompt*.
 

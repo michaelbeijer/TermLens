@@ -37,7 +37,7 @@ namespace Supervertaler.Trados.Controls
         public SuperMemoryQuickAddDialog(string defaultTerm = "", string defaultCorrection = "",
             string activePromptName = null, string targetLanguage = null)
         {
-            Text = "Add to SuperMemory";
+            Text = "Quick Add to memory bank";
             Font = new Font("Segoe UI", 9f);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;

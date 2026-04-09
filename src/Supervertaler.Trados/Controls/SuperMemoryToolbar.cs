@@ -144,9 +144,11 @@ namespace Supervertaler.Trados.Controls
                 "Switching is immediate - the next chat turn reads from\n" +
                 "the new bank; chat history is preserved.");
             tip.SetToolTip(_btnProcessInbox,
-                "Reads new files from your SuperMemory inbox and uses AI\n" +
-                "to organise them into structured knowledge base articles\n" +
-                "(client profiles, terminology, domain knowledge, style guides).");
+                "Reads new Markdown notes from the active memory bank's\n" +
+                "00_INBOX folder and uses AI to organise them into structured\n" +
+                "knowledge base articles (client profiles, terminology,\n" +
+                "domain knowledge, style guides). For binary files like TMX\n" +
+                "or PDF, use Distill instead.");
 
             // ─── Health Check button ─────────────────────────────────
             _btnHealthCheck = new Button
@@ -168,9 +170,9 @@ namespace Supervertaler.Trados.Controls
             _btnHealthCheck.Click += (s, e) => HealthCheckRequested?.Invoke(this, EventArgs.Empty);
 
             tip.SetToolTip(_btnHealthCheck,
-                "Scans your SuperMemory knowledge base for problems:\n" +
-                "conflicting terminology, broken links, stale or duplicate\n" +
-                "content. Fixes what it can and flags the rest for review.");
+                "Scans the active memory bank for problems: conflicting\n" +
+                "terminology, broken links, stale or duplicate content.\n" +
+                "Fixes what it can and flags the rest for review.");
 
             // ─── Distill button ─────────────────────────────────────
             _btnDistill = new Button
@@ -193,7 +195,9 @@ namespace Supervertaler.Trados.Controls
 
             tip.SetToolTip(_btnDistill,
                 "Extract knowledge from translation files (TMX, DOCX, PDF,\n" +
-                "termbases) into SuperMemory knowledge base articles.");
+                "termbases) into structured Markdown articles in the active\n" +
+                "memory bank. Source files dropped into the inbox are\n" +
+                "archived after a successful distill.");
 
             // ─── Inbox count label ───────────────────────────────────
             _lblInboxCount = new Label

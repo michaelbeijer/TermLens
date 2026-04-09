@@ -200,9 +200,11 @@ The AI Assistant is a separate dockable ViewPart (`AiAssistantViewPart` + `AiAss
 - **Apply to target** — right-click assistant responses to insert text into the active Trados segment.
 - **AI Context control** — `AiSettings.DisabledAiTermbaseIds` filters which termbases contribute terms to prompts; `AiSettings.IncludeTmMatches` toggles TM match injection into the system prompt.
 
-### Memory banks / multi-bank support (implemented)
+### SuperMemory / multi-bank support (implemented)
 
-Memory banks are self-organising translation knowledge bases stored as interlinked Markdown files under `<Root>/memory-banks/<bank-name>/`. They share the exact on-disk layout (including the seven-folder skeleton: `00_INBOX`, `01_CLIENTS`, `02_TERMINOLOGY`, `03_DOMAINS`, `04_STYLE`, `05_INDICES`, `06_TEMPLATES`) with the Python Supervertaler Assistant, so banks created in either product are immediately visible to the other.
+**SuperMemory** is the user-facing brand name for the self-organising translation knowledge base system (chat banners, Reports tab labels, help menu, marketing copy all use this). **Memory banks** are the individual containers within SuperMemory — self-contained folders, one per client/domain/project, that the user can switch between. The two-level terminology matches how Gmail uses "Gmail" for the product and "inbox" for the container, or Obsidian uses "Obsidian" for the product and "vault" for the container.
+
+Memory banks are stored as interlinked Markdown files under `<Root>/memory-banks/<bank-name>/`. They share the exact on-disk layout (including the seven-folder skeleton: `00_INBOX`, `01_CLIENTS`, `02_TERMINOLOGY`, `03_DOMAINS`, `04_STYLE`, `05_INDICES`, `06_TEMPLATES`) with the Python Supervertaler Assistant, so banks created in either product are immediately visible to the other.
 
 - **Multiple banks** — users can keep several banks side by side (one per client, per domain, or per language pair). The active bank is persisted in `AiSettings.ActiveMemoryBankName` and survives Trados restarts.
 - **Toolbar dropdown** — the `SuperMemoryToolbar` Memory Bank combo lists every bank under `<Root>/memory-banks/` (via `UserDataPath.ListMemoryBanks()`) with the active one selected. Switching is immediate: `AiAssistantViewPart.OnMemoryBankChanged` persists the new bank, invalidates the cached `MemoryBankReader`, restarts the inbox watcher, and drops a confirmation banner into the chat.

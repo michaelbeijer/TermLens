@@ -1,14 +1,16 @@
 ---
-description: Self-organising, AI-maintained translation knowledge bases
+description: SuperMemory — Supervertaler's self-organising translation knowledge base system
 ---
 
-# Memory banks
+# SuperMemory and memory banks
 
-A **memory bank** is a self-organising translation knowledge base – a living, AI-maintained wiki of everything the Supervertaler Assistant should know about a client, a domain, or a project. It captures the things a translation memory cannot: why a term was picked, what alternatives were rejected, what a client prefers, what the domain's common pitfalls are, how the style guide wants things phrased.
+**SuperMemory** is Supervertaler's self-organising translation knowledge base system – a [Karpathy-inspired](https://venturebeat.com/data/karpathy-shares-llm-knowledge-base-architecture-that-bypasses-rag-with-an) feature that captures the reasoning behind your translation decisions and makes it available to the AI on every translation. Where a translation memory gives the AI previous wordings and a termbase gives it approved term pairs, SuperMemory gives it the _why_: client preferences, rejected alternatives, domain conventions, style rules, and the accumulated institutional knowledge for each piece of work.
 
-A memory bank is one of several [context sources](context-awareness.md) the assistant consults when it translates a segment, drafts a prompt, or answers a chat message. Unlike a translation memory or a termbase, which give the AI dense pairs of source and target text, a memory bank gives it the **reasoning** behind those pairs – the decisions, the caveats, and the accumulated institutional knowledge for a specific piece of work.
+Knowledge inside SuperMemory is organised into one or more **memory banks** – self-contained folders that each act as an Obsidian-compatible vault. You can keep a single default bank, or several banks side by side (one per client, one per domain, one per language pair) and switch between them in one click from the Supervertaler Assistant toolbar. This page covers both SuperMemory as a system and how to work with the memory banks inside it.
 
-Each bank is built on [Obsidian](https://obsidian.md/) and stored as interlinked Markdown files on disk, so it is human-readable, portable, and future-proof. You can edit it in any text editor, version-control it with Git, and sync it between machines with Dropbox or OneDrive.
+SuperMemory is one of several [context sources](context-awareness.md) the assistant consults when it translates a segment, drafts a prompt, or answers a chat message. It sits alongside termbases, translation memories, document content, and segment metadata – the five sources compose freely, and the AI reads from whichever ones are enabled in AI Settings.
+
+Each memory bank is built on [Obsidian](https://obsidian.md/) and stored as interlinked Markdown files on disk, so it is human-readable, portable, and future-proof. You can edit a bank in any text editor, version-control it with Git, and sync it between machines with Dropbox or OneDrive.
 
 <figure><img src="../.gitbook/assets/Sv_SuperMemory-Graph.png" alt="Memory bank knowledge graph in Obsidian"><figcaption><p>A memory bank knowledge graph showing interconnected clients, terminology, and domain knowledge</p></figcaption></figure>
 

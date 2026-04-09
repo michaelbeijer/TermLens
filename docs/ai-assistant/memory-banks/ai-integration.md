@@ -1,12 +1,12 @@
 ---
-description: How memory banks are loaded into the AI context – the algorithm, ranking, and token budget
+description: How SuperMemory is loaded into the AI context – the algorithm, ranking, and token budget
 ---
 
 # AI Integration
 
-This page is the technical deep dive into **how** the Supervertaler Assistant loads a memory bank into its AI context. For the broader picture of all context sources – including memory banks alongside termbases, TM matches, and document content – start with [Context Awareness](../context-awareness.md). For what a memory bank *is* and how to create one, start with [Memory banks](../memory-banks.md).
+This page is the technical deep dive into **how** SuperMemory — Supervertaler's self-organising translation knowledge base system — loads the active memory bank into the AI context. For the broader picture of all context sources, start with [Context Awareness](../context-awareness.md). For what SuperMemory and memory banks *are* and how to create one, start with [SuperMemory and memory banks](../memory-banks.md).
 
-When memory bank context is enabled in [AI Settings](../../settings/ai-settings.md), every AI call – chat messages, batch translations, single-segment translations, AutoPrompt runs – triggers a fresh load of the active bank before the prompt is sent. The load is deterministic, fast, and scoped to the current project and document.
+When SuperMemory context is enabled in [AI Settings](../../settings/ai-settings.md), every AI call – chat messages, batch translations, single-segment translations, AutoPrompt runs – triggers a fresh load of the active memory bank before the prompt is sent. The load is deterministic, fast, and scoped to the current project and document.
 
 ## What the AI loads
 
