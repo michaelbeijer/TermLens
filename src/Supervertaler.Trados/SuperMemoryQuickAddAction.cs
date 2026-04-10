@@ -47,6 +47,7 @@ namespace Supervertaler.Trados
             var sourceTerm = "";
             var targetTerm = "";
             var targetLang = "";
+            var sourceLang = "";
 
             if (doc != null)
             {
@@ -73,12 +74,20 @@ namespace Supervertaler.Trados
                         ? SegmentTagHandler.GetFinalText(doc.ActiveSegmentPair.Source) : "";
                 }
 
-                // Get target language for dialog label
+                // Get source and target language display names for dialog labels
                 try
                 {
                     var langPair = doc.ActiveFile?.Language;
                     if (langPair != null)
                         targetLang = LanguageUtils.ShortenLanguageName(langPair.DisplayName);
+                }
+                catch { }
+
+                try
+                {
+                    var srcFile = doc.ActiveFile?.SourceFile;
+                    if (srcFile?.Language != null)
+                        sourceLang = LanguageUtils.ShortenLanguageName(srcFile.Language.DisplayName);
                 }
                 catch { }
             }
@@ -97,16 +106,31 @@ namespace Supervertaler.Trados
             catch { }
 
             // ── Show dialog ──────────────────────────────────────────
-            using (var dlg = new SuperMemoryQuickAddDialog(sourceTerm, targetTerm, activePromptName, targetLang))
+            using (var dlg = new SuperMemoryQuickAddDialog(sourceTerm, targetTerm, activePromptName, targetLang, sourceLang))
             {
                 if (dlg.ShowDialog() != DialogResult.OK)
                     return;
 
-                if (string.IsNullOrEmpty(dlg.Term) || string.IsNullOrEmpty(dlg.Correction))
+                // In structured mode both fields are required; in raw-note
+                // mode we're more lenient (at least one field + notes is OK).
+                if (!dlg.SaveAsRawNote &&
+                    (string.IsNullOrEmpty(dlg.Term) || string.IsNullOrEmpty(dlg.Correction)))
                 {
                     MessageBox.Show(
-                        "Both the term and its correction are required.",
-                        "Supervertaler — SuperMemory",
+                        "Both the source term and the target term are required for a structured article.\n\n" +
+                        "If you want to save a free-form note instead, tick the \"Save as raw note\" checkbox.",
+                        "Supervertaler \u2014 SuperMemory",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (dlg.SaveAsRawNote &&
+                    string.IsNullOrEmpty(dlg.Term) && string.IsNullOrEmpty(dlg.Correction) &&
+                    string.IsNullOrEmpty(dlg.Notes))
+                {
+                    MessageBox.Show(
+                        "Please enter at least something \u2014 a term, a translation, or a note.",
+                        "Supervertaler \u2014 SuperMemory",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -119,36 +143,66 @@ namespace Supervertaler.Trados
                 if (string.IsNullOrWhiteSpace(bankName))
                     bankName = UserDataPath.DefaultMemoryBankName;
                 var vaultPath = UserDataPath.GetMemoryBankDir(bankName);
-                bool mdWritten = WriteTermArticle(vaultPath, dlg.Term, dlg.Correction, dlg.Notes);
+
+                bool mdWritten;
+                if (dlg.SaveAsRawNote)
+                {
+                    mdWritten = WriteRawNote(vaultPath, dlg.Term, dlg.Correction, dlg.Notes);
+                }
+                else
+                {
+                    mdWritten = WriteTermArticle(vaultPath, dlg.Term, dlg.Correction, dlg.Notes);
+                }
 
                 // ── 2. Append to active prompt (if requested) ────────
                 bool promptUpdated = false;
-                if (dlg.AppendToPrompt)
+                if (dlg.AppendToPrompt && !dlg.SaveAsRawNote)
                 {
+                    // Only append to the prompt for structured articles — raw
+                    // notes need AI processing first, so appending unprocessed
+                    // content to the prompt would be premature.
                     promptUpdated = AppendToActivePrompt(dlg.Term, dlg.Correction, dlg.Notes);
                 }
 
                 // ── 3. Feedback ──────────────────────────────────────
                 var msg = new StringBuilder();
                 if (mdWritten)
-                    msg.AppendLine($"✓  Added to memory bank \"{bankName}\".");
+                {
+                    if (dlg.SaveAsRawNote)
+                        msg.AppendLine($"\u2713  Saved raw note to memory bank \"{bankName}\" inbox.");
+                    else
+                        msg.AppendLine($"\u2713  Added to memory bank \"{bankName}\".");
+                }
                 else
-                    msg.AppendLine($"⚠  Could not write to memory bank \"{bankName}\".");
+                {
+                    msg.AppendLine($"\u26A0  Could not write to memory bank \"{bankName}\".");
+                }
 
-                if (dlg.AppendToPrompt)
+                if (dlg.AppendToPrompt && !dlg.SaveAsRawNote)
                 {
                     if (promptUpdated)
-                        msg.AppendLine("✓  Appended to active translation prompt.");
+                        msg.AppendLine("\u2713  Appended to active translation prompt.");
                     else
-                        msg.AppendLine("⚠  Could not update the active prompt (no prompt selected or section not found).");
+                        msg.AppendLine("\u26A0  Could not update the active prompt (no prompt selected or section not found).");
+                }
+
+                if (dlg.SaveAsRawNote && mdWritten)
+                {
+                    msg.AppendLine();
+                    msg.AppendLine("Run Process Inbox in the Supervertaler Assistant to compile this note into a structured article.");
                 }
 
                 msg.AppendLine();
-                msg.AppendLine($"\"{dlg.Term}\" → \"{dlg.Correction}\"");
+                if (!string.IsNullOrEmpty(dlg.Term) && !string.IsNullOrEmpty(dlg.Correction))
+                    msg.AppendLine($"\"{dlg.Term}\" \u2192 \"{dlg.Correction}\"");
+                else if (!string.IsNullOrEmpty(dlg.Term))
+                    msg.AppendLine($"Term: \"{dlg.Term}\"");
+                else if (!string.IsNullOrEmpty(dlg.Correction))
+                    msg.AppendLine($"Term: \"{dlg.Correction}\"");
 
                 MessageBox.Show(
                     msg.ToString().TrimEnd(),
-                    "Supervertaler — SuperMemory",
+                    "Supervertaler \u2014 SuperMemory",
                     MessageBoxButtons.OK,
                     mdWritten ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             }
@@ -169,10 +223,10 @@ namespace Supervertaler.Trados
                 var termDir = Path.Combine(vaultPath, TermFolder);
                 Directory.CreateDirectory(termDir);
 
-                // Build a safe filename: "e-mail vs email.md"
+                // Build a safe filename: "fiche → plug.md"
                 var safeTerm = SanitiseFileName(term);
                 var safeCorrection = SanitiseFileName(correction);
-                var fileName = $"{safeTerm} vs {safeCorrection}.md";
+                var fileName = $"{safeTerm} \u2192 {safeCorrection}.md";
                 var filePath = Path.Combine(termDir, fileName);
 
                 // Don't overwrite existing articles silently
@@ -180,7 +234,7 @@ namespace Supervertaler.Trados
                 {
                     // Append a timestamp to make it unique
                     var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                    fileName = $"{safeTerm} vs {safeCorrection} ({stamp}).md";
+                    fileName = $"{safeTerm} \u2192 {safeCorrection} ({stamp}).md";
                     filePath = Path.Combine(termDir, fileName);
                 }
 
@@ -213,6 +267,62 @@ namespace Supervertaler.Trados
                 sb.AppendLine("## Sources");
                 sb.AppendLine("- Added via Supervertaler Quick Add");
                 sb.AppendLine();
+
+                File.WriteAllText(filePath, sb.ToString(), new UTF8Encoding(false));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  Write a raw note to the inbox
+        // ══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Creates a plain Markdown note in the SuperMemory vault's 00_INBOX folder.
+        /// This is the unstructured alternative to <see cref="WriteTermArticle"/> —
+        /// the AI will compile it into proper articles when Process Inbox runs.
+        /// </summary>
+        private static bool WriteRawNote(string vaultPath, string term, string correction, string notes)
+        {
+            try
+            {
+                var inboxDir = Path.Combine(vaultPath, "00_INBOX");
+                Directory.CreateDirectory(inboxDir);
+
+                var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                var label = !string.IsNullOrEmpty(term) ? SanitiseFileName(term) : "quick-note";
+                var fileName = $"quick-add-{label}-{stamp}.md";
+                var filePath = Path.Combine(inboxDir, fileName);
+
+                var sb = new StringBuilder();
+                sb.AppendLine("# Quick Add note");
+                sb.AppendLine();
+                sb.AppendLine($"*Added via Quick Add on {DateTime.Now:yyyy-MM-dd HH:mm}*");
+                sb.AppendLine();
+
+                if (!string.IsNullOrEmpty(term))
+                {
+                    sb.AppendLine($"**Source term:** {term}");
+                    sb.AppendLine();
+                }
+                if (!string.IsNullOrEmpty(correction))
+                {
+                    sb.AppendLine($"**Target term / translation:** {correction}");
+                    sb.AppendLine();
+                }
+                if (!string.IsNullOrEmpty(notes))
+                {
+                    sb.AppendLine("**Notes:**");
+                    sb.AppendLine(notes);
+                    sb.AppendLine();
+                }
+
+                sb.AppendLine("---");
+                sb.AppendLine("*This note was captured via Quick Add (Ctrl+Alt+M). Run Process Inbox to compile it into a structured knowledge base article.*");
 
                 File.WriteAllText(filePath, sb.ToString(), new UTF8Encoding(false));
                 return true;

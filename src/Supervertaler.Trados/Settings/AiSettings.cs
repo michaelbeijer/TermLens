@@ -162,18 +162,27 @@ namespace Supervertaler.Trados.Settings
         /// When enabled, SuperMemory knowledge base articles (client profiles,
         /// domain knowledge, style guides, terminology reasoning) are automatically
         /// loaded and included in the AI context for translations and chat.
+        ///
+        /// Defaults to <c>false</c>. SuperMemory is a power-user feature that
+        /// most translators should opt into deliberately: the simpler workflow
+        /// (TermLens glossaries + AI context awareness) covers the majority of
+        /// needs. Users who want the full self-organising knowledge base can
+        /// enable this toggle in AI Settings once they have a populated bank.
         /// </summary>
         [DataMember(Name = "includeSuperMemoryContext")]
-        public bool IncludeSuperMemoryContext { get; set; } = true;
+        public bool IncludeSuperMemoryContext { get; set; } = false;
 
         /// <summary>
         /// When enabled, SuperMemory knowledge base articles are included in the
         /// AutoPrompt meta-prompt so that generated translation prompts reflect
         /// established client conventions, terminology reasoning, and style guides.
         /// Only effective when <see cref="IncludeSuperMemoryContext"/> is also true.
+        ///
+        /// Defaults to <c>false</c> (same reasoning as
+        /// <see cref="IncludeSuperMemoryContext"/> — opt-in only).
         /// </summary>
         [DataMember(Name = "includeSuperMemoryInAutoPrompt")]
-        public bool IncludeSuperMemoryInAutoPrompt { get; set; } = true;
+        public bool IncludeSuperMemoryInAutoPrompt { get; set; } = false;
 
         /// <summary>
         /// Name of the memory bank that is currently active for AI context, Quick
