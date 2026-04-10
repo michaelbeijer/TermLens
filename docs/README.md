@@ -43,9 +43,9 @@ A built-in Default Translation Prompt and Default Proofreading Prompt to get you
 
 Create, edit, and import termbases in Supervertaler's `.db` format. Quick-add terms with keyboard shortcuts, mark terms as non-translatable, and manage multiple termbases per project.
 
-### Memory banks
+### SuperMemory
 
-Self-organising, AI-maintained translation knowledge bases that store client profiles, terminology decisions, domain conventions, and style preferences as interlinked Markdown files. The AI consults the active memory bank automatically when translating — with client and domain auto-detection. Keep several banks side by side and switch between them from the toolbar dropdown. Quick-add terms and corrections with Ctrl+Alt+M. [Learn more →](ai-assistant/super-memory.md)
+Self-organising, AI-maintained translation knowledge base. Stores client profiles, terminology decisions, domain conventions, and style preferences as interlinked Markdown files. The AI consults the active memory bank automatically when translating. Keep separate banks per client or domain and switch between them from the toolbar dropdown. Quick-add terms and corrections while translating with Ctrl+Alt+M. [Learn more →](ai-assistant/super-memory.md)
 
 ## System Requirements
 

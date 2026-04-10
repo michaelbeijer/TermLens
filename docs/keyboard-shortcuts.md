@@ -45,11 +45,11 @@ All keyboard shortcuts available in Supervertaler for Trados, with Mac equivalen
 Assign prompts to slots in **Settings → Prompts**. Select a QuickLauncher prompt and choose a shortcut from the dropdown in the detail pane. If no slots are assigned, the shortcuts default to menu position order.
 {% endhint %}
 
-## Memory banks
+## SuperMemory
 
 | Shortcut (Windows) | Shortcut (Mac) | Action |
 |---------------------|----------------|--------|
-| `Ctrl+Alt+M` | `Control+Option+M` | Add to memory bank – quick-add a term or correction to the active memory bank |
+| `Ctrl+Alt+M` | `Control+Option+M` | Quick Add – add a term or correction to the active memory bank |
 
 ## SuperSearch
 
