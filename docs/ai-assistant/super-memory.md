@@ -10,7 +10,7 @@ Knowledge inside SuperMemory is organised into one or more **memory banks** – 
 
 SuperMemory is one of several [context sources](context-awareness.md) the assistant consults when it translates a segment, drafts a prompt, or answers a chat message. It sits alongside termbases, translation memories, document content, and segment metadata – you can enable any combination of the five, and the AI draws from whichever are active in AI Settings.
 
-Each memory bank is built on [Obsidian](https://obsidian.md/) and stored as interlinked Markdown files on disk, so it is human-readable, portable, and future-proof. You can edit a bank in any text editor, version-control it with Git, and sync it between machines with Dropbox or OneDrive.
+Each memory bank is stored as interlinked Markdown files on disk — human-readable, portable, and future-proof. You can open and edit a bank in any text editor, version-control it with Git, and sync it between machines with Dropbox or OneDrive. [Obsidian](https://obsidian.md/) is optional but recommended: it gives you a visual knowledge graph, backlink navigation, and the Web Clipper browser extension for clipping web content directly into your bank. See [Obsidian Setup](super-memory/obsidian-setup.md) for installation instructions.
 
 <figure><img src="../.gitbook/assets/Sv_SuperMemory-Graph.png" alt="Memory bank knowledge graph in Obsidian"><figcaption><p>A memory bank knowledge graph showing interconnected clients, terminology, and domain knowledge</p></figcaption></figure>
 
