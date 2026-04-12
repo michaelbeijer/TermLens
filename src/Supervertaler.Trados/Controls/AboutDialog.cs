@@ -155,7 +155,7 @@ namespace Supervertaler.Trados.Controls
                 LinkBehavior = LinkBehavior.HoverUnderline
             };
             var licenseTip = new ToolTip();
-            licenseTip.SetToolTip(licenseLink, "Open license settings");
+            licenseTip.SetToolTip(licenseLink, "Open licence settings");
             licenseLink.LinkClicked += (s, e) =>
             {
                 Close();
@@ -198,7 +198,8 @@ namespace Supervertaler.Trados.Controls
                 ("Ctrl+Alt+T",    "Add term (dialog)"),
                 ("Ctrl+Alt+N",    "Quick-add non-translatable"),
                 ("Ctrl+T",        "Translate active segment"),
-                ("Ctrl+Alt+Down",  "Term Picker"),
+                ("Ctrl (tap)",     "Term Picker (memoQ-style)"),
+                ("Ctrl+Alt+G",     "Term Picker (alternative)"),
                 ("Alt+1\u20269",  "Insert term from TermLens panel"),
                 ("F1",            "Context-sensitive help"),
             };
@@ -282,7 +283,7 @@ namespace Supervertaler.Trados.Controls
             };
             var securityTip = new ToolTip();
             securityTip.SetToolTip(securityLink,
-                "This plugin makes no network calls except to your chosen AI provider and the license server.\n" +
+                "This plugin makes no network calls except to your chosen AI provider and the licence server.\n" +
                 "No telemetry, no tracking, no data collection. Verify it yourself on GitHub.");
             securityLink.LinkClicked += (s, e) =>
             {

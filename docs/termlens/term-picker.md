@@ -6,7 +6,7 @@ The Term Picker is a compact overlay that shows all matched terms for the curren
 
 ## Opening the Term Picker
 
-Press **Ctrl+Alt+Down** to open the Term Picker. It appears as a floating window above the editor.
+Tap **Ctrl** (press and release without any other key) to open the Term Picker — the same shortcut memoQ uses. Alternatively, press **Ctrl+Alt+G**. It appears as a floating window above the editor.
 
 ## Colour-coded rows
 

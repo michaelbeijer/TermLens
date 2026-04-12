@@ -65,6 +65,9 @@ namespace Supervertaler.Trados
         private static int _pendingAccumulated;    // sequential mode: accumulated number so far
         private static System.Windows.Forms.Timer _chordTimer;
 
+        // --- Ctrl-tap Term Picker (memoQ-style) ---
+        private static CtrlTapFilter _ctrlTapFilter;
+
         protected override IUIControl GetContentControl()
         {
             return _mainPanel.Value;
@@ -73,6 +76,13 @@ namespace Supervertaler.Trados
         protected override void Initialize()
         {
             _currentInstance = this;
+
+            // Ctrl-tap filter: pressing and releasing Ctrl alone opens the Term Picker
+            if (_ctrlTapFilter == null)
+            {
+                _ctrlTapFilter = new CtrlTapFilter(() => HandleTermPicker());
+                System.Windows.Forms.Application.AddMessageFilter(_ctrlTapFilter);
+            }
 
             // License check — show/hide activation overlay based on tier
             LicenseManager.Instance.LicenseStateChanged += (s, e) =>
@@ -1843,7 +1853,7 @@ namespace Supervertaler.Trados
         // ─── Term Picker dialog ─────────────────────────────────────
 
         /// <summary>
-        /// Called by TermPickerAction (Ctrl+Alt+Down).
+        /// Called by TermPickerAction (Ctrl+Alt+G).
         /// Opens a dialog showing all matched terms for the current segment.
         /// </summary>
         public static void HandleTermPicker()

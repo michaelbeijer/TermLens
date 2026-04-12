@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.19.5] — 2026-04-13
+
+### Changed
+
+- **Term Picker shortcut — Ctrl tap (memoQ-style).** Pressing and releasing Ctrl alone (without any other key) now opens the Term Picker dialogue, matching memoQ's behaviour. A quick tap of Ctrl triggers it; holding Ctrl for a combo (Ctrl+C, Ctrl+V, etc.) works normally. Maximum hold duration is 400 ms to prevent accidental triggers. The previous shortcut Ctrl+Alt+G is kept as a fallback.
+
+---
+
 ## [4.19.4] — 2026-04-11
 
 ### Fixed
