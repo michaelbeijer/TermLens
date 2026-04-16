@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.19.12] — 2026-04-16
+
+### Fixed
+
+- **Ctrl+Q (QuickLauncher) now reliably surfaces the Supervertaler Assistant panel.** Previously, selecting a QuickLauncher prompt would submit the message to the chat backend but the dockable Assistant panel could remain auto-hidden, unpinned, or buried behind another dock tab — so the user saw nothing happen. The Chat tab inside the panel was already being selected correctly by `SubmitMessage`; the missing step was activating the panel itself. `RunQuickLauncherPrompt` now calls `instance.Activate()` before submitting, matching the SuperSearch action pattern. Affects both the context-menu QuickLauncher (Ctrl+Q) and the Ctrl+Alt+digit slot shortcuts, since both funnel through the same entry point.
+
+---
+
 ## [4.19.11] — 2026-04-15
 
 ### Fixed

@@ -4035,6 +4035,13 @@ Always list the original source filename(s) in the `sources:` frontmatter field.
             var instance = _currentInstance;
             if (instance == null) return;
 
+            // Activate the Supervertaler Assistant panel so it is visible even
+            // when auto-hidden, unpinned, or behind another dock tab. Matches
+            // the SuperSearchAction pattern. SubmitMessage will then switch to
+            // the Chat tab (index 0) inside the panel.
+            try { instance.Activate(); }
+            catch { /* Activate may not be available in all Trados versions */ }
+
             instance.SafeInvoke(() =>
             {
                 _control.Value.SubmitMessage(expandedPrompt, displayPrompt, promptName);
