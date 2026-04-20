@@ -143,6 +143,14 @@ namespace Supervertaler.Trados
             _promptLibrary.EnsureDefaultPrompts();
             _control.Value.SettingsRequested += OnSettingsRequested;
 
+            // Live-sync the Batch Translate dropdown whenever the user toggles the
+            // active prompt in the Prompt Manager, no matter which entry point
+            // opened the Settings dialog (AI Assistant gear, termbase gear, etc.).
+            // A static event avoids the per-instance wiring that previously missed
+            // forms opened from TermLensEditorViewPart.
+            Controls.PromptManagerPanel.ActivePromptChangedGlobal -= OnActivePromptChangedGlobal;
+            Controls.PromptManagerPanel.ActivePromptChangedGlobal += OnActivePromptChangedGlobal;
+
             if (!LicenseManager.Instance.HasAssistantAccess)
             {
                 _control.Value.ShowUpgradeRequired();
@@ -384,6 +392,11 @@ namespace Supervertaler.Trados
                 {
                     form.DistillTermbaseRequested += (ds, de) =>
                         DistillTermbase(de.TermbaseName, de.FormattedTerms);
+
+                    // Note: live-sync of the active prompt is handled by the static
+                    // Controls.PromptManagerPanel.ActivePromptChangedGlobal hook
+                    // wired in Initialize, not here — that way it also fires when
+                    // the Settings dialog is opened from TermLensEditorViewPart.
 
                     var parent = _control.Value.FindForm();
                     var result = parent != null
@@ -1156,6 +1169,54 @@ namespace Supervertaler.Trados
                 var projectName = TermLensEditorViewPart.GetCurrentProjectName();
                 _control.Value.BatchTranslateControl.SetPrompts(
                     prompts, selectedPath, categoryFilter, projectName, activePromptPath);
+            });
+        }
+
+        /// <summary>
+        /// Static-event handler wired in Initialize. Runs whenever the user toggles
+        /// the active prompt in the Prompt Manager, regardless of which code path
+        /// opened the Settings dialog.
+        /// </summary>
+        private void OnActivePromptChangedGlobal(object sender, string newPath)
+        {
+            RefreshBatchPromptDropdownWithActive(newPath);
+        }
+
+        /// <summary>
+        /// Live variant of <see cref="PopulateBatchPromptDropdown"/>: refreshes the
+        /// Batch Translate dropdown using an in-memory active-prompt path (typically
+        /// the pending value from the Prompt Manager while the Settings dialog is
+        /// still open). The change is NOT persisted here — the normal on-close
+        /// refresh reads from disk, so a Cancel naturally snaps back.
+        /// </summary>
+        private void RefreshBatchPromptDropdownWithActive(string activePath)
+        {
+            SafeInvoke(() =>
+            {
+                try
+                {
+                    // Use the existing cache — the prompt library on disk hasn't
+                    // changed (the user is just toggling active in memory), so a
+                    // rescan is unnecessary and would slow down each right-click.
+                    var prompts = _promptLibrary?.GetAllPrompts();
+                    if (prompts == null) return;
+                    if (_control?.Value?.BatchTranslateControl == null) return;
+
+                    var normalisedActive = string.IsNullOrEmpty(activePath) ? null : activePath;
+                    var selectedPath = normalisedActive ?? (_settings?.AiSettings?.SelectedPromptPath ?? "");
+
+                    var mode = _control.Value.BatchTranslateControl.CurrentMode;
+                    var categoryFilter = mode == BatchMode.Proofread ? "Proofread" : "Translate";
+                    var projectName = TermLensEditorViewPart.GetCurrentProjectName();
+
+                    _control.Value.BatchTranslateControl.SetPrompts(
+                        prompts, selectedPath, categoryFilter, projectName, normalisedActive);
+                }
+                catch
+                {
+                    // Swallow — a stale settings dialog or disposed control shouldn't
+                    // surface an error to the user for a UI-refresh helper.
+                }
             });
         }
 

@@ -1,5 +1,40 @@
 # Changelog
 
+## [4.19.20] — 2026-04-20
+
+### Fixed
+
+- **"Set as active prompt for this project" now reflects in the Batch Translate dropdown immediately and works for any prompt, regardless of which entry point opened the Settings dialog.** Three issues were stacked on top of each other:
+  1. **No live sync** — the Batch Translate dropdown only refreshed when the Settings dialog closed, so right-clicking a prompt → "Set as active prompt for this project" had no visible effect until the user clicked OK. `PromptManagerPanel` now raises a static `ActivePromptChangedGlobal` event; `AiAssistantViewPart` subscribes once in `Initialize` and live-refreshes the Batch dropdown with the pending active path while the dialog is still open. Cancelling the dialog still snaps back to the persisted state via the existing unconditional refresh on close.
+  2. **Category filter hid the checkmark** — even after clicking OK, prompts whose `Category` was not `Translate` (or `Proofread`, in proofread mode) were silently filtered out of the dropdown, so the checkmark had nowhere to land. The category filter now makes an exception for the active prompt — it always appears in the dropdown regardless of folder, so marking any prompt as active works uniformly. Path-separator normalisation was also extended to the selection match (previously only the active-marker check handled `/` vs `\`), eliminating a subtle mismatch when the stored path used forward slashes.
+  3. **Entry-point-dependent wiring** — an earlier iteration subscribed to the event only when the Settings dialog was opened from the AI Assistant gear. Opening Settings from the TermLens gear (which instantiates `TermLensSettingsForm` in a separate code path) left the event with zero subscribers, making the live-sync appear intermittent. The static event used in the final fix is wired once at plugin init, so it catches the change regardless of which code path created the form.
+
+---
+
+## [4.19.15] — 2026-04-20
+
+### Fixed
+
+- **New prompts created at the tree root in the Prompt Manager are now visible in the Batch Translate dropdown.** Previously, creating a new prompt without first selecting a folder left its `Category` empty. The Batch Translate dropdown filters strictly by `Category == "Translate"` (or `"Proofread"`), so root-level prompts were silently excluded — marking one as the active prompt for the project had no visible effect in the Batch panel (the dropdown stayed on `(None — default)`). New prompts now default to the `Translate` category when no folder is selected, so they appear in the Batch dropdown and respect "Set as active prompt for this project" immediately. Existing root-level prompts with empty categories still need to be moved into the `Translate` folder (or re-categorised in the editor) to become visible.
+
+---
+
+## [4.19.14] — 2026-04-17
+
+### Added
+
+- **Claude Opus 4.7 support.** Anthropic's new flagship model (released 2026-04-16) is now selectable in AI Settings under the Claude provider and via the OpenRouter gateway (`anthropic/claude-opus-4.7`). Opus 4.7 has a 1M-token context window, 128k max output, and is Anthropic's most capable generally available model. Pricing is $5 / input MTok, $25 / output MTok — the same as Opus 4.6. Sonnet 4.6 remains the recommended default for most translation work; reach for Opus 4.7 when you need top-tier reasoning or long-context jobs. See [What's new in Claude Opus 4.7](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7) for details.
+
+### Fixed (cost estimates)
+
+- **Corrected stale pricing for Claude Opus 4.6 and Haiku 4.5.** The internal pricing table had Opus 4.6 at the pre-4.6 rate of $15 / $75 per MTok — Anthropic dropped Opus pricing to $5 / $25 with the 4.6 release. Haiku 4.5 was listed at $0.80 / $4.00, corrected to the current $1.00 / $5.00. Cost estimates shown in the AI Assistant and Batch Translate were over-stating Opus usage and under-stating Haiku usage — now accurate.
+
+### Note on Opus 4.7 tokenizer
+
+- Claude Opus 4.7 uses a new tokenizer that can use **~1.0×–1.35× more tokens** for the same text compared to earlier models. Our pre-send cost estimates (`chars / 4` heuristic) will under-estimate Opus 4.7 costs by a similar margin. Actual billing is based on Anthropic's token counts.
+
+---
+
 ## [4.19.13] — 2026-04-17
 
 ### Fixed (critical — termbase data integrity)

@@ -23,6 +23,14 @@ namespace Supervertaler.Trados.Settings
         /// </summary>
         public event EventHandler<DistillTermbaseEventArgs> DistillTermbaseRequested;
 
+        /// <summary>
+        /// Bubbled from <see cref="PromptManagerPanel.ActivePromptChanged"/>. Fires
+        /// while the dialog is open so subscribers (e.g. the Batch Translate panel)
+        /// can live-refresh. The payload is the new active prompt's relative path,
+        /// or empty if the active prompt was cleared.
+        /// </summary>
+        public event EventHandler<string> ActivePromptChanged;
+
         private readonly TermLensSettings _settings;
         private readonly Core.PromptLibrary _promptLibrary;
 
@@ -165,6 +173,8 @@ namespace Supervertaler.Trados.Settings
             {
                 Dock = DockStyle.Fill
             };
+            _promptManagerPanel.ActivePromptChanged += (s, newPath) =>
+                ActivePromptChanged?.Invoke(this, newPath);
             promptsPage.Controls.Add(_promptManagerPanel);
             _tabControl.TabPages.Add(promptsPage);
 

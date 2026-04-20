@@ -729,23 +729,29 @@ namespace Supervertaler.Trados.Controls
             {
                 foreach (var p in prompts)
                 {
-                    // Filter by category if specified
-                    if (!string.IsNullOrEmpty(categoryFilter) &&
-                        !string.Equals(p.Category, categoryFilter, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    _promptList.Add(p);
-
-                    // Append visual marker to active prompt name
+                    // Is this the active prompt for the project?
                     var isActive = !string.IsNullOrEmpty(activePromptPath)
                         && string.Equals(
                             (p.RelativePath ?? "").Replace('/', '\\'),
                             (activePromptPath ?? "").Replace('/', '\\'),
                             StringComparison.OrdinalIgnoreCase);
+
+                    // Filter by category if specified — but always include the active
+                    // prompt even if its category doesn't match, so "Set as active"
+                    // works for any prompt regardless of folder.
+                    if (!string.IsNullOrEmpty(categoryFilter) &&
+                        !string.Equals(p.Category, categoryFilter, StringComparison.OrdinalIgnoreCase) &&
+                        !isActive)
+                        continue;
+
+                    _promptList.Add(p);
                     _cmbPrompt.Items.Add(isActive ? p.Name + "  \u2714" : p.Name);
 
                     if (!string.IsNullOrEmpty(selectedRelativePath) &&
-                        string.Equals(p.RelativePath, selectedRelativePath, StringComparison.OrdinalIgnoreCase))
+                        string.Equals(
+                            (p.RelativePath ?? "").Replace('/', '\\'),
+                            (selectedRelativePath ?? "").Replace('/', '\\'),
+                            StringComparison.OrdinalIgnoreCase))
                     {
                         selectedIdx = _cmbPrompt.Items.Count - 1;
                     }

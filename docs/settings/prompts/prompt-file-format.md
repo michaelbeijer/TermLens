@@ -37,9 +37,14 @@ The plugin automatically prepends a system prompt to every AI call. This system 
 
 #### New prompt
 
-1. Click **New** in the Prompts tab
-2. Fill in Name, Description, Category, and Content
-3. Click **Save**
+1. Optionally select a target folder (e.g. `Translate` or `Proofread`) in the tree before clicking **New** — the new prompt's **Category** will be pre-filled from the selected folder.
+2. Click **New** in the Prompts tab.
+3. Fill in Name, Description, Category, and Content.
+4. Click **Save**.
+
+{% hint style="info" %}
+**Category matters for Batch Translate.** The Batch Translate dropdown filters by category: Translate mode only shows prompts whose Category is `Translate`, and Proofread mode only shows `Proofread` prompts. If you click **New** without first selecting a folder, the category defaults to `Translate` so the new prompt is immediately visible in the Batch Translate dropdown. Prompts with an empty or unrelated category will not appear in either Batch mode — move them into a `Translate` or `Proofread` folder (or edit the Category field) to make them selectable.
+{% endhint %}
 
 #### Edit a prompt
 

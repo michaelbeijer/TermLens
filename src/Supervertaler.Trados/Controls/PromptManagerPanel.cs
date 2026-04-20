@@ -63,6 +63,23 @@ namespace Supervertaler.Trados.Controls
         private const string SystemPromptTag = "__SYSTEM_PROMPT__";
         private string _activePromptPath; // per-project active prompt relative path
 
+        /// <summary>
+        /// Fired when the user toggles the per-project active prompt (right-click →
+        /// "Set as active prompt for this project"). The string argument is the new
+        /// active prompt's relative path, or empty if the active prompt was cleared.
+        /// Consumers use this to live-refresh the Batch Translate dropdown while the
+        /// Settings dialog is still open — the change is persisted only on OK.
+        /// </summary>
+        public event EventHandler<string> ActivePromptChanged;
+
+        /// <summary>
+        /// Static/global variant of <see cref="ActivePromptChanged"/>. Subscribed
+        /// once by <c>AiAssistantViewPart</c> at initialisation so the Batch
+        /// Translate panel refreshes regardless of which entry point opened the
+        /// Settings dialog (AI Assistant gear, termbase gear, etc.).
+        /// </summary>
+        public static event EventHandler<string> ActivePromptChangedGlobal;
+
         public PromptManagerPanel()
         {
             BuildUI();
@@ -1152,8 +1169,9 @@ namespace Supervertaler.Trados.Controls
             }
 
             var newPrompt = new PromptTemplate();
-            if (!string.IsNullOrEmpty(preFillDomain))
-                newPrompt.Category = preFillDomain;
+            // Default to "Translate" when no folder is selected so the new prompt
+            // is visible in the Batch Translate dropdown (which filters by category).
+            newPrompt.Category = !string.IsNullOrEmpty(preFillDomain) ? preFillDomain : "Translate";
 
             using (var dlg = new PromptEditorDialog(newPrompt))
             {
@@ -1539,6 +1557,8 @@ namespace Supervertaler.Trados.Controls
             }
 
             RefreshTree();
+            ActivePromptChanged?.Invoke(this, _activePromptPath ?? "");
+            ActivePromptChangedGlobal?.Invoke(this, _activePromptPath ?? "");
         }
 
         // ═══════════════════════════════════════════════════════════

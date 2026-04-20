@@ -24,8 +24,9 @@ namespace Supervertaler.Trados.Core
 
             // Claude (Anthropic)
             { "claude-sonnet-4-6",         (3.00m,   15.00m) },
-            { "claude-haiku-4-5-20251001", (0.80m,   4.00m)  },
-            { "claude-opus-4-6",           (15.00m,  75.00m) },
+            { "claude-haiku-4-5-20251001", (1.00m,   5.00m)  },
+            { "claude-opus-4-7",           (5.00m,   25.00m) },
+            { "claude-opus-4-6",           (5.00m,   25.00m) },
 
             // Google Gemini
             { "gemini-2.5-flash",          (0.15m,   0.60m)  },
