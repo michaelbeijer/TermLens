@@ -9,13 +9,16 @@ DIST_DIR="$SCRIPT_DIR/dist"
 BUILD_DIR="$PROJECT_DIR/bin/Release"
 DOTNET="${HOME}/.dotnet/dotnet"
 
-PACKAGES_DIR="$APPDATA/Trados/Trados Studio/18/Plugins/Packages"
-UNPACKED_DIR="$APPDATA/Trados/Trados Studio/18/Plugins/Unpacked/Supervertaler for Trados"
-OLD_UNPACKED_DIR="$APPDATA/Trados/Trados Studio/18/Plugins/Unpacked/TermLens"
+PACKAGES_DIR="$LOCALAPPDATA/Trados/Trados Studio/18/Plugins/Packages"
+UNPACKED_DIR="$LOCALAPPDATA/Trados/Trados Studio/18/Plugins/Unpacked/Supervertaler for Trados"
+OLD_UNPACKED_DIR="$LOCALAPPDATA/Trados/Trados Studio/18/Plugins/Unpacked/TermLens"
 
-# Also clean up old Local install location if present
-OLD_LOCAL_PACKAGES="$LOCALAPPDATA/Trados/Trados Studio/18/Plugins/Packages"
-OLD_LOCAL_UNPACKED="$LOCALAPPDATA/Trados/Trados Studio/18/Plugins/Unpacked/Supervertaler for Trados"
+# Also clean up old Roaming install location if present (build.sh used to
+# deploy to Roaming; switched to Local in v4.19.25 to match the install scope
+# end-users get from the recommended "This computer for me only" option in
+# the Trados Plugin Installer).
+OLD_ROAMING_PACKAGES="$APPDATA/Trados/Trados Studio/18/Plugins/Packages"
+OLD_ROAMING_UNPACKED="$APPDATA/Trados/Trados Studio/18/Plugins/Unpacked/Supervertaler for Trados"
 
 # Verify all version files are in sync before building.
 CSPROJ_VER=$(sed -n 's/.*<Version>\([0-9.]*\)<\/Version>.*/\1/p' "$PROJECT_DIR/Supervertaler.Trados.csproj" | head -1)
@@ -86,14 +89,16 @@ if [ -d "$OLD_UNPACKED_DIR" ]; then
     echo "  Old TermLens folder cleaned."
 fi
 
-# Clean up old Local install location (switched to Roaming)
-if [ -f "$OLD_LOCAL_PACKAGES/Supervertaler.Trados.sdlplugin" ]; then
-    echo "  Removing old Local Packages/Supervertaler.Trados.sdlplugin..."
-    rm -f "$OLD_LOCAL_PACKAGES/Supervertaler.Trados.sdlplugin"
+# Clean up old Roaming install location (build.sh used to deploy here before
+# switching to Local in v4.19.25; remove any spaced-name .sdlplugin and its
+# Unpacked folder so HandlePendingUpdate doesn't pick the older Roaming copy).
+if [ -f "$OLD_ROAMING_PACKAGES/Supervertaler for Trados.sdlplugin" ]; then
+    echo "  Removing old Roaming Packages/Supervertaler for Trados.sdlplugin..."
+    rm -f "$OLD_ROAMING_PACKAGES/Supervertaler for Trados.sdlplugin"
 fi
-if [ -d "$OLD_LOCAL_UNPACKED" ]; then
-    echo "  Removing old Local Unpacked/Supervertaler.Trados..."
-    rm -rf "$OLD_LOCAL_UNPACKED"
+if [ -d "$OLD_ROAMING_UNPACKED" ]; then
+    echo "  Removing old Roaming Unpacked/Supervertaler for Trados..."
+    rm -rf "$OLD_ROAMING_UNPACKED"
 fi
 
 # Remove old TermLens package if it exists

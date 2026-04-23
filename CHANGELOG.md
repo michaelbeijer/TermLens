@@ -1,5 +1,35 @@
 # Changelog
 
+## [4.19.25] – 2026-04-23
+
+### Fixed (term-entry editor – critical, reversed-direction termbases)
+
+- **The Add and Edit dialogues no longer silently corrupt entries in termbases whose declared direction is the inverse of the project's.** The v4.19.22 fix normalised the dialogue's labels to termbase-declared direction (e.g. English on the left when the termbase is en→nl) but did not reconcile the values being loaded into those fields. The result: in a project translating Dutch → English using a termbase declared English → Dutch, adding or editing a term silently wrote the Dutch text into the `source_term` (English) column and the English text into the `target_term` (Dutch) column. The corrupted entry then stopped matching in TermLens because the matcher's index ended up keyed on the wrong-language string. The Edit path now re-reads the entry from the database by ID before populating the dialogue (via `TermbaseReader.GetTermById`), and the Add path detects when the termbase's declared direction is the inverse of the project's (using the same `LanguageUtils.ShortenLanguageName` + primary-language `StartsWith` comparison `TermbaseReader` uses at load time) and swaps the pre-filled values internally so they land in the correctly-labelled fields and are saved into the correct DB columns. Forward-only fix – pre-existing reversed entries remain reversed in the DB and need to be repaired manually via the "Reverse source/target" right-click action in the Termbase Editor or via `tools/repair_termbase_directions.py` for batch cleanup.
+
+### Changed
+
+- **`build.sh` deploy target moved from Roaming to LocalAppData.** Matches the install scope end-users get from the recommended "This computer for me only" option in Trados Plugin Installer, eliminating the dual-scope state Michael's dev machine used to live in (AppStore install in Local, build.sh install in Roaming). `build.sh` now also removes any leftover spaced-name `.sdlplugin` and Unpacked folder from Roaming so `HandlePendingUpdate` doesn't pick the stale copy.
+
+---
+
+## [4.19.24] – 2026-04-23
+
+### Fixed (update channel consolidation – architectural change)
+
+- **The in-plugin updater now reads exclusively from the RWS App Store catalogue.** Previously, the plugin polled GitHub releases in parallel with Studio's own App Store install tracking, creating a second source of truth for "what's installed". The two channels could disagree: the in-plugin GitHub updater would download an unsigned `.sdlplugin` that Studio flagged with the "Unsigned Trados Studio Plug-in Found" dialogue, and on the next restart the App Store install tracking would silently roll back to its last-approved version – occasionally leaving the user stuck on the previous version after a restart and still seeing the unsigned-plugin warning. With the consolidation, every installed build is RWS-signed, the two channels can no longer fight, and the unsigned-plugin dialogue cannot appear as a result of a plugin update. GitHub releases continue to host release notes as documentation; binary `.sdlplugin` assets are no longer attached.
+
+### Fixed (orphan duplicate installs from non-Roaming install scope)
+
+- **The updater now detects the user's original install scope and writes updates back to the same scope.** Previously, the one-click "Install Update" action always wrote the downloaded `.sdlplugin` to `%AppData%\…\Plugins\Packages\` (Roaming) regardless of where Trados Plugin Installer had originally placed the plugin – if the user had chosen "This computer for me only" during install (which lands in `%LocalAppData%\…\Plugins\`) or "This computer for all users" (`%ProgramData%\…\Plugins\`), the update created an orphan duplicate: the new version in Roaming and the old version still sitting in the original scope, with Studio picking whichever looked newer. The updater now scans all three plugin scopes via two new helpers in `UpdateChecker` (`FindCurrentInstallScopePackagesDir` / `FindCurrentInstallScopeUnpackedDir`), finds the one containing the existing install, and overwrites in place – no more stale copies left behind.
+
+### Changed
+
+- App Store catalogue responses are cached locally for 24 hours (at `%LocalAppData%\Supervertaler.Trados\appstore_cache.json`) to avoid unnecessary API traffic. The catalogue API does not expose `ETag` / `Last-Modified` headers, so conditional `If-None-Match` requests aren't possible – a local TTL is the right shape.
+- Update-check failures (network errors, parse errors) are now handled silently – they never block Studio startup or surface error dialogues.
+- Documentation (`docs/installation.md`) rewritten: Download and Updating sections now describe the AppStore-only flow; the "old version still showing after update" troubleshooting section is annotated as legacy / manual-surgery only since v4.19.24's updater is scope-aware.
+
+---
+
 ## [4.19.23] — 2026-04-21
 
 ### Added

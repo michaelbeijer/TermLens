@@ -12,7 +12,7 @@ Supervertaler for Trados is a Trados Studio 2024 (v18) plugin that brings key Su
 - **Language**: C# / .NET Framework 4.8, SDK-style .csproj
 - **Namespace**: `Supervertaler.Trados` (sub-namespaces: `.Controls`, `.Core`, `.Models`, `.Settings`)
 - **Build**: `bash build.sh` from repo root (dotnet build → package_plugin.py → deploy)
-- **Deploy target**: `%APPDATA%\Trados\Trados Studio\18\Plugins\Packages\Supervertaler for Trados.sdlplugin`
+- **Deploy target**: `%LocalAppData%\Trados\Trados Studio\18\Plugins\Packages\Supervertaler for Trados.sdlplugin` (matches the recommended "This computer for me only" Trados Plugin Installer option; switched from Roaming in v4.19.25)
 - **Strong-name key**: `src/Supervertaler.Trados/Supervertaler.Trados.snk` — PublicKeyToken: `6afde1272ae2306a`
   (Trados's `DefaultPluginTypeLoader` refuses unsigned assemblies — this is non-negotiable)
 
@@ -113,7 +113,7 @@ and displays their terms as green chips alongside Supervertaler terms.
 ## Build / deploy rules
 
 - **Trados must be fully closed** before running `bash build.sh` — it locks plugin files and skips re-extraction if `Unpacked/Supervertaler.Trados/` is non-empty. `build.sh` detects this via `tasklist.exe` and aborts.
-- `build.sh` wipes `%LOCALAPPDATA%\Trados\...\Plugins\Unpacked\Supervertaler.Trados\` before deploying so Trados re-extracts cleanly on next start.
+- `build.sh` wipes `%LocalAppData%\Trados\...\Plugins\Unpacked\Supervertaler for Trados\` before deploying so Trados re-extracts cleanly on next start. It also removes any leftover spaced-name `.sdlplugin` and Unpacked folder from `%AppData%\Trados\...\Plugins\` (the deploy target before v4.19.25) so `HandlePendingUpdate` doesn't pick the stale Roaming copy.
 - `.sdlplugin` is OPC (Open Packaging Convention), like `.docx`. Requires `[Content_Types].xml` and `_rels/` entries — plain ZIP will silently fail to load.
 
 ---
