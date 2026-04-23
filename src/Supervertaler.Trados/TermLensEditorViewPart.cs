@@ -2011,9 +2011,10 @@ namespace Supervertaler.Trados
 
                 // Link to open the Unpacked plugins folder — fallback for
                 // Mac/Parallels users or if automatic install fails.
-                var unpackedPath = System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    @"Trados\Trados Studio\18\Plugins\Unpacked");
+                // Scope-aware: targets whichever install scope the existing
+                // plugin lives in (Roaming / LocalAppData / ProgramData),
+                // matching the user's original Trados Plugin Installer choice.
+                var unpackedPath = UpdateChecker.FindCurrentInstallScopeUnpackedDir();
                 var lnkFolder = new LinkLabel
                 {
                     Text = "Open Plugins folder (manual install)",
@@ -2098,10 +2099,10 @@ namespace Supervertaler.Trados
 
                     try
                     {
-                        // 1. Download .sdlplugin to Packages folder
-                        var packagesDir = System.IO.Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                            @"Trados\Trados Studio\18\Plugins\Packages");
+                        // 1. Download .sdlplugin to the Packages folder of the
+                        // install scope that already has Supervertaler (so we
+                        // don't create an orphan duplicate in a different scope).
+                        var packagesDir = UpdateChecker.FindCurrentInstallScopePackagesDir();
                         System.IO.Directory.CreateDirectory(packagesDir);
 
                         var pluginPath = System.IO.Path.Combine(packagesDir, "Supervertaler for Trados.sdlplugin");

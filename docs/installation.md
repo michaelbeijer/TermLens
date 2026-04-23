@@ -6,10 +6,13 @@ You are viewing help for **Supervertaler for Trados** – the Trados Studio plug
 
 ### Download
 
-You can install Supervertaler for Trados in two ways:
+Install Supervertaler for Trados from the [RWS App Store](https://appstore.rws.com/plugin/432) – it's the only supported install channel. Every published build is RWS-signed, which avoids the "Unsigned Trados Studio Plug-in Found" warning that would otherwise appear when Trados loads a plugin from a different source.
 
-* **RWS App Store** – Install directly from the [RWS App Store](https://appstore.rws.com/plugin/432)
-* **GitHub Releases** – Download the latest `Supervertaler for Trados.sdlplugin` file from the [GitHub Releases](https://github.com/Supervertaler/Supervertaler-for-Trados/releases) page
+You can either install from inside Trados Studio (**Add-Ins > RWS App Store**, search for "Supervertaler", click **Download**) or download the `Supervertaler for Trados.sdlplugin` file from the [App Store website](https://appstore.rws.com/plugin/432) and double-click it. Either path opens the Trados Plugin Installer.
+
+{% hint style="info" %}
+The [GitHub repository](https://github.com/Supervertaler/Supervertaler-for-Trados) is for source-code review, release notes, and issue tracking only. GitHub releases no longer include a `.sdlplugin` binary attachment – the App Store is the single source of truth for the plugin binary.
+{% endhint %}
 
 ### Install
 
@@ -84,24 +87,31 @@ The Trados plugin cannot reliably use a Mac-side path (`\\Mac\Home\...`) due to 
 
 ### Updating
 
-To update to a newer version:
+When a new version is published to the App Store, Supervertaler shows an **Update Available** dialogue on the next Trados startup, with the version difference and an **Install Update** button.
 
-1. Download the latest `Supervertaler for Trados.sdlplugin` file from [GitHub Releases](https://github.com/Supervertaler/Supervertaler-for-Trados/releases)
-2. **Close Trados Studio completely** – the plugin files are locked while Trados is running
-3. Double-click the new `.sdlplugin` file – the Trados Plugin Installer handles the rest
-4. Start Trados Studio – it detects the updated package and loads the new version automatically
+1. Click **Install Update** – the plugin downloads the RWS-signed update from the App Store and writes it back to the same install scope (Roaming, Local, or ProgramData) you originally chose during installation
+2. When prompted, click **Restart Trados Studio** – the plugin restarts Trados for you and loads the new version
 
-The new version cleanly replaces the previous installation. Your settings, termbases, and licence key are all preserved – no need to uninstall first.
+Your settings, termbases, prompts, memory banks, and licence key are all preserved across updates – no need to uninstall first.
 
-{% hint style="success" %}
-**One-click update:** When a new version is available, the plugin shows an "Update Available" dialogueue on startup. Click **Install Update** to download and install the new version automatically – no need to visit GitHub. After installation, the plugin offers to restart Trados Studio for you.
-{% endhint %}
+#### Manual update from the App Store website
+
+If you've dismissed the in-plugin dialogue (for example, by clicking **Remind Me Later**) and want to update straight away, you can install manually from the App Store website:
+
+1. **Close Trados Studio completely** – the plugin files are locked while Trados is running
+2. Open the [App Store page for Supervertaler](https://appstore.rws.com/plugin/432) and click **Download** to save the latest `Supervertaler for Trados.sdlplugin`
+3. Double-click the file – the Trados Plugin Installer handles the rest
+4. Start Trados Studio – the new version loads automatically
 
 {% hint style="warning" %}
-Trados Studio **must be fully closed** before installing or updating. If Trados is still running, the installer may silently fail because the plugin files are locked.
+Trados Studio **must be fully closed** before installing or updating manually. If Trados is still running, the installer may silently fail because the plugin files are locked.
 {% endhint %}
 
 ### Troubleshooting: old version still showing after update
+
+{% hint style="info" %}
+From **v4.19.24** onwards the in-plugin updater is install-scope aware – it writes updates back to the same scope (Roaming, Local, or ProgramData) as the original install, so this scenario does not occur for automatic updates. The steps below remain useful if you have inherited a multi-scope install from an earlier version, or have placed `.sdlplugin` files manually in different locations.
+{% endhint %}
 
 If Trados still loads an older version of the plugin after installing a new one, an old copy may be lingering in a different installation location. Check all three plugin folders and remove any old `Supervertaler for Trados.sdlplugin` (in `Packages`) and `Supervertaler.Trados` folder (in `Unpacked`):
 

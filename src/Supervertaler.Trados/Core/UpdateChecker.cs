@@ -1,9 +1,9 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
-using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Supervertaler.Trados.Settings;
@@ -11,67 +11,63 @@ using Supervertaler.Trados.Settings;
 namespace Supervertaler.Trados.Core
 {
     /// <summary>
-    /// Checks GitHub Releases for a newer version of the plugin.
-    /// Call <see cref="CheckForUpdateAsync"/> from a background task — returns
-    /// the new version info if an update is available, or null if up to date.
+    /// Polls the RWS AppStore catalogue for a newer published version of plugin 432.
+    /// The AppStore is the single source of truth — the plugin never installs
+    /// unsigned builds from GitHub. GitHub releases remain as documentation only.
     /// </summary>
     public sealed class UpdateChecker
     {
         private static readonly HttpClient _http = new HttpClient();
-        private const string ReleasesUrl = "https://api.github.com/repos/Supervertaler/Supervertaler-for-Trados/releases";
+
+        private const string AppStoreCatalogueUrl = "https://api-appstore.rws.com/app-store-api/v1/plugins";
+        private const string ApiVersionHeaderName = "Apiversion";
+        private const string ApiVersionHeaderValue = "2.0.0";
+        private const int PluginId = 432;
+        private const string ReleaseNotesUrlFormat =
+            "https://github.com/Supervertaler/Supervertaler-for-Trados/releases/tag/v{0}";
+        private const int CacheTtlHours = 24;
 
         static UpdateChecker()
         {
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Supervertaler-Trados-UpdateCheck/1.0");
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Supervertaler-Trados-UpdateCheck/2.0");
         }
 
         /// <summary>
-        /// Checks GitHub for a newer release. Returns (newVersion, releaseUrl, pluginDownloadUrl)
-        /// if an update is available, or null if the user is up to date (or if
-        /// the check fails for any reason).
+        /// Checks the RWS AppStore for a newer published version. Returns
+        /// (newVersion, releaseNotesUrl, pluginDownloadUrl) if an update is
+        /// available, or null if the user is up to date or the check fails.
+        /// A 24-hour local cache avoids hammering the API across sessions.
         /// </summary>
         public static async Task<(string version, string url, string pluginUrl)?> CheckForUpdateAsync(
             TermLensSettings settings = null)
         {
             settings = settings ?? TermLensSettings.Load();
 
-            // Get the latest release from GitHub (first item is newest)
-            var json = await _http.GetStringAsync(ReleasesUrl + "?per_page=1");
+            // Cache first — skip the network entirely if the cached entry is fresh
+            var entry = LoadCachedEntry();
+            if (entry == null)
+            {
+                entry = await FetchEntryFromApiAsync().ConfigureAwait(false);
+                if (entry != null) SaveCachedEntry(entry);
+            }
+            if (entry == null) return null;
 
-            // Parse the JSON array
-            var releases = ParseReleases(json);
-            if (releases == null || releases.Length == 0) return null;
-
-            var latest = releases[0];
-            var latestTag = (latest.TagName ?? "").TrimStart('v');
-            var releaseUrl = latest.HtmlUrl ?? "";
-
+            // API returns 4-part versions (e.g. "4.19.22.0"); normalise to 3-part
+            // so the string compare against SkippedUpdateVersion and the assembly
+            // InformationalVersion (which is 3-part) agree.
+            var latestTag = NormaliseVersion(entry.Version);
             if (string.IsNullOrEmpty(latestTag)) return null;
 
-            // Get current version
             var currentVersion = GetCurrentVersion();
             if (string.IsNullOrEmpty(currentVersion)) return null;
 
-            // Compare
-            if (CompareVersions(latestTag, currentVersion) <= 0) return null; // up to date
+            if (CompareVersions(latestTag, currentVersion) <= 0) return null;
 
-            // Check if user skipped this version
             if (string.Equals(settings.SkippedUpdateVersion, latestTag, StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            // Find the .sdlplugin download URL from release assets
-            string pluginUrl = null;
-            if (latest.Assets != null)
-            {
-                foreach (var asset in latest.Assets)
-                {
-                    if (asset.Name != null && asset.Name.EndsWith(".sdlplugin", StringComparison.OrdinalIgnoreCase))
-                    {
-                        pluginUrl = asset.BrowserDownloadUrl;
-                        break;
-                    }
-                }
-            }
+            var releaseUrl = string.Format(ReleaseNotesUrlFormat, latestTag);
+            var pluginUrl = ToHttps(entry.DownloadUrl);
 
             return (latestTag, releaseUrl, pluginUrl);
         }
@@ -92,7 +88,7 @@ namespace Supervertaler.Trados.Core
 
         /// <summary>
         /// Compares two semantic version strings (e.g. "4.1.0-beta" vs "4.0.2-beta").
-        /// Returns positive if a > b, negative if a &lt; b, zero if equal.
+        /// Returns positive if a &gt; b, negative if a &lt; b, zero if equal.
         /// Pre-release (beta) sorts lower than release: 4.1.0-beta &lt; 4.1.0.
         /// </summary>
         internal static int CompareVersions(string a, string b)
@@ -109,16 +105,13 @@ namespace Supervertaler.Trados.Core
             c = aPatch.CompareTo(bPatch);
             if (c != 0) return c;
 
-            // Both have same numeric version — compare pre-release
-            // No pre-release > any pre-release (4.1.0 > 4.1.0-beta)
             bool aHasPre = !string.IsNullOrEmpty(aPre);
             bool bHasPre = !string.IsNullOrEmpty(bPre);
 
             if (!aHasPre && !bHasPre) return 0;
-            if (!aHasPre && bHasPre) return 1;   // a is release, b is pre-release
-            if (aHasPre && !bHasPre) return -1;  // a is pre-release, b is release
+            if (!aHasPre && bHasPre) return 1;
+            if (aHasPre && !bHasPre) return -1;
 
-            // Both have pre-release — compare lexically (beta.1 < beta.2)
             return string.Compare(aPre, bPre, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -133,7 +126,6 @@ namespace Supervertaler.Trados.Core
 
             version = version.TrimStart('v');
 
-            // Split off pre-release suffix
             var hyphen = version.IndexOf('-');
             string numPart;
             if (hyphen >= 0)
@@ -153,61 +145,231 @@ namespace Supervertaler.Trados.Core
         }
 
         /// <summary>
-        /// Downloads a file from a URL to a local path.
-        /// Used by the one-click update to download the .sdlplugin directly.
+        /// Downloads a file from a URL to a local path. Used by the one-click
+        /// update flow to pull the AppStore-signed .sdlplugin.
         /// </summary>
         internal static async Task DownloadFileAsync(string url, string destinationPath)
         {
-            using (var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            using (var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
-                using (var httpStream = await response.Content.ReadAsStreamAsync())
+                using (var httpStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                 using (var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
-                    await httpStream.CopyToAsync(fileStream);
+                    await httpStream.CopyToAsync(fileStream).ConfigureAwait(false);
                 }
             }
         }
 
-        // --- Minimal JSON parsing for GitHub releases API ---
-
-        [DataContract]
-        private class GitHubRelease
+        /// <summary>
+        /// Returns the Packages directory (…\Plugins\Packages) for the install
+        /// scope where Supervertaler currently lives. This lets updates write
+        /// back to whichever scope the user originally chose during Trados
+        /// Plugin Installer (Roaming, LocalAppData, or ProgramData) instead of
+        /// hard-coding Roaming and creating orphan duplicates. Falls back to
+        /// Roaming if no existing install is found.
+        /// </summary>
+        internal static string FindCurrentInstallScopePackagesDir()
         {
-            [DataMember(Name = "tag_name")]
-            public string TagName { get; set; }
-
-            [DataMember(Name = "html_url")]
-            public string HtmlUrl { get; set; }
-
-            [DataMember(Name = "assets")]
-            public GitHubAsset[] Assets { get; set; }
+            foreach (var dir in AllPackagesRoots())
+            {
+                var pkg = Path.Combine(dir, PluginFileName);
+                if (File.Exists(pkg))
+                    return dir;
+            }
+            return AllPackagesRoots()[0]; // Roaming fallback
         }
 
-        [DataContract]
-        private class GitHubAsset
+        /// <summary>
+        /// Companion to <see cref="FindCurrentInstallScopePackagesDir"/> —
+        /// returns the sibling Unpacked directory for the same install scope.
+        /// </summary>
+        internal static string FindCurrentInstallScopeUnpackedDir()
         {
-            [DataMember(Name = "name")]
-            public string Name { get; set; }
-
-            [DataMember(Name = "browser_download_url")]
-            public string BrowserDownloadUrl { get; set; }
+            var pkgDir = FindCurrentInstallScopePackagesDir();
+            var pluginsRoot = Path.GetDirectoryName(pkgDir);
+            return Path.Combine(pluginsRoot, "Unpacked");
         }
 
-        private static GitHubRelease[] ParseReleases(string json)
+        private const string PluginFileName = "Supervertaler for Trados.sdlplugin";
+
+        private static string[] AllPackagesRoots()
+        {
+            return new[]
+            {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Trados", "Trados Studio", "18", "Plugins", "Packages"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Trados", "Trados Studio", "18", "Plugins", "Packages"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "Trados", "Trados Studio", "18", "Plugins", "Packages"),
+            };
+        }
+
+        // --- Cache -----------------------------------------------------------
+
+        private static string CacheFilePath =>
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Supervertaler.Trados", "appstore_cache.json");
+
+        private static CachedEntry LoadCachedEntry()
+        {
+            try
+            {
+                if (!File.Exists(CacheFilePath)) return null;
+                var json = File.ReadAllText(CacheFilePath, Encoding.UTF8);
+                var entry = DeserializeCache(json);
+                if (entry == null) return null;
+                if ((DateTime.UtcNow - entry.FetchedAtUtc).TotalHours >= CacheTtlHours) return null;
+                return entry;
+            }
+            catch { return null; }
+        }
+
+        private static void SaveCachedEntry(CachedEntry entry)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(CacheFilePath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                using (var stream = new MemoryStream())
+                {
+                    var serializer = new DataContractJsonSerializer(typeof(CachedEntry));
+                    serializer.WriteObject(stream, entry);
+                    File.WriteAllBytes(CacheFilePath, stream.ToArray());
+                }
+            }
+            catch
+            {
+                // Non-fatal — a stale or missing cache just means the next check
+                // hits the API again.
+            }
+        }
+
+        private static CachedEntry DeserializeCache(string json)
         {
             try
             {
                 using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
-                    var serializer = new DataContractJsonSerializer(typeof(GitHubRelease[]));
-                    return (GitHubRelease[])serializer.ReadObject(stream);
+                    var serializer = new DataContractJsonSerializer(typeof(CachedEntry));
+                    return (CachedEntry)serializer.ReadObject(stream);
+                }
+            }
+            catch { return null; }
+        }
+
+        // --- API fetch -------------------------------------------------------
+
+        private static async Task<CachedEntry> FetchEntryFromApiAsync()
+        {
+            try
+            {
+                using (var req = new HttpRequestMessage(HttpMethod.Get, AppStoreCatalogueUrl))
+                {
+                    req.Headers.TryAddWithoutValidation(ApiVersionHeaderName, ApiVersionHeaderValue);
+                    using (var resp = await _http.SendAsync(req).ConfigureAwait(false))
+                    {
+                        if (!resp.IsSuccessStatusCode) return null;
+                        var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        var catalogue = ParseCatalogue(json);
+                        if (catalogue?.Value == null) return null;
+
+                        foreach (var plugin in catalogue.Value)
+                        {
+                            if (plugin.Id != PluginId) continue;
+                            if (plugin.Versions == null || plugin.Versions.Length == 0) return null;
+
+                            // The API only returns published versions, so index 0
+                            // is always the live one for our plugin.
+                            var v = plugin.Versions[0];
+                            return new CachedEntry
+                            {
+                                FetchedAtUtc = DateTime.UtcNow,
+                                Version = v.VersionNumber,
+                                DownloadUrl = v.DownloadUrl
+                            };
+                        }
+                    }
                 }
             }
             catch
             {
-                return null;
+                // Network / parse errors → treat as "no update info available"
             }
+            return null;
+        }
+
+        private static AppStoreCatalogue ParseCatalogue(string json)
+        {
+            try
+            {
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    var serializer = new DataContractJsonSerializer(typeof(AppStoreCatalogue));
+                    return (AppStoreCatalogue)serializer.ReadObject(stream);
+                }
+            }
+            catch { return null; }
+        }
+
+        // --- Normalisation ---------------------------------------------------
+
+        private static string NormaliseVersion(string version)
+        {
+            if (string.IsNullOrEmpty(version)) return version;
+            return version.EndsWith(".0") ? version.Substring(0, version.Length - 2) : version;
+        }
+
+        private static string ToHttps(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                return "https://" + url.Substring(7);
+            return url;
+        }
+
+        // --- Data contracts --------------------------------------------------
+
+        [DataContract]
+        private class AppStoreCatalogue
+        {
+            [DataMember(Name = "value")]
+            public AppStorePlugin[] Value { get; set; }
+        }
+
+        [DataContract]
+        private class AppStorePlugin
+        {
+            [DataMember(Name = "id")]
+            public int Id { get; set; }
+
+            [DataMember(Name = "versions")]
+            public AppStoreVersion[] Versions { get; set; }
+        }
+
+        [DataContract]
+        private class AppStoreVersion
+        {
+            [DataMember(Name = "versionNumber")]
+            public string VersionNumber { get; set; }
+
+            [DataMember(Name = "downloadUrl")]
+            public string DownloadUrl { get; set; }
+        }
+
+        [DataContract]
+        private class CachedEntry
+        {
+            [DataMember(Name = "fetchedAtUtc")]
+            public DateTime FetchedAtUtc { get; set; }
+
+            [DataMember(Name = "version")]
+            public string Version { get; set; }
+
+            [DataMember(Name = "downloadUrl")]
+            public string DownloadUrl { get; set; }
         }
     }
 }
