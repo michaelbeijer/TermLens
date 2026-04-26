@@ -59,11 +59,11 @@ Each article includes rich YAML frontmatter with metadata and backlinks to relat
 
 | Field | Purpose |
 |-------|---------|
-| `type` | Article type — `terminology`, `client`, `domain`, `style`, or `template` |
+| `type` | Article type – `terminology`, `client`, `domain`, `style`, or `template` |
 | `domain` | Subject area (e.g. Legal, Medical, Marketing) |
 | `client` | Client name when applicable |
 | `language_pair` | Source → target language codes |
-| `confidence` | `high` / `medium` / `low` — set by the AI based on the authority of the source material. Low-confidence articles are flagged for human review by [Health Check](health-check.md). |
+| `confidence` | `high` / `medium` / `low` – set by the AI based on the authority of the source material. Low-confidence articles are flagged for human review by [Health Check](health-check.md). |
 | `sources` | Original filenames the article was derived from, for traceability. Terminology articles always quote exact source and target terms verbatim. |
 | `tldr` | One-sentence summary for fast scanning in Obsidian previews and the master indices below |
 | `created` / `updated` | Timestamps maintained automatically |
@@ -72,11 +72,11 @@ Each article includes rich YAML frontmatter with metadata and backlinks to relat
 
 After every successful Process Inbox run, three master index files are refreshed in the bank's `05_INDICES/` folder:
 
-* `master-terminology.md` — a flat table of all source → target term decisions across the bank, with domain, client, confidence, and status columns
-* `client-summary.md` — one section per client with their `tldr` or first paragraph
-* `domain-summary.md` — one section per domain with their `tldr` or first paragraph
+* `master-terminology.md` – a flat table of all source → target term decisions across the bank, with domain, client, confidence, and status columns
+* `client-summary.md` – one section per client with their `tldr` or first paragraph
+* `domain-summary.md` – one section per domain with their `tldr` or first paragraph
 
-These indexes are built by scanning frontmatter directly — no extra LLM call — and complete in under a second. Open them in Obsidian to browse the whole bank at a glance. [Health Check](health-check.md) refreshes them as well.
+These indexes are built by scanning frontmatter directly – no extra LLM call – and complete in under a second. Open them in Obsidian to browse the whole bank at a glance. [Health Check](health-check.md) refreshes them as well.
 
 ## Templates and the heal-on-activation prompt
 

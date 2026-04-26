@@ -4,7 +4,7 @@ description: How SuperMemory is loaded into the AI context – the algorithm, ra
 
 # AI Integration
 
-This page is the technical deep dive into **how** SuperMemory — Supervertaler's self-organising translation knowledge base system — loads the active memory bank into the AI context. For the broader picture of all context sources, start with [Context Awareness](../context-awareness.md). For what SuperMemory is and how to create and switch memory banks, start with [SuperMemory](../super-memory.md).
+This page is the technical deep dive into **how** SuperMemory – Supervertaler's self-organising translation knowledge base system – loads the active memory bank into the AI context. For the broader picture of all context sources, start with [Context Awareness](../context-awareness.md). For what SuperMemory is and how to create and switch memory banks, start with [SuperMemory](../super-memory.md).
 
 When SuperMemory context is enabled in [AI Settings](../../settings/ai-settings.md), every AI call – chat messages, batch translations, single-segment translations, AutoPrompt runs – triggers a fresh load of the active memory bank before the prompt is sent. The load is deterministic, fast, and scoped to the current project and document.
 

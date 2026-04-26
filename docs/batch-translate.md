@@ -85,7 +85,7 @@ TM matches and surrounding segments are **not** included in Batch Translate – 
 
 The **Auto-backup translations to TMX** checkbox is ticked by default. When enabled, Supervertaler writes every translated segment to a TMX file as it arrives from the AI. If Trados crashes mid-run, you can recover the completed translations without re-running the batch.
 
-The TMX files are also useful outside of crash recovery — you can import them into any TM in Trados, memoQ, Wordfast, or any other CAT tool that accepts standard TMX.
+The TMX files are also useful outside of crash recovery – you can import them into any TM in Trados, memoQ, Wordfast, or any other CAT tool that accepts standard TMX.
 
 Click **Open folder…** next to the checkbox to open the backup folder directly in Windows Explorer.
 

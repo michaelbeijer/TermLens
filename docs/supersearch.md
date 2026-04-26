@@ -5,7 +5,7 @@ You are viewing help for **Supervertaler for Trados** -- the Trados Studio plugi
 {% endhint %}
 
 {% embed url="https://youtu.be/549Ulc92FiU" %}
-SuperSearch in action — cross-file search across a Trados project
+SuperSearch in action – cross-file search across a Trados project
 {% endembed %}
 
 SuperSearch is a cross-file search and replace tool that lets you find text across **all SDLXLIFF files** in your Trados project -- not just the file you currently have open. It lives in its own dockable panel, so you can keep it visible while you translate.
