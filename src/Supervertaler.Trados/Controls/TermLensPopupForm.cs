@@ -36,6 +36,13 @@ namespace Supervertaler.Trados.Controls
         // and the keyboard path race, or if a block fires its event twice.
         private int? _pendingInsertOneBased;
 
+        // Transient hint state — used to flash a short message in place of
+        // the keyboard-shortcut hint label (e.g. when the user presses E on
+        // a read-only MultiTerm match). Auto-restores after a few seconds.
+        private string _originalHintText;
+        private Color _originalHintColor;
+        private System.Windows.Forms.Timer _hintRestoreTimer;
+
         public TermLensPopupForm(
             TermLensControl dockedControl,
             string sourceText,
@@ -97,12 +104,29 @@ namespace Supervertaler.Trados.Controls
             card.Controls.Add(_flowPanel);
             card.Controls.Add(_hintLabel);
 
-            // Dimensions: cap width so a long sentence wraps; the form will
-            // auto-resize height once the flow panel measures.
-            int maxPopupWidth = UiScale.Pixels(560);
-            ClientSize = new Size(maxPopupWidth, UiScale.Pixels(120));
+            // Sizing strategy:
+            //   - maxAvailableWidth caps how wide the popup can ever be — a
+            //     fraction of the screen the popup will appear on, with an
+            //     absolute upper bound so it doesn't span 4K monitors.
+            //   - Individual chips get the same cap (less the form's chrome)
+            //     as their MaxWidth, so a single very long target term will
+            //     still ellipsis-truncate rather than blow past the screen.
+            //   - After the chips are added, ResizeToContent measures the
+            //     flow panel's preferred size at maxAvailableWidth and
+            //     SHRINKS the popup to fit in BOTH dimensions — short
+            //     segments don't get a giant empty popup, long segments
+            //     grow to show every chip.
+            //
+            // Earlier versions hard-capped width at 560 px regardless of
+            // screen, which truncated chips on long sentences (reported on
+            // patent-style segments running past 100 chars).
+            var screen = Screen.FromPoint(Cursor.Position).WorkingArea;
+            int maxAvailableWidth = Math.Min(
+                UiScale.Pixels(1200),
+                screen.Width - UiScale.Pixels(60));
+            ClientSize = new Size(maxAvailableWidth, UiScale.Pixels(120));
 
-            int maxBlockWidth = maxPopupWidth - card.Padding.Horizontal - UiScale.Pixels(20);
+            int maxBlockWidth = maxAvailableWidth - card.Padding.Horizontal - UiScale.Pixels(40);
             if (maxBlockWidth < 60) maxBlockWidth = 60;
 
             // Reuse the docked panel's matcher/index — no termbase reload.
@@ -123,8 +147,8 @@ namespace Supervertaler.Trados.Controls
                 }
             }
 
-            // Size the form to the flow panel's natural height (capped).
-            ResizeToContent(maxPopupWidth);
+            // Shrink-to-fit in both dimensions, capped at the screen.
+            ResizeToContent(maxAvailableWidth, screen);
 
             if (_blocks.Count > 0)
                 SetCurrent(0);
@@ -132,24 +156,31 @@ namespace Supervertaler.Trados.Controls
             ResumeLayout(false);
         }
 
-        private void ResizeToContent(int desiredWidth)
+        private void ResizeToContent(int maxAvailableWidth, Rectangle screen)
         {
-            // Measure the flow panel's preferred size at the target width, then
-            // size the form to fit. Cap at half the working area height so we
-            // don't overflow on very long segments — AutoScroll will scroll.
+            int chromeH = Padding.Horizontal + UiScale.Pixels(20);  // card horizontal padding
+            int chromeV = Padding.Vertical + _hintLabel.Height + UiScale.Pixels(12); // card vertical padding
+
+            // Measure the flow panel's preferred size at the maximum allowed
+            // width — chips wrap inside that constraint.
             var pref = _flowPanel.GetPreferredSize(new Size(
-                desiredWidth - Padding.Horizontal - UiScale.Pixels(20),
+                maxAvailableWidth - chromeH,
                 int.MaxValue));
 
-            int chrome = Padding.Vertical
-                + _hintLabel.Height
-                + UiScale.Pixels(12); // card padding top+bottom
+            // Width: shrink to actual content width (so short segments get a
+            // small popup), capped at maxAvailableWidth.
+            int desiredWidth = Math.Min(pref.Width + chromeH, maxAvailableWidth);
+            int minWidth = UiScale.Pixels(280);
+            desiredWidth = Math.Max(desiredWidth, minWidth);
 
-            int desiredHeight = Math.Min(
-                pref.Height + chrome + UiScale.Pixels(8),
-                Screen.PrimaryScreen.WorkingArea.Height / 2);
+            // Height: shrink to fit, cap at 80 % of the screen height (vs the
+            // earlier 50 % cap which truncated multi-line chip rows on long
+            // sentences). AutoScroll handles anything beyond that.
+            int maxHeight = screen.Height * 4 / 5;
+            int desiredHeight = Math.Min(pref.Height + chromeV + UiScale.Pixels(8), maxHeight);
+            desiredHeight = Math.Max(desiredHeight, UiScale.Pixels(80));
 
-            ClientSize = new Size(desiredWidth, Math.Max(desiredHeight, UiScale.Pixels(80)));
+            ClientSize = new Size(desiredWidth, desiredHeight);
         }
 
         /// <summary>
@@ -263,14 +294,25 @@ namespace Supervertaler.Trados.Controls
         /// entry data before closing the popup so the editor doesn't
         /// reference a disposed TermBlock; routes through the same
         /// OnTermEditRequested handler the docked panel's right-click
-        /// "Edit Term…" menu uses.
+        /// "Edit Term…" menu uses. MultiTerm matches are read-only — we
+        /// flash a hint instead of opening anything (Trados Studio 2026
+        /// is expected to replace MultiTerm with a SQLite-backed
+        /// terminology system, so we're not investing in MultiTerm
+        /// write support here).
         /// </summary>
         private void EditCurrentMatch()
         {
             if (_currentIndex < 0 || _currentIndex >= _blocks.Count) return;
             var block = _blocks[_currentIndex];
             var entry = block.PrimaryEntry;
-            if (entry == null || entry.IsMultiTerm) return; // MultiTerm is read-only
+            if (entry == null) return;
+
+            if (entry.IsMultiTerm)
+            {
+                ShowTransientHint(
+                    "MultiTerm entries are read-only — edit them in Trados → Termbase Viewer.");
+                return;
+            }
 
             // Snapshot the entry list — block.Entries is a live read-only
             // view that's invalid after the popup disposes.
@@ -279,6 +321,42 @@ namespace Supervertaler.Trados.Controls
             FormClosed += (s, e) =>
                 TermLensEditorViewPart.HandleEditCurrentTerm(entry, allEntries);
             Close();
+        }
+
+        /// <summary>
+        /// Briefly replace the keyboard-shortcut hint with a status message
+        /// in muted red, then restore the original after a few seconds. Used
+        /// for non-fatal feedback (e.g. "MultiTerm is read-only") without
+        /// breaking the user's keyboard flow with a modal dialogue.
+        /// </summary>
+        private void ShowTransientHint(string text, int durationMs = 3500)
+        {
+            if (_originalHintText == null)
+            {
+                _originalHintText = _hintLabel.Text;
+                _originalHintColor = _hintLabel.ForeColor;
+            }
+
+            _hintLabel.Text = text;
+            _hintLabel.ForeColor = Color.FromArgb(180, 70, 70); // muted red
+
+            if (_hintRestoreTimer == null)
+            {
+                _hintRestoreTimer = new System.Windows.Forms.Timer();
+                _hintRestoreTimer.Tick += (s, e) =>
+                {
+                    _hintRestoreTimer.Stop();
+                    if (!IsDisposed)
+                    {
+                        _hintLabel.Text = _originalHintText;
+                        _hintLabel.ForeColor = _originalHintColor;
+                    }
+                };
+            }
+
+            _hintRestoreTimer.Stop();
+            _hintRestoreTimer.Interval = durationMs;
+            _hintRestoreTimer.Start();
         }
     }
 }

@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.19.38] – 2026-04-26
+
+### Changed (TermLens popup – feedback when E is pressed on a MultiTerm match)
+
+- **Pressing E on a MultiTerm (green) match in the floating TermLens popup now flashes a short hint in place of the keyboard-shortcut footer instead of silently doing nothing.** The hint reads *"MultiTerm entries are read-only — edit them in Trados → Termbase Viewer."* in muted red, then auto-restores the regular hint after 3.5 seconds. Same E-key behaviour as before for non-MultiTerm matches: editor opens. Decision rationale: Trados Studio 2026 is expected to replace MultiTerm with a SQLite-backed terminology system, so MultiTerm write support isn't worth investing in — the right escape hatch is to send users to Trados's own MultiTerm editor for now.
+
+---
+
+## [4.19.37] – 2026-04-26
+
+### Changed (Term Picker shortcut → Ctrl+Shift+P)
+
+- **The Term Picker dialogue now opens via Ctrl+Shift+P (was Ctrl+Shift+T in v4.19.36).** Ctrl+Shift+T also collides with a Trados Studio binding. Ctrl+Shift+P doesn't collide with anything in either Trados or Supervertaler, and follows the VS Code-style "command palette" convention (P for Picker). Plugin-internal action ID stays `TermLens_TermPicker` so any user-customised remappings survive the rename. Stale "Ctrl+Shift+T" comment in `AddTermAction.cs` (which describes Ctrl+Alt+T, not the picker shortcut at all) fixed as a drive-by.
+
+### Fixed (TermLens popup – grows to fit long segments)
+
+- **The popup no longer truncates chips on long source segments.** Previously the popup was hard-capped at 560 pixels wide regardless of screen size, so a patent-style sentence pushing past 100 characters would show the source segment fine but truncate the target chip text with an ellipsis (e.g. "De onderhavige uitvinding heeft in het algemeen betrekkin…"). Width now scales with the screen — capped at `min(1200 px, screen.Width − 60)` — and the popup shrinks to the actual content width (so short segments still get compact popups). Height cap raised from half-screen to four-fifths so multi-line chip rows aren't cut off either; `AutoScroll` handles anything beyond that. Reported by a user on a long English-Dutch patent sentence.
+
+---
+
 ## [4.19.36] – 2026-04-26
 
 ### Changed (Term Picker shortcut → Ctrl+Shift+T)

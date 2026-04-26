@@ -16,7 +16,7 @@ namespace Supervertaler.Trados
 {
     /// <summary>
     /// Editor context menu action: "Add Term to TermLens".
-    /// Appears in the right-click context menu and responds to Ctrl+Shift+T.
+    /// Appears in the right-click context menu and responds to Ctrl+Alt+T.
     /// Extracts selected source/target text, opens AddTermDialog, and inserts the term.
     /// </summary>
     [Action("TermLens_AddTerm", typeof(EditorController),
