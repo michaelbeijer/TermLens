@@ -456,7 +456,9 @@ namespace Supervertaler.Trados.Core
             sb.AppendLine($"2. Use actual values: {ctx.SourceLang} and {ctx.TargetLang}");
             sb.AppendLine("3. Include ALL termbase terms in the glossary (do not summarize or sample)");
             sb.AppendLine("4. The prompt should be comprehensive (2000-5000 words)");
-            sb.AppendLine("5. Output the prompt content between the delimiters shown below – NOTHING else");
+            sb.AppendLine("5. Use exactly ONE blank line between sections, paragraphs, and list blocks.");
+            sb.AppendLine("   Never insert two or more consecutive blank lines.");
+            sb.AppendLine("6. Output the prompt content between the delimiters shown below – NOTHING else");
             sb.AppendLine();
             sb.AppendLine("===PROMPT_START===");
             sb.AppendLine("(Your full prompt content here – plain text, no JSON escaping needed)");
@@ -489,7 +491,12 @@ namespace Supervertaler.Trados.Core
             if (endIdx < 0) return null;
 
             var content = aiResponse.Substring(startIdx, endIdx - startIdx).Trim();
-            return string.IsNullOrEmpty(content) ? null : content;
+            if (string.IsNullOrEmpty(content)) return null;
+
+            // Collapse 3+ consecutive newlines into 2 (one blank line max between blocks).
+            // Models often emit 2-3 blank lines around section headings even when not asked.
+            content = Regex.Replace(content, @"(\r?\n[ \t]*){3,}", "\n\n");
+            return content;
         }
 
         /// <summary>

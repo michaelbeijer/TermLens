@@ -3461,24 +3461,34 @@ Always list the original source filename(s) in the `sources:` frontmatter field.
                 // Re-activate the Supervertaler Assistant pane at every batch
                 // boundary. When ProcessSegmentPair writes a translation to a
                 // segment, Trados' built-in Translation Results pane reacts to
-                // the active-segment change and steals focus during the gap
-                // between batches (when no new segment writes are happening to
-                // mask it). The user's Supervertaler Assistant tab loses front
-                // position on every batch boundary. Counter that by re-Activating
-                // our viewpart whenever a new batch starts, so the user is taken
-                // straight back to the live progress log.
+                // the active-segment change and steals focus. Without this
+                // counter-Activate, the user's Supervertaler Assistant tab
+                // loses front position on every batch boundary.
                 //
-                // We trigger on "Translating batch" / "Proofreading batch" (start
-                // of next batch) rather than "✓ Batch X complete" because Trados'
-                // focus steal happens AFTER our batch-complete log line during
-                // the API request gap; calling Activate at batch-start happens
-                // after the steal has already occurred and so reliably wins.
+                // Trigger on both "Translating batch ..." (next batch starting)
+                // AND "✓ Batch X complete" (this batch's writes just landed).
+                // Trados' focus steal happens DURING/AFTER ProcessSegmentPair
+                // writes, which fire just before "✓ Batch ... complete" is
+                // logged. Activating only on next-batch-start was too late on
+                // the last batch and on slow API runs where the steal landed
+                // mid-gap and stuck. The synchronous Activate handles inline
+                // steals; the deferred Activate (posted via BeginInvoke) wins
+                // against steals queued for a later UI tick — same pattern as
+                // OnNavigateToSegment.
                 if (!string.IsNullOrEmpty(e.Message) &&
                     (e.Message.StartsWith("Translating batch ", StringComparison.Ordinal) ||
-                     e.Message.StartsWith("Proofreading batch ", StringComparison.Ordinal)))
+                     e.Message.StartsWith("Proofreading batch ", StringComparison.Ordinal) ||
+                     e.Message.StartsWith("✓ Batch ", StringComparison.Ordinal)))
                 {
-                    try { Activate(); }
-                    catch { /* Activate may not be available in all Trados versions */ }
+                    try { Activate(); } catch { }
+                    try
+                    {
+                        _control.Value.BeginInvoke((Action)(() =>
+                        {
+                            try { Activate(); } catch { }
+                        }));
+                    }
+                    catch { /* control may not be available */ }
                 }
             });
         }
@@ -3585,6 +3595,21 @@ Always list the original source filename(s) in the `sources:` frontmatter field.
 
                 // Update segment counts (some may now be filled)
                 UpdateBatchSegmentCounts();
+
+                // Final counter-Activate for the last batch. The mid-run fix
+                // in OnBatchProgress only fires while progress messages are
+                // arriving; once the run ends, Trados' Translation Results
+                // pane can still steal focus on the last segment write. Use
+                // the same dual sync + deferred pattern as OnNavigateToSegment.
+                try { Activate(); } catch { }
+                try
+                {
+                    _control.Value.BeginInvoke((Action)(() =>
+                    {
+                        try { Activate(); } catch { }
+                    }));
+                }
+                catch { /* control may not be available */ }
             });
 
             // Clean up
@@ -4285,13 +4310,27 @@ Always list the original source filename(s) in the `sources:` frontmatter field.
                         var parentPu = _activeDocument.GetParentParagraphUnit(allPair);
                         var sid = allPair.Properties?.Id.Id;
 
-                        // Simple heuristic: if segment ID parses to an int that is <= previous,
-                        // we've crossed a file boundary
+                        // Trados' segment ID IS the number shown in the editor grid –
+                        // it's preserved across merges (the surviving segment keeps its
+                        // ID, the retired one is gone) and assigned fresh on splits, so
+                        // using it as the per-file number keeps our Reports tab numbering
+                        // aligned with what Daniel/the user sees in Trados even after
+                        // merging or splitting. Falling back to iteration count only when
+                        // the ID isn't parseable as an int (older formats / exotic filters).
+                        //
+                        // File-boundary detection: a segment ID that resets to a low number
+                        // (or, in the non-parseable case, looks suspiciously like a restart)
+                        // means we've crossed into the next file in a multi-file project.
                         int segIdNum;
-                        if (int.TryParse(sid, out segIdNum) && segIdNum <= fileSegIdx && fileSegIdx > 0)
+                        bool parsed = int.TryParse(sid, out segIdNum);
+
+                        if (parsed && segIdNum <= fileSegIdx && fileSegIdx > 0)
                             fileSegIdx = 0;
 
-                        fileSegIdx++;
+                        if (parsed)
+                            fileSegIdx = segIdNum;
+                        else
+                            fileSegIdx++;
 
                         if (!string.IsNullOrEmpty(sid))
                         {
