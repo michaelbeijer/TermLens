@@ -233,7 +233,12 @@ namespace Supervertaler.Trados.Settings
                 Width = 70,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            _cboUiScale.Items.AddRange(new object[] { "100%", "110%", "125%", "150%" });
+            // 70-90% lets users dial the plugin smaller than Windows' display
+            // scaling on hi-DPI machines where the global scaling is too
+            // aggressive but they don't want to change Windows-wide settings.
+            // Below 70% the system-rendered control elements (NUD spinners,
+            // checkbox boxes) become disproportionately large vs the text.
+            _cboUiScale.Items.AddRange(new object[] { "70%", "80%", "90%", "100%", "110%", "125%", "150%" });
             var scalePercent = (int)Math.Round(_settings.UiScaleFactor * 100);
             var scaleText = scalePercent + "%";
             var idx = _cboUiScale.Items.IndexOf(scaleText);
