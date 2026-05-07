@@ -266,11 +266,18 @@ namespace Supervertaler.Trados.Controls
 
         private Button CreateToolbarButton(string text, int width)
         {
+            // AutoSize so buttons grow to fit their text at any DPI / font
+            // size – the previous fixed-width pattern clipped "New", "Restore"
+            // and "Refresh" labels at 150% Windows scaling. The `width` arg is
+            // kept as a minimum so narrow labels still get a comfortable
+            // click target rather than collapsing to text-width-only.
             var btn = new Button
             {
                 Text = text,
-                Width = width,
-                Height = 25,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(width, 25),
+                Padding = new Padding(8, 0, 8, 0),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(80, 80, 80),
@@ -449,12 +456,19 @@ namespace Supervertaler.Trados.Controls
                 BackColor = Color.White
             };
 
+            // AutoSize on these two buttons so they grow to fit the text at
+            // any DPI – at 150% Windows scaling the fixed Width = 130 / 120
+            // clipped "Edit System Prompt" / "Reset to Default". Position the
+            // second button dynamically against the first's actual right edge,
+            // and the status label dynamically against the second button.
             _btnEditSystem = new Button
             {
                 Text = "Edit System Prompt",
                 Location = new Point(6, 4),
-                Width = 130,
-                Height = 25,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(130, 25),
+                Padding = new Padding(8, 0, 8, 0),
                 FlatStyle = FlatStyle.System,
                 Font = bodyFont
             };
@@ -463,9 +477,11 @@ namespace Supervertaler.Trados.Controls
             _btnResetSystem = new Button
             {
                 Text = "Reset to Default",
-                Location = new Point(142, 4),
-                Width = 120,
-                Height = 25,
+                Location = new Point(_btnEditSystem.PreferredSize.Width + 12, 4),
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(120, 25),
+                Padding = new Padding(8, 0, 8, 0),
                 FlatStyle = FlatStyle.System,
                 Font = bodyFont
             };
@@ -474,7 +490,7 @@ namespace Supervertaler.Trados.Controls
             _lblSystemStatus = new Label
             {
                 Text = "",
-                Location = new Point(268, 8),
+                Location = new Point(_btnResetSystem.Right + 6, 8),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(100, 100, 100),
                 Font = new Font("Segoe UI", 8f)

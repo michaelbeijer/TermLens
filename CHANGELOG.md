@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.19.81] – 2026-05-07
+
+### Fixed (Settings → Prompts: toolbar and system-prompt buttons clipped at high DPI)
+
+- **At 150% Windows display scaling on the Settings → Prompts tab, the toolbar buttons "New", "Restore" and "Refresh" all clipped their last character ("Ne", "Restor", "Refres"), and the two system-prompt buttons below the right-hand pane ("Edit System Prompt" / "Reset to Default") were similarly clipped.** Cause: each button had a hard-coded `Width` (45 / 65 / 130 / 120 px) chosen to fit at 100% scaling – tight even there, and not enough text room left after the AutoScaleMode.Dpi pass at higher DPIs.
+- Fix at [`PromptManagerPanel.cs`](src/Supervertaler.Trados/Controls/PromptManagerPanel.cs): switch every toolbar button (via the `CreateToolbarButton` helper) and the two system-prompt buttons to `AutoSize = true` with `AutoSizeMode.GrowAndShrink`. The previous explicit widths are kept as `MinimumSize` so very-short labels still get a comfortable click target. Position the "Reset to Default" button and the status label dynamically against their neighbours' measured `PreferredSize` / `Right` edges instead of fixed x coordinates, so wider buttons at high DPI don't push them on top of each other.
+
+---
+
 ## [4.19.80] – 2026-05-07
 
 ### Added (Settings: UI scale dropdown can now go below 100%)
