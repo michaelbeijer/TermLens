@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.19.83] – 2026-05-07
+
+### Fixed (TermLens panel: big bold "A" font-size button clipped at the bottom)
+
+- After the v4.19.79 small-A / big-A redesign, the bigger bold "A" on the right of the TermLens header strip was getting its bottom edge clipped at high Windows display scaling – the small regular "A" rendered fully, but the bold one didn't have enough vertical room inside the 28 px-tall header panel.
+- Fix at [`TermLensControl.cs`](src/Supervertaler.Trados/Controls/TermLensControl.cs): bump header height 28 → 32, and trim the big-A font from 11 pt → 10 pt. The size delta vs the small 7 pt A is still clearly visible (and tooltips spell out increase / decrease either way), but the bold A now has comfortable clearance even at 150% scaling.
+
+---
+
 ## [4.19.82] – 2026-05-07
 
 ### Fixed (Settings → Termbases tab: multiple high-DPI clipping issues)

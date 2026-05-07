@@ -65,11 +65,14 @@ namespace Supervertaler.Trados.Controls
 
             BackColor = Color.White;
 
-            // Header bar
+            // Header bar – 32 px tall instead of 28 so the big bold "A" font-
+            // size button has comfortable vertical clearance at high DPI. At
+            // 28 px the bottom of the bold A was clipping when the plugin
+            // was hosted by Trados at 150% Windows display scaling.
             _headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = UiScale.Pixels(28),
+                Height = UiScale.Pixels(32),
                 BackColor = Color.FromArgb(245, 245, 245),
                 Padding = new Padding(UiScale.Pixels(6), UiScale.Pixels(2), UiScale.Pixels(56), UiScale.Pixels(2))
             };
@@ -99,7 +102,7 @@ namespace Supervertaler.Trados.Controls
                 Dock = DockStyle.Right,
                 Width = UiScale.Pixels(28),
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", UiScale.FontSize(11f), FontStyle.Bold),
+                Font = new Font("Segoe UI", UiScale.FontSize(10f), FontStyle.Bold),
                 ForeColor = Color.FromArgb(100, 100, 100),
                 BackColor = Color.Transparent,
                 Cursor = Cursors.Hand,
