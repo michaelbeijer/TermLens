@@ -376,7 +376,14 @@ namespace Supervertaler.Trados
 
         private void UpdateContextDisplay()
         {
-            var sourceText = _activeDocument?.ActiveSegmentPair?.Source?.ToString();
+            // Strip inline-formatting tags from the source preview – ToString()
+            // would emit e.g. `<cf bold=True>SEVT</cf>` which leaks Trados'
+            // internal tag syntax into the chat header. SegmentTagHandler
+            // .GetFinalText returns just the readable text. Same treatment
+            // already applied to the target.
+            var sourceText = _activeDocument?.ActiveSegmentPair?.Source != null
+                ? SegmentTagHandler.GetFinalText(_activeDocument.ActiveSegmentPair.Source)
+                : null;
             var targetText = _activeDocument?.ActiveSegmentPair?.Target != null
                 ? SegmentTagHandler.GetFinalText(_activeDocument.ActiveSegmentPair.Target)
                 : null;

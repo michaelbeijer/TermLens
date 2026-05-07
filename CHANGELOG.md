@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.19.85] – 2026-05-07
+
+### Fixed (Chat header: source preview leaked Trados inline-formatting tags)
+
+- **The "Source: …" preview at the top of the chat panel was showing raw Trados inline-formatting tags – e.g. `Source: "<cf bold=True>SEVT</cf> <cf size=…>` – instead of plain readable text.** The target preview already used `SegmentTagHandler.GetFinalText` (which returns the visible text only), but the source preview called `Source.ToString()` directly, which serialises the segment with all formatting markers.
+- Fix at [`AiAssistantViewPart.UpdateContextDisplay`](src/Supervertaler.Trados/AiAssistantViewPart.cs): route the source through `SegmentTagHandler.GetFinalText` too.
+
+---
+
 ## [4.19.84] – 2026-05-07
 
 ### Fixed (Chat panel: Send / Stop / Clear button labels clipped at high DPI)
