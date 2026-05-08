@@ -144,10 +144,14 @@ namespace Supervertaler.Trados.Core
                         // Build user prompt
                         var userPrompt = ProofreadingPrompt.BuildBatchUserPrompt(promptSegments);
 
-                        // Call LLM
+                        // Call LLM. enablePromptCaching: the system prompt (instructions + termbase +
+                        // bilingual document context) is byte-stable across all batches in this proofread
+                        // run. Anthropic and OpenRouter→Anthropic add explicit cache_control markers;
+                        // OpenAI/DeepSeek/Gemini 2.5+ benefit from implicit automatic caching.
                         var response = await client.SendPromptAsync(
                             userPrompt, systemPrompt, maxTokens, cancellationToken,
-                            feature: Models.PromptLogFeature.Proofread);
+                            feature: Models.PromptLogFeature.Proofread,
+                            enablePromptCaching: true);
 
                         // Parse response
                         var parsed = ProofreadingPrompt.ParseBatchResponse(

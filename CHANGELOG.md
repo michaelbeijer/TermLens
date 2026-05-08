@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.19.86] – 2026-05-08
+
+### Added (Anthropic prompt caching: ~80% input-cost reduction on batch operations)
+
+- **Batch Translate and Batch Proofreader now mark the static portion of the system prompt with `cache_control: ephemeral`**, so the first batch in a run pays a one-time 1.25× cache-write surcharge and every subsequent batch within ~5 minutes pays only 0.1× of the input rate for the cached portion. For a typical 1000-segment Sonnet 4.6 run with full document context, this drops the API bill from ~$3.69 (estimate) down to ~$1.36 (real) – about a 60–65% reduction overall, and ~80% on the cached portion alone.
+- New `enablePromptCaching` parameter on `LlmClient.SendPromptAsync`; passed `true` by both batch services. Single-shot callers (chat, AutoPrompt, single-segment translate) leave it `false` to avoid the 1.25× write-surcharge on calls that won't benefit from cache reads.
+- Anthropic native: system prompt is sent as a `[{"type":"text","text":"...","cache_control":{"type":"ephemeral"}}]` block.
+- OpenRouter → Anthropic: same `cache_control` marker passed through in OpenAI-shape content array.
+- Other providers (OpenAI, DeepSeek, Gemini 2.5+) get implicit automatic caching at the provider layer because the system prompt is byte-stable across batches; no marker needed. Grok / Mistral / Ollama: no caching available, flag is a no-op.
+
+### Added (Reports tab: real API-reported token counts and cost, not estimates)
+
+- **The Reports tab now shows real provider-billed token counts and the real cost of each call, with cache-hit tokens broken out separately**, instead of the previous chars/4 + list-price estimate. The `~` prefix on the cost is dropped when actuals are available; when caching contributed, the cache-hit count is shown inline (e.g. "830,000 in (720,000 cached) / 32,000 out · $1.36").
+- New `ApiUsage` type in `LlmClient` capturing `RegularInputTokens` / `CacheReadTokens` / `CacheWriteTokens` / `OutputTokens`. Populated from each provider's `usage` block on every successful call.
+- Anthropic native: parses `usage.input_tokens` / `output_tokens` / `cache_creation_input_tokens` / `cache_read_input_tokens`.
+- OpenAI shape (OpenAI native, OpenRouter, DeepSeek, Mistral, Grok, Custom): parses `usage.prompt_tokens` / `completion_tokens` plus either `prompt_tokens_details.cached_tokens` (OpenAI native) or `cache_creation_input_tokens` / `cache_read_input_tokens` (OpenRouter passing through Anthropic provider).
+- New `TokenEstimator.ComputeActualCost` applies cache-aware multipliers per provider: Anthropic 0.1× read / 1.25× write, OpenAI 0.5× read, DeepSeek 0.1× read, Gemini 2.5+ 0.25× read, others passthrough.
+- Falls back gracefully to the chars/4 + list-price estimate when usage isn't available (Ollama, parse failures, providers that don't return usage).
+
+### Added (AI Cost Guide: in-app help dropdown + permanent disclaimer link)
+
+- New help dropdown item **AI Cost Guide** added to the Chat / Batch Operations / Reports tab help menus, opening the GitBook page that explains how costs are computed, links to every provider's own usage console, and gives per-model cost-per-document estimates.
+- New permanent footer in the Reports tab: "Token counts and costs are estimates · AI Cost Guide" (right-aligned, light text, link). Always visible so users see the disclaimer without having to click anything; tooltip explains the chars/4 heuristic for the legacy estimate path. With the actual-usage feature above, this disclaimer now applies only to providers that don't report usage (Ollama and edge cases) – everything else shows real billed numbers.
+
+### Added (Batch Translate: pre-run truncation warning when document is bigger than `Max segments`)
+
+- When `IncludeDocumentContext` is on and the active document has more segments than the configured `Max segments` cap, the Batch Translate panel now logs a warning before the run starts, naming exactly which segments will be visible to the AI and which will be omitted (per the existing first-80% + last-20% truncation rule). Previously this happened silently inside `TranslationPrompt.BuildSystemPrompt` and users had no way to know their middle-of-document segments weren't being shown to the AI – which can hurt terminology consistency on long jobs.
+
+### Fixed (`DocumentContextMaxSegments` default mismatch)
+
+- The `AiSettings.DocumentContextMaxSegments` property was auto-initialised to `20`, while the AI Settings panel's NumericUpDown range was 100–2000 with a nominal default of `500`. Effect: any user whose persisted JSON didn't yet contain the key was being silently clamped to 100 segments of document context (well below the panel's intended default), which is too small for any non-trivial document. The auto-init now matches the panel's intended default of `500`. Users with an explicitly saved value are unaffected.
+
+### Fixed (cost estimator: Claude Opus 4.6 / 4.7 priced at 1/3 the real rate)
+
+- The estimator's pricing table had Opus 4.6 and 4.7 at $5 / $25 per million input/output tokens. Anthropic's published Opus 4.x rate is $15 / $75 per million – the table was off by 3×, causing the in-app cost estimate to under-shoot the real bill (e.g. estimate ~$0.57 vs Anthropic Console ~$0.92 on a single AutoPrompt call). Corrected to $15 / $75. Sonnet 4.6 ($3 / $15) and Haiku 4.5 ($1 / $5) were already correct.
+
+---
+
 ## [4.19.85] – 2026-05-07
 
 ### Fixed (Chat header: source preview leaked Trados inline-formatting tags)

@@ -25,8 +25,8 @@ namespace Supervertaler.Trados.Core
             // Claude (Anthropic)
             { "claude-sonnet-4-6",         (3.00m,   15.00m) },
             { "claude-haiku-4-5-20251001", (1.00m,   5.00m)  },
-            { "claude-opus-4-7",           (5.00m,   25.00m) },
-            { "claude-opus-4-6",           (5.00m,   25.00m) },
+            { "claude-opus-4-7",           (15.00m,  75.00m) },
+            { "claude-opus-4-6",           (15.00m,  75.00m) },
 
             // Google Gemini
             { "gemini-2.5-flash",          (0.15m,   0.60m)  },
@@ -119,6 +119,61 @@ namespace Supervertaler.Trados.Core
         public static bool HasPricing(string model)
         {
             return !string.IsNullOrEmpty(model) && Pricing.ContainsKey(model);
+        }
+
+        /// <summary>
+        /// Returns the per-provider cache discount multipliers for a given model:
+        /// (cacheReadMultiplier, cacheWriteMultiplier), both relative to the regular
+        /// input rate. Multiply input rate by these for the effective cached rate.
+        /// </summary>
+        private static (decimal readMultiplier, decimal writeMultiplier) GetCacheMultipliers(string model)
+        {
+            if (string.IsNullOrEmpty(model)) return (1m, 1m);
+            var lc = model.ToLowerInvariant();
+
+            // Anthropic native + OpenRouter→Anthropic
+            if (lc.Contains("claude") || lc.StartsWith("anthropic/"))
+                return (0.1m, 1.25m);
+
+            // OpenAI auto-cache: 50% off cache reads, no separate cache-write surcharge
+            if (lc.StartsWith("gpt-") || lc.StartsWith("openai/") || lc.StartsWith("o4-"))
+                return (0.5m, 1m);
+
+            // DeepSeek automatic disk caching: ~90% off cache reads
+            if (lc.StartsWith("deepseek") || lc.Contains("deepseek/"))
+                return (0.1m, 1m);
+
+            // Gemini 2.5+ implicit caching: 75% off cache reads
+            if (lc.StartsWith("gemini-2.5") || lc.StartsWith("gemini-3")
+                || lc.StartsWith("google/gemini-2.5") || lc.StartsWith("google/gemini-3"))
+                return (0.25m, 1m);
+
+            // No documented caching for this provider/model
+            return (1m, 1m);
+        }
+
+        /// <summary>
+        /// Computes the actual API cost in USD from real token counts returned by
+        /// the provider's response usage block, applying per-provider cache
+        /// discount rates. Use this when ApiUsage is available; falls back to
+        /// EstimateCost when only chars/4 estimates exist.
+        /// Returns 0 for unknown models or Ollama (local).
+        /// </summary>
+        public static decimal ComputeActualCost(string model,
+            int regularInputTokens, int cacheReadTokens, int cacheWriteTokens, int outputTokens)
+        {
+            if (string.IsNullOrEmpty(model)) return 0m;
+
+            (decimal inputPer1M, decimal outputPer1M) rates;
+            if (!Pricing.TryGetValue(model, out rates))
+                return 0m;
+
+            var (readMul, writeMul) = GetCacheMultipliers(model);
+
+            return (regularInputTokens * rates.inputPer1M / 1_000_000m)
+                 + (cacheReadTokens * rates.inputPer1M * readMul / 1_000_000m)
+                 + (cacheWriteTokens * rates.inputPer1M * writeMul / 1_000_000m)
+                 + (outputTokens * rates.outputPer1M / 1_000_000m);
         }
     }
 }

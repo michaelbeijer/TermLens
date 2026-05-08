@@ -3394,6 +3394,31 @@ Always list the original source filename(s) in the `sources:` frontmatter field.
                     $"Starting: {segments.Count} segments, provider={provider}, model={model}, " +
                     $"batch size={batchSize}{kbSummary}");
 
+                // Warn if document context will be truncated for the AI. Truncation
+                // happens silently inside TranslationPrompt.BuildSystemPrompt – without
+                // this warning, users would have no way to know their middle-of-document
+                // segments aren't visible to the AI, which can hurt terminology
+                // consistency on long jobs.
+                if (aiSettings.IncludeDocumentContext && docSegments != null)
+                {
+                    var maxDocSegs = aiSettings.DocumentContextMaxSegments > 0
+                        ? aiSettings.DocumentContextMaxSegments : 500;
+                    if (docSegments.Count > maxDocSegs)
+                    {
+                        int firstCount = (int)(maxDocSegs * 0.8);
+                        int lastCount = maxDocSegs - firstCount;
+                        int omitted = docSegments.Count - maxDocSegs;
+                        batchControl.AppendLog(
+                            $"⚠ Document context truncated: {docSegments.Count} segments " +
+                            $"in document, but only {maxDocSegs} fit in the AI context window " +
+                            $"(segments 1–{firstCount} and " +
+                            $"{docSegments.Count - lastCount + 1}–{docSegments.Count} sent; " +
+                            $"the middle {omitted} segments are omitted). " +
+                            $"To send the whole document, raise “Max segments” in " +
+                            $"Settings → AI Settings → AI Context.");
+                    }
+                }
+
                 // Start backup TMX – written every 10 segments so translations survive a crash
                 if (batchControl.IsTmxBackupEnabled)
                 {

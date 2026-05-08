@@ -134,6 +134,16 @@ namespace Supervertaler.Trados.Core
             int aggOutputTokens = 0;
             bool aggHasError = false;
 
+            // Real API-reported usage, if every batch returned parseable usage info.
+            // If even one batch fails to report (e.g. Ollama, parse failure on a
+            // weird response shape), we drop back to the chars/4 estimate for the
+            // whole run – mixing the two would produce a misleading "actual" total.
+            int aggActualRegularIn = 0;
+            int aggActualCacheRead = 0;
+            int aggActualCacheWrite = 0;
+            int aggActualOutput = 0;
+            bool aggActualUsageComplete = true;
+
             if (segments == null || segments.Count == 0)
             {
                 Completed?.Invoke(this, new BatchCompletedEventArgs
@@ -220,15 +230,37 @@ namespace Supervertaler.Trados.Core
                         // Build user prompt
                         var userPrompt = TranslationPrompt.BuildBatchUserPrompt(promptSegments);
 
-                        // Call LLM – suppress per-batch log entries; we fire one aggregated entry at the end
+                        // Call LLM – suppress per-batch log entries; we fire one aggregated entry at the end.
+                        // enablePromptCaching: the system prompt (base instructions + custom prompt + KB +
+                        // termbase + document context) is byte-stable across every batch in this run, so
+                        // caching pays off from batch 2 onwards. Anthropic native and OpenRouter→Anthropic
+                        // get explicit cache_control markers; OpenAI/DeepSeek/Gemini 2.5+ get implicit
+                        // automatic caching at the provider layer; other providers ignore the flag.
                         var response = await client.SendPromptAsync(
                             userPrompt, systemPrompt, maxTokens, cancellationToken,
                             feature: Models.PromptLogFeature.BatchTranslate,
-                            suppressLog: true);
+                            suppressLog: true,
+                            enablePromptCaching: true);
 
                         // Accumulate token counts for the aggregated log entry
                         aggInputTokens += TokenEstimator.EstimateInputTokens(userPrompt, systemPrompt);
                         aggOutputTokens += TokenEstimator.EstimateTokens(response);
+
+                        // Also accumulate real API-reported usage when available.
+                        var usage = client.LastUsage;
+                        if (usage != null)
+                        {
+                            aggActualRegularIn += usage.RegularInputTokens;
+                            aggActualCacheRead += usage.CacheReadTokens;
+                            aggActualCacheWrite += usage.CacheWriteTokens;
+                            aggActualOutput += usage.OutputTokens;
+                        }
+                        else
+                        {
+                            // Provider didn't report usage – disqualify the run
+                            // from showing actuals so we don't display a partial total.
+                            aggActualUsageComplete = false;
+                        }
 
                         // Parse response
                         var parsed = TranslationPrompt.ParseBatchResponse(response, batchCount);
@@ -336,6 +368,19 @@ namespace Supervertaler.Trados.Core
                     Duration = sw.Elapsed,
                     IsError = aggHasError
                 };
+
+                // If every batch reported real usage, attach the cache-aware actuals
+                // so the Reports tab shows the true billed cost (no `~` prefix).
+                if (aggActualUsageComplete && (aggActualRegularIn + aggActualCacheRead + aggActualCacheWrite + aggActualOutput) > 0)
+                {
+                    aggEntry.ActualRegularInputTokens = aggActualRegularIn;
+                    aggEntry.ActualCacheReadTokens = aggActualCacheRead;
+                    aggEntry.ActualCacheWriteTokens = aggActualCacheWrite;
+                    aggEntry.ActualOutputTokens = aggActualOutput;
+                    aggEntry.ActualCost = TokenEstimator.ComputeActualCost(model,
+                        aggActualRegularIn, aggActualCacheRead, aggActualCacheWrite, aggActualOutput);
+                }
+
                 LlmClient.FirePromptCompleted(aggEntry);
             }
 

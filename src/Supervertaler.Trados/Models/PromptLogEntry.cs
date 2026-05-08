@@ -35,6 +35,23 @@ namespace Supervertaler.Trados.Models
         public int EstimatedInputTokens { get; set; }
         public int EstimatedOutputTokens { get; set; }
         public decimal EstimatedCost { get; set; }
+
+        /// <summary>
+        /// When set, these are the real token counts and cost reported by the
+        /// provider's API response (with cache pricing applied). When null, the
+        /// chars/4 + list-price estimate above is used instead. Populated via
+        /// LlmClient.LastUsage on the per-call path and aggregated across batches
+        /// by BatchTranslator/BatchProofreader.
+        /// </summary>
+        public int? ActualRegularInputTokens { get; set; }
+        public int? ActualCacheReadTokens { get; set; }
+        public int? ActualCacheWriteTokens { get; set; }
+        public int? ActualOutputTokens { get; set; }
+        public decimal? ActualCost { get; set; }
+
+        /// <summary>True when actual API-reported usage is available for this entry.</summary>
+        public bool HasActualUsage => ActualRegularInputTokens.HasValue;
+
         public TimeSpan Duration { get; set; }
         public bool IsError { get; set; }
         public string ErrorMessage { get; set; }
@@ -69,13 +86,35 @@ namespace Supervertaler.Trados.Models
                 if (IsError)
                     return $"{DisplayModel ?? Model} \u2022 ERROR \u2022 {Duration.TotalSeconds:F1}s";
 
-                var costStr = EstimatedCost >= 0.01m
+                if (HasActualUsage)
+                {
+                    var regularIn = ActualRegularInputTokens ?? 0;
+                    var cacheRead = ActualCacheReadTokens ?? 0;
+                    var cacheWrite = ActualCacheWriteTokens ?? 0;
+                    var totalIn = regularIn + cacheRead + cacheWrite;
+                    var output = ActualOutputTokens ?? 0;
+                    var cost = ActualCost ?? 0m;
+
+                    var costStr = cost >= 0.01m
+                        ? $"${cost:F2}"
+                        : cost > 0
+                            ? $"${cost:F4}"
+                            : "free";
+
+                    // Show cache hit count when caching contributed, so users can
+                    // see at a glance how much of their input was discounted.
+                    var cacheNote = cacheRead > 0 ? $" ({cacheRead:N0} cached)" : "";
+
+                    return $"{DisplayModel ?? Model} \u2022 {totalIn:N0} in{cacheNote} / {output:N0} out \u2022 {costStr} \u2022 {Duration.TotalSeconds:F1}s";
+                }
+
+                var estCostStr = EstimatedCost >= 0.01m
                     ? $"~${EstimatedCost:F2}"
                     : EstimatedCost > 0
                         ? $"~${EstimatedCost:F4}"
                         : "free";
 
-                return $"{DisplayModel ?? Model} \u2022 {EstimatedInputTokens:N0} in / {EstimatedOutputTokens:N0} out \u2022 {costStr} \u2022 {Duration.TotalSeconds:F1}s";
+                return $"{DisplayModel ?? Model} \u2022 {EstimatedInputTokens:N0} in / {EstimatedOutputTokens:N0} out \u2022 {estCostStr} \u2022 {Duration.TotalSeconds:F1}s";
             }
         }
 
@@ -92,8 +131,22 @@ namespace Supervertaler.Trados.Models
             sb.AppendLine($"Provider: {Provider}");
             sb.AppendLine($"Model: {DisplayModel ?? Model}");
             sb.AppendLine($"Duration: {Duration.TotalSeconds:F1}s");
-            sb.AppendLine($"Estimated tokens: {EstimatedInputTokens:N0} in / {EstimatedOutputTokens:N0} out");
-            sb.AppendLine($"Estimated cost: {(EstimatedCost > 0 ? $"${EstimatedCost:F4}" : "free")}");
+            if (HasActualUsage)
+            {
+                var regularIn = ActualRegularInputTokens ?? 0;
+                var cacheRead = ActualCacheReadTokens ?? 0;
+                var cacheWrite = ActualCacheWriteTokens ?? 0;
+                var totalIn = regularIn + cacheRead + cacheWrite;
+                var output = ActualOutputTokens ?? 0;
+                sb.AppendLine($"Tokens (actual): {totalIn:N0} in ({regularIn:N0} regular, {cacheRead:N0} cache hit, {cacheWrite:N0} cache write) / {output:N0} out");
+                var cost = ActualCost ?? 0m;
+                sb.AppendLine($"Cost (actual): {(cost > 0 ? $"${cost:F4}" : "free")}");
+            }
+            else
+            {
+                sb.AppendLine($"Estimated tokens: {EstimatedInputTokens:N0} in / {EstimatedOutputTokens:N0} out");
+                sb.AppendLine($"Estimated cost: {(EstimatedCost > 0 ? $"${EstimatedCost:F4}" : "free")}");
+            }
             sb.AppendLine();
 
             if (!string.IsNullOrEmpty(SystemPrompt))

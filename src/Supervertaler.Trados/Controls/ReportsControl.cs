@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using Supervertaler.Trados.Core;
 using Supervertaler.Trados.Models;
 
 namespace Supervertaler.Trados.Controls
@@ -40,7 +41,9 @@ namespace Supervertaler.Trados.Controls
         private Label _lblEmpty;
 
         // Footer
+        private Panel _footerPanel;
         private Label _lblFooter;
+        private LinkLabel _lnkCostNote;
 
         // State
         private int _issueCount;
@@ -134,18 +137,63 @@ namespace Supervertaler.Trados.Controls
             y += 28;
 
             // ─── Footer (anchored to bottom) ─────────────────────
-            _lblFooter = new Label
+            // Two-part bar: status text on the left ("Last run: ..." for proofreading
+            // reports), and a permanent estimate disclaimer + AI Cost Guide link on the
+            // right. The link is always visible so users see "these numbers are estimates"
+            // every time they look at the Reports tab, without needing to click anything.
+            _footerPanel = new Panel
             {
                 Height = 22,
+                BackColor = Color.FromArgb(250, 250, 250),
+                Dock = DockStyle.Bottom
+            };
+
+            _lnkCostNote = new LinkLabel
+            {
+                Text = "Token counts and costs are estimates · AI Cost Guide",
+                Font = new Font("Segoe UI", 7.5f),
+                LinkColor = Color.FromArgb(37, 99, 235),
+                ActiveLinkColor = Color.FromArgb(37, 99, 235),
+                VisitedLinkColor = Color.FromArgb(37, 99, 235),
+                LinkBehavior = LinkBehavior.HoverUnderline,
+                AutoSize = true,
+                Padding = new Padding(0, 0, 12, 0)
+            };
+            // Make only the trailing "AI Cost Guide" the clickable link.
+            const string linkText = "AI Cost Guide";
+            _lnkCostNote.LinkArea = new LinkArea(
+                _lnkCostNote.Text.LastIndexOf(linkText, StringComparison.Ordinal),
+                linkText.Length);
+            _lnkCostNote.LinkClicked += (s, e) =>
+                HelpSystem.OpenHelp(HelpSystem.Topics.AiCostGuide);
+            var costTip = new ToolTip { AutoPopDelay = 10000, InitialDelay = 300 };
+            costTip.SetToolTip(_lnkCostNote,
+                "Token counts shown in this tab are computed locally with a chars/4\r\n" +
+                "heuristic – they are not the actual token counts billed by the provider.\r\n" +
+                "Click \"AI Cost Guide\" for provider-by-provider links to your real usage console.");
+            _footerPanel.Controls.Add(_lnkCostNote);
+
+            _lblFooter = new Label
+            {
                 Font = new Font("Segoe UI", 7.5f),
                 ForeColor = Color.FromArgb(140, 140, 140),
                 Text = "",
                 TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(12, 0, 12, 0),
-                BackColor = Color.FromArgb(250, 250, 250),
-                Dock = DockStyle.Bottom
+                AutoSize = false,
+                Location = new Point(0, 0),
+                Padding = new Padding(12, 0, 12, 0)
             };
-            Controls.Add(_lblFooter);
+            _footerPanel.Controls.Add(_lblFooter);
+
+            _footerPanel.Resize += (s, e) =>
+            {
+                if (_lnkCostNote == null || _lblFooter == null || _footerPanel == null) return;
+                int linkX = Math.Max(0, _footerPanel.ClientSize.Width - _lnkCostNote.Width);
+                _lnkCostNote.Location = new Point(linkX,
+                    Math.Max(0, (_footerPanel.ClientSize.Height - _lnkCostNote.Height) / 2));
+                _lblFooter.Size = new Size(Math.Max(0, linkX), _footerPanel.ClientSize.Height);
+            };
+            Controls.Add(_footerPanel);
 
             // ─── Scrollable results panel (fills remaining space) ──
             _resultsPanel = new Panel
@@ -179,7 +227,7 @@ namespace Supervertaler.Trados.Controls
 
         private void OnControlResize(object sender, EventArgs e)
         {
-            if (_btnClear == null || _lblIssueCount == null || _resultsPanel == null || _lblFooter == null)
+            if (_btnClear == null || _lblIssueCount == null || _resultsPanel == null || _footerPanel == null)
                 return;
 
             UpdateClearButtonSize();
@@ -199,7 +247,7 @@ namespace Supervertaler.Trados.Controls
             var resultsTop = Math.Max(_lblHeader.Bottom, _btnClear.Bottom) + HeaderSpacing;
             _resultsPanel.Location = new Point(0, resultsTop);
             _resultsPanel.Width = clientWidth;
-            _resultsPanel.Height = Math.Max(40, _lblFooter.Top - _resultsPanel.Top);
+            _resultsPanel.Height = Math.Max(40, _footerPanel.Top - _resultsPanel.Top);
         }
 
         private void UpdateClearButtonSize()

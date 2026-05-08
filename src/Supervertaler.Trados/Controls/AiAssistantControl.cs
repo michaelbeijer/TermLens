@@ -760,6 +760,12 @@ namespace Supervertaler.Trados.Controls
                 menu.Items.Add("SuperMemory Help", null, (s, ev) =>
                     HelpSystem.OpenHelp(HelpSystem.Topics.SuperMemory));
             }
+            // AI Cost Guide is relevant on every tab – Chat shows per-message cost
+            // estimates, Batch shows whole-run estimates, Reports shows the prompt
+            // log with token/cost columns. The guide explains they are estimates
+            // and links to each provider's actual usage console.
+            menu.Items.Add("AI Cost Guide", null, (s, ev) =>
+                HelpSystem.OpenHelp(HelpSystem.Topics.AiCostGuide));
             menu.Items.Add("-");  // separator
             menu.Items.Add("About Supervertaler for Trados", null, (s, ev) =>
             {
