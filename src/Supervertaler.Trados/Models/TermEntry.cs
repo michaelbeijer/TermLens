@@ -57,6 +57,15 @@ namespace Supervertaler.Trados.Models
         public string Client { get; set; }
 
         /// <summary>
+        /// Project name – a free-text identifier for the project this term came
+        /// from (e.g. "PROJ-033-BEprov-WO" or "Brants 2026 patent"). Bookkeeping
+        /// metadata for the user's own organisation; not sent to the LLM in
+        /// translation prompts. Stored in the termbase_terms table; the
+        /// Workbench shares this column.
+        /// </summary>
+        public string Project { get; set; }
+
+        /// <summary>
         /// Abbreviated form(s) of the source term (e.g., "GC" for "gas chromatography").
         /// Multiple variants can be pipe-separated: "GC|G.C.|gc".
         /// Each variant is indexed for matching – if any variant appears in a segment,

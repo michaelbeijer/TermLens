@@ -135,7 +135,7 @@ namespace Supervertaler.Trados.Core
             var sql = $@"
                 SELECT t.id, t.source_term, t.target_term, t.termbase_id,
                        t.source_lang, t.target_lang, t.definition, t.domain,
-                       t.notes, t.forbidden, t.case_sensitive, t.client,
+                       t.notes, t.forbidden, t.case_sensitive, t.client, t.project,
                        tb.name AS termbase_name,
                        tb.is_project_termbase,
                        COALESCE(tb.ranking, 99) AS ranking
@@ -227,7 +227,7 @@ namespace Supervertaler.Trados.Core
             var sql = $@"
                 SELECT t.id, t.source_term, t.target_term, t.termbase_id,
                        t.source_lang, t.target_lang, t.definition, t.domain,
-                       t.notes, t.forbidden, t.case_sensitive, t.client,
+                       t.notes, t.forbidden, t.case_sensitive, t.client, t.project,
                        tb.name AS termbase_name,
                        tb.is_project_termbase,
                        COALESCE(tb.ranking, 99) AS ranking
@@ -601,6 +601,28 @@ namespace Supervertaler.Trados.Core
                 }
             }
 
+            // Ensure project column exists – free-text "which project did this
+            // term come from" bookkeeping field, mirrors the Workbench schema.
+            if (!HasColumn(conn, "termbase_terms", "project"))
+            {
+                using (var cmd = new SqliteCommand(
+                    "ALTER TABLE termbase_terms ADD COLUMN project TEXT DEFAULT ''", conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            // Ensure client column exists – Workbench's schema has it; older
+            // Trados-only databases may not.
+            if (!HasColumn(conn, "termbase_terms", "client"))
+            {
+                using (var cmd = new SqliteCommand(
+                    "ALTER TABLE termbase_terms ADD COLUMN client TEXT DEFAULT ''", conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
             // Backfill missing UUIDs (same as Supervertaler's generate_missing_uuids)
             BackfillMissingUuids(conn);
         }
@@ -682,6 +704,9 @@ namespace Supervertaler.Trados.Core
 
             if (TryGetOrdinal(reader, "client", out ord) && !reader.IsDBNull(ord))
                 entry.Client = reader.GetString(ord);
+
+            if (TryGetOrdinal(reader, "project", out ord) && !reader.IsDBNull(ord))
+                entry.Project = reader.GetString(ord);
 
             // created_date is stored as TEXT (SQLite CURRENT_TIMESTAMP returns
             // 'YYYY-MM-DD HH:MM:SS' UTC) but Microsoft.Data.Sqlite may also
@@ -799,7 +824,8 @@ namespace Supervertaler.Trados.Core
             string definition = "", string domain = "", string notes = "",
             bool isNonTranslatable = false,
             string sourceAbbreviation = null, string targetAbbreviation = null,
-            string url = null, string client = null, bool forbidden = false)
+            string url = null, string client = null, bool forbidden = false,
+            string project = null)
         {
             var connStr = new SqliteConnectionStringBuilder
             {
@@ -844,11 +870,11 @@ namespace Supervertaler.Trados.Core
                     INSERT INTO termbase_terms
                         (source_term, target_term, termbase_id, source_lang, target_lang,
                          definition, domain, notes, forbidden, case_sensitive, is_nontranslatable,
-                         term_uuid, source_abbreviation, target_abbreviation, url, client)
+                         term_uuid, source_abbreviation, target_abbreviation, url, client, project)
                     VALUES
                         (@source, @target, @tbId, @srcLang, @tgtLang,
                          @def, @domain, @notes, @forbidden, 0, @nt,
-                         @uuid, @srcAbbr, @tgtAbbr, @url, @client);
+                         @uuid, @srcAbbr, @tgtAbbr, @url, @client, @project);
                     SELECT last_insert_rowid();";
 
                 using (var cmd = new SqliteCommand(sql, conn))
@@ -868,6 +894,7 @@ namespace Supervertaler.Trados.Core
                     cmd.Parameters.AddWithValue("@tgtAbbr", targetAbbreviation ?? "");
                     cmd.Parameters.AddWithValue("@url", url ?? "");
                     cmd.Parameters.AddWithValue("@client", client ?? "");
+                    cmd.Parameters.AddWithValue("@project", project ?? "");
 
                     var result = cmd.ExecuteScalar();
                     return result != null ? Convert.ToInt64(result) : -1;
@@ -1084,7 +1111,8 @@ namespace Supervertaler.Trados.Core
             string definition = "", string domain = "", string notes = "",
             bool isNonTranslatable = false,
             string sourceAbbreviation = null, string targetAbbreviation = null,
-            string url = null, string client = null, bool forbidden = false)
+            string url = null, string client = null, bool forbidden = false,
+            string project = null)
         {
             var connStr = new SqliteConnectionStringBuilder
             {
@@ -1130,7 +1158,8 @@ namespace Supervertaler.Trados.Core
                         source_abbreviation = @srcAbbr,
                         target_abbreviation = @tgtAbbr,
                         url         = @url,
-                        client      = @client
+                        client      = @client,
+                        project     = @project
                     WHERE id = @id";
 
                 using (var cmd = new SqliteCommand(sql, conn))
@@ -1146,6 +1175,7 @@ namespace Supervertaler.Trados.Core
                     cmd.Parameters.AddWithValue("@tgtAbbr", targetAbbreviation ?? "");
                     cmd.Parameters.AddWithValue("@url", url ?? "");
                     cmd.Parameters.AddWithValue("@client", client ?? "");
+                    cmd.Parameters.AddWithValue("@project", project ?? "");
                     cmd.Parameters.AddWithValue("@id", termId);
 
                     return cmd.ExecuteNonQuery() > 0;

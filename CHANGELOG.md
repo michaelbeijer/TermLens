@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.19.88] – 2026-05-08
+
+### Added (Project field on term entries)
+
+- Term entries now have a **Project** free-text metadata field for tracking which project a term came from (e.g. `PROJ-033 patent` or a job code). Surfaces in the Termbase Editor as a sortable/filterable column, in the term-entry edit dialog as a tooltipped optional field, and in the inline grid editor's row-edit and inline-add paths.
+- Schema migration adds `project` and `client` columns to `termbase_terms` if they aren't already present (Workbench-shared databases already had them via the Workbench's own migration; older Trados-only databases pick them up on first launch).
+- The Project field is **bookkeeping only** – it is *not* sent to the LLM in translation prompt blocks. Domain and Client cover the LLM-context use case; Project is for the user's own organisation. If you want a term's project context to inform translation, put it in Notes instead.
+- The Termbase Editor's search box now also matches against Notes, Domain, Client, and Project (previously only matched Source / Target / Definition).
+
+---
+
 ## [4.19.87] – 2026-05-08
 
 ### Fixed (Reports tab: cost shown as "free" for unknown models, masking real cost)

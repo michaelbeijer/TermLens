@@ -311,6 +311,8 @@ namespace Supervertaler.Trados.Controls
                 _dataTable.Columns.Add("SrcAbbr", typeof(string));
                 _dataTable.Columns.Add("TgtAbbr", typeof(string));
                 _dataTable.Columns.Add("Url", typeof(string));
+                _dataTable.Columns.Add("Client", typeof(string));
+                _dataTable.Columns.Add("Project", typeof(string));
                 _dataTable.Columns.Add("Created", typeof(DateTime));
 
                 foreach (var term in terms)
@@ -330,6 +332,8 @@ namespace Supervertaler.Trados.Controls
                         term.SourceAbbreviation ?? "",
                         term.TargetAbbreviation ?? "",
                         term.Url ?? "",
+                        term.Client ?? "",
+                        term.Project ?? "",
                         term.CreatedDate.HasValue ? (object)term.CreatedDate.Value : DBNull.Value);
                 }
 
@@ -417,6 +421,20 @@ namespace Supervertaler.Trados.Controls
                     _dgvTerms.Columns["Url"].ToolTipText = "Reference URL";
                     _dgvTerms.Columns["Url"].FillWeight = 12;
                     _dgvTerms.Columns["Url"].MinimumWidth = 50;
+                }
+                if (_dgvTerms.Columns.Contains("Client"))
+                {
+                    _dgvTerms.Columns["Client"].HeaderText = "Client";
+                    _dgvTerms.Columns["Client"].ToolTipText = "Client code (e.g. ACME, GLOBEX)";
+                    _dgvTerms.Columns["Client"].FillWeight = 10;
+                    _dgvTerms.Columns["Client"].MinimumWidth = 50;
+                }
+                if (_dgvTerms.Columns.Contains("Project"))
+                {
+                    _dgvTerms.Columns["Project"].HeaderText = "Project";
+                    _dgvTerms.Columns["Project"].ToolTipText = "Project this term came from";
+                    _dgvTerms.Columns["Project"].FillWeight = 12;
+                    _dgvTerms.Columns["Project"].MinimumWidth = 50;
                 }
                 if (_dgvTerms.Columns.Contains("Created"))
                 {
@@ -530,7 +548,11 @@ namespace Supervertaler.Trados.Controls
             {
                 var escaped = text.Replace("'", "''");
                 parts.Add($"(SourceTerm LIKE '%{escaped}%' OR TargetTerm LIKE '%{escaped}%' " +
-                          $"OR Definition LIKE '%{escaped}%')");
+                          $"OR Definition LIKE '%{escaped}%' " +
+                          $"OR Notes LIKE '%{escaped}%' " +
+                          $"OR Domain LIKE '%{escaped}%' " +
+                          $"OR Client LIKE '%{escaped}%' " +
+                          $"OR Project LIKE '%{escaped}%')");
             }
 
             // NT filter
@@ -623,7 +645,9 @@ namespace Supervertaler.Trados.Controls
                     isNonTranslatable: isNt,
                     sourceAbbreviation: row["SrcAbbr"] as string ?? "",
                     targetAbbreviation: row["TgtAbbr"] as string ?? "",
-                    url: row["Url"] as string ?? "");
+                    url: row["Url"] as string ?? "",
+                    client: row["Client"] as string ?? "",
+                    project: row["Project"] as string ?? "");
 
                 // Refresh the in-memory term index so TermLens reflects
                 // the edit immediately (source/target text may have changed)
@@ -679,7 +703,9 @@ namespace Supervertaler.Trados.Controls
                     row["Definition"] as string ?? "",
                     row["Domain"] as string ?? "",
                     row["Notes"] as string ?? "",
-                    url: row["Url"] as string ?? "");
+                    url: row["Url"] as string ?? "",
+                    client: row["Client"] as string ?? "",
+                    project: row["Project"] as string ?? "");
 
                 if (newId > 0)
                 {
@@ -850,6 +876,8 @@ namespace Supervertaler.Trados.Controls
                 Domain = row["Domain"] as string ?? "",
                 Notes = row["Notes"] as string ?? "",
                 Url = row["Url"] as string ?? "",
+                Client = row["Client"] as string ?? "",
+                Project = row["Project"] as string ?? "",
                 IsNonTranslatable = row["NT"] as bool? ?? false,
                 TermbaseId = _termbase.Id
             };
@@ -870,6 +898,8 @@ namespace Supervertaler.Trados.Controls
                         row["Domain"] = dlg.Domain;
                         row["Notes"] = dlg.Notes;
                         row["Url"] = dlg.Url;
+                        row["Client"] = dlg.Client;
+                        row["Project"] = dlg.Project;
                         row["NT"] = dlg.IsNonTranslatable;
                         row["Forbidden"] = dlg.IsForbidden;
 

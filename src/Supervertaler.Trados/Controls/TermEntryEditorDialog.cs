@@ -30,6 +30,7 @@ namespace Supervertaler.Trados.Controls
         private TextBox _txtNotes;
         private TextBox _txtUrl;
         private TextBox _txtClient;
+        private TextBox _txtProject;
         private const int CollapsedHeight = 60;
         private const int ExpandedHeight = 120;
         private bool _definitionExpanded;
@@ -60,7 +61,7 @@ namespace Supervertaler.Trados.Controls
         {
             public TermEntry Entry;
             public TermbaseInfo Termbase;
-            public string Source, Target, Definition, Domain, Notes, Url, Client;
+            public string Source, Target, Definition, Domain, Notes, Url, Client, Project;
             public string SourceAbbr, TargetAbbr;
             public bool IsNonTranslatable;
             public bool IsForbidden;
@@ -80,6 +81,7 @@ namespace Supervertaler.Trados.Controls
         public string Notes => _txtNotes.Text.Trim();
         public string Url => _txtUrl.Text.Trim();
         public string Client => _txtClient.Text.Trim();
+        public string Project => _txtProject.Text.Trim();
         public bool IsNonTranslatable => _chkNonTranslatable.Checked;
         public bool IsForbidden => _chkForbidden.Checked;
         public long TermId => _termId;
@@ -172,6 +174,7 @@ namespace Supervertaler.Trados.Controls
                     Notes = entry.Notes ?? "",
                     Url = entry.Url ?? "",
                     Client = entry.Client ?? "",
+                    Project = entry.Project ?? "",
                     IsNonTranslatable = entry.IsNonTranslatable,
                     IsForbidden = entry.Forbidden,
                     IsInverted = false
@@ -652,6 +655,25 @@ namespace Supervertaler.Trados.Controls
             _contentPanel.Controls.Add(_txtClient);
             y += 28;
 
+            _contentPanel.Controls.Add(MakeLabel("Project (optional):", leftX, y, labelColor));
+            y += 18;
+
+            _txtProject = new TextBox
+            {
+                Location = new Point(leftX, y),
+                Width = _contentPanel.Width - 32,
+                BackColor = inputBg,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            var projectTip = new ToolTip { AutoPopDelay = 8000 };
+            projectTip.SetToolTip(_txtProject,
+                "Project name – free-text identifier for the project this\n" +
+                "term came from (e.g. \"PROJ-033 patent\" or job code).\n" +
+                "Bookkeeping metadata; not sent to the AI in translation\n" +
+                "prompts.");
+            _contentPanel.Controls.Add(_txtProject);
+            y += 28;
+
             // Non-translatable checkbox
             _chkNonTranslatable = new CheckBox
             {
@@ -765,6 +787,7 @@ namespace Supervertaler.Trados.Controls
             _txtNotes.Text = entry.Notes ?? "";
             _txtUrl.Text = entry.Url ?? "";
             _txtClient.Text = entry.Client ?? "";
+            _txtProject.Text = entry.Project ?? "";
             _chkNonTranslatable.Checked = entry.IsNonTranslatable;
             _chkForbidden.Checked = entry.Forbidden;
         }
@@ -822,6 +845,7 @@ namespace Supervertaler.Trados.Controls
             ed.Notes = _txtNotes.Text.Trim();
             ed.Url = _txtUrl.Text.Trim();
             ed.Client = _txtClient.Text.Trim();
+            ed.Project = _txtProject.Text.Trim();
             ed.IsNonTranslatable = _chkNonTranslatable.Checked;
             ed.IsForbidden = _chkForbidden.Checked;
             // Synonym lists are stored by reference – already up to date
@@ -852,6 +876,7 @@ namespace Supervertaler.Trados.Controls
             _txtNotes.Text = ed.Notes;
             _txtUrl.Text = ed.Url ?? "";
             _txtClient.Text = ed.Client ?? "";
+            _txtProject.Text = ed.Project ?? "";
             _chkNonTranslatable.Checked = ed.IsNonTranslatable;
             _chkForbidden.Checked = ed.IsForbidden;
 
@@ -1140,7 +1165,8 @@ namespace Supervertaler.Trados.Controls
                         isNonTranslatable: IsNonTranslatable,
                         sourceAbbreviation: SourceAbbreviation,
                         targetAbbreviation: TargetAbbreviation,
-                        url: Url, client: Client, forbidden: IsForbidden);
+                        url: Url, client: Client, forbidden: IsForbidden,
+                        project: Project);
                 }
                 else if (_termbase != null)
                 {
@@ -1153,7 +1179,8 @@ namespace Supervertaler.Trados.Controls
                         isNonTranslatable: IsNonTranslatable,
                         sourceAbbreviation: SourceAbbreviation,
                         targetAbbreviation: TargetAbbreviation,
-                        url: Url, client: Client, forbidden: IsForbidden);
+                        url: Url, client: Client, forbidden: IsForbidden,
+                        project: Project);
 
                     // Can't save synonyms without a term ID
                     if (newId <= 0)
