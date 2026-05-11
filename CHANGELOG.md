@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.19.92] – 2026-05-11
+
+### Fixed (Prompt Editor: "Default:" label clipped by the "Copy to clipboard" checkbox)
+
+- The Mode row added in v4.19.91 laid out the "Copy to clipboard" checkbox and the "Default:" label slightly too close together — at Segoe UI 9 pt the checkbox's autoscaled text ran into the label, clipping the "D" so the user only saw "efault:". Pushed `_lblDefaultMode` from x=385 to x=415 and `_cboDefaultMode` from x=440 / width=130 to x=470 / width=105. Combo still fits comfortably within the 600 px dialog, the checkbox now has ~25 px breathing room on its right edge, and there's no functional change.
+
+
 ## [4.19.91] – 2026-05-11
 
 ### Added (QuickLauncher prompts can now copy to clipboard instead of sending to the AI Assistant)
