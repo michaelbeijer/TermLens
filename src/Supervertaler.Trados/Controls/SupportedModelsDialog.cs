@@ -18,6 +18,7 @@ namespace Supervertaler.Trados.Controls
 
         public SupportedModelsDialog()
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             BuildUI();
             PopulateModels();
         }

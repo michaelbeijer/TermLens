@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.19.97] – 2026-05-11
+
+### Added (Supervertaler blue icon on every plugin dialog title bar)
+
+- Every plugin dialog (Settings, Prompt Editor, Termbase Editor, Term Picker, About, Setup, all the Add/Edit/Bulk/Merge/Save dialogs, Usage Statistics, Supported Models, Distill Choice, Legacy Memory Bank Migration, SuperMemory Quick Add) now shows the blue Supervertaler icon in its title bar (and in the Alt+Tab switcher and Windows taskbar) instead of the generic WinForms placeholder icon.
+- Bundled the existing `sv-icon-512.png` as a multi-resolution `sv-icon.ico` (16, 20, 24, 32, 40, 48, 64, 96, 128, 256 px) embedded resource, loaded once by a new `Core/IconHelper.AppIcon` and assigned to every Form constructor. The 16-px frame is hand-tuned in the generated .ico so the title bar render stays crisp at 100% DPI; Windows picks the larger frames automatically for high-DPI displays and the taskbar.
+
+
 ## [4.19.96] – 2026-05-11
 
 ### Fixed (Prompt Editor: top fields don't align with Prompt content's text area)

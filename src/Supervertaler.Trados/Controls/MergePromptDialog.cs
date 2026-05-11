@@ -41,6 +41,7 @@ namespace Supervertaler.Trados.Controls
         public MergePromptDialog(
             List<MergeMatch> matches, string newSource, string newTarget)
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             _matches = matches ?? new List<MergeMatch>();
             _newSource = newSource ?? "";
             _newTarget = newTarget ?? "";

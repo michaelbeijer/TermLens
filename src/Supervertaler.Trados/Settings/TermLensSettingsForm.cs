@@ -84,6 +84,7 @@ namespace Supervertaler.Trados.Settings
         public TermLensSettingsForm(TermLensSettings settings,
             Core.PromptLibrary promptLibrary = null, int defaultTab = 0)
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _promptLibrary = promptLibrary ?? new Core.PromptLibrary();
             _projectSourceLanguage = TermLensEditorViewPart.GetCurrentProjectSourceLanguage();

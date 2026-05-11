@@ -37,6 +37,7 @@ namespace Supervertaler.Trados.Controls
         /// <param name="prompt">The prompt to edit, or null to create a new one.</param>
         public PromptEditorDialog(PromptTemplate prompt = null)
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             _isNew = prompt == null;
             _prompt = prompt ?? new PromptTemplate();
             BuildUI();

@@ -5,8 +5,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Supervertaler.Trados</RootNamespace>
     <AssemblyName>Supervertaler.Trados</AssemblyName>
-    <Version>4.19.96</Version>
-    <InformationalVersion>4.19.96</InformationalVersion>
+    <Version>4.19.97</Version>
+    <InformationalVersion>4.19.97</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Authors>Michael Beijer</Authors>
     <Company>Supervertaler</Company>
@@ -117,6 +117,16 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\memory-bank-templates\*.md">
       <LogicalName>MemoryBankTemplate.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Supervertaler title-bar icon (multi-resolution .ico, 16..256 px).
+       Loaded once by Core\IconHelper.AppIcon and applied to every plugin
+       dialog so windows show the blue Sv logo instead of the WinForms
+       generic icon. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sv-icon.ico">
+      <LogicalName>Supervertaler.Trados.Resources.sv-icon.ico</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

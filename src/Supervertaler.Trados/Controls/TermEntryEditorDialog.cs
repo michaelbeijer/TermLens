@@ -107,6 +107,7 @@ namespace Supervertaler.Trados.Controls
         public TermEntryEditorDialog(TermEntry entry, string dbPath, TermbaseInfo termbase,
             string projectSourceLang = null)
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             _dbPath = dbPath;
             _termbase = termbase;
             _termId = entry?.Id ?? -1;

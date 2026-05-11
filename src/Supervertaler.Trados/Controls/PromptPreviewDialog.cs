@@ -27,6 +27,7 @@ namespace Supervertaler.Trados.Controls
 
         public PromptPreviewDialog(string title, string contentLabel, string content)
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             BuildUI(title, contentLabel, content);
         }
 

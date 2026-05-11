@@ -56,6 +56,7 @@ namespace Supervertaler.Trados.Controls
         public SuperMemoryQuickAddDialog(string defaultTerm = "", string defaultCorrection = "",
             string activePromptName = null, string targetLanguage = null, string sourceLanguage = null)
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             // Let WinForms scale this dialog by system DPI so it doesn't squish
             // at >100% Windows display scaling. Cheap fallback; for surfaces
             // with their own UiScale-driven layout, set AutoScaleMode = None

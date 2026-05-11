@@ -42,6 +42,7 @@ namespace Supervertaler.Trados.Controls
 
         public TermbaseEditorDialog(string dbPath, TermbaseInfo termbase, TermLensSettings settings)
         {
+            Icon = Supervertaler.Trados.Core.IconHelper.AppIcon;
             _dbPath = dbPath ?? throw new ArgumentNullException(nameof(dbPath));
             _termbase = termbase ?? throw new ArgumentNullException(nameof(termbase));
             _settings = settings;
