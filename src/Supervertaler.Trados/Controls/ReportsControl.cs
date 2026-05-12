@@ -917,8 +917,10 @@ namespace Supervertaler.Trados.Controls
                 allCards.Add(p);
             }
 
-            // Stable sort: prompt log cards newest-first, issue cards stay in their
-            // original insertion order (they're already ordered by segment number).
+            // Prompt log cards newest-first, then issue cards by segment number.
+            // List<T>.Sort is not stable, so issue cards need an explicit tie-break
+            // on SegmentNumber – otherwise removing a card (e.g. checkbox toggle)
+            // can scramble the remaining cards' order.
             allCards.Sort((a, b) =>
             {
                 var ea = a.Tag as PromptLogEntry;
@@ -927,7 +929,11 @@ namespace Supervertaler.Trados.Controls
                     return eb.Timestamp.CompareTo(ea.Timestamp); // newest first
                 if (ea != null) return -1; // prompt logs before issue cards
                 if (eb != null) return 1;
-                return 0; // both issue cards – preserve original order
+                var ia = a.Tag as ProofreadingIssue;
+                var ib = b.Tag as ProofreadingIssue;
+                if (ia != null && ib != null)
+                    return ia.SegmentNumber.CompareTo(ib.SegmentNumber);
+                return 0;
             });
 
             int yPos = 4;
