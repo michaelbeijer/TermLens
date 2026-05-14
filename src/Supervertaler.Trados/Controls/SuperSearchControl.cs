@@ -470,6 +470,8 @@ namespace Supervertaler.Trados.Controls
             _previewPanel.Controls.Add(previewTable);
             _previewPanel.Controls.Add(previewBorder);
 
+            BuildPreviewContextMenus();
+
             // Add controls in correct order for WinForms docking z-order:
             // Grid (Fill) must be added LAST / be in FRONT of z-order
             Controls.Add(_grid);
@@ -896,6 +898,77 @@ namespace Supervertaler.Trados.Controls
             }
 
             rtb.Select(0, 0);
+        }
+
+        // ─── Preview Copy / Selection ────────────────────────────
+
+        // The preview RichTextBoxes are ReadOnly, which still allows mouse
+        // selection and Ctrl+C, but gives no right-click menu and no Ctrl+A.
+        // Wire both up so a translator can copy a prior translation verbatim.
+        private void BuildPreviewContextMenus()
+        {
+            _rtbPreviewSource.ContextMenuStrip = CreatePreviewContextMenu(_rtbPreviewSource);
+            _rtbPreviewTarget.ContextMenuStrip = CreatePreviewContextMenu(_rtbPreviewTarget);
+
+            _rtbPreviewSource.KeyDown += OnPreviewKeyDown;
+            _rtbPreviewTarget.KeyDown += OnPreviewKeyDown;
+        }
+
+        private ContextMenuStrip CreatePreviewContextMenu(RichTextBox owner)
+        {
+            var menu = new ContextMenuStrip();
+
+            var copyItem = new ToolStripMenuItem("Copy") { ShortcutKeyDisplayString = "Ctrl+C" };
+            copyItem.Click += (s, e) =>
+            {
+                if (owner.SelectionLength > 0)
+                    owner.Copy();
+                else if (!string.IsNullOrEmpty(owner.Text))
+                    Clipboard.SetText(owner.Text);
+            };
+            menu.Items.Add(copyItem);
+
+            var selectAllItem = new ToolStripMenuItem("Select All") { ShortcutKeyDisplayString = "Ctrl+A" };
+            selectAllItem.Click += (s, e) => owner.SelectAll();
+            menu.Items.Add(selectAllItem);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            var copySourceItem = new ToolStripMenuItem("Copy source");
+            copySourceItem.Click += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(_rtbPreviewSource.Text))
+                    Clipboard.SetText(_rtbPreviewSource.Text);
+            };
+            menu.Items.Add(copySourceItem);
+
+            var copyTargetItem = new ToolStripMenuItem("Copy target");
+            copyTargetItem.Click += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(_rtbPreviewTarget.Text))
+                    Clipboard.SetText(_rtbPreviewTarget.Text);
+            };
+            menu.Items.Add(copyTargetItem);
+
+            menu.Opening += (s, e) =>
+            {
+                copyItem.Enabled = owner.SelectionLength > 0 || !string.IsNullOrEmpty(owner.Text);
+                selectAllItem.Enabled = !string.IsNullOrEmpty(owner.Text);
+                copySourceItem.Enabled = !string.IsNullOrEmpty(_rtbPreviewSource.Text);
+                copyTargetItem.Enabled = !string.IsNullOrEmpty(_rtbPreviewTarget.Text);
+            };
+
+            return menu;
+        }
+
+        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.A)
+            {
+                (sender as RichTextBox)?.SelectAll();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
         }
 
         // ─── Private Helpers ─────────────────────────────────────

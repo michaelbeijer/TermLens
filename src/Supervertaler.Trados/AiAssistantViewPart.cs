@@ -261,6 +261,15 @@ namespace Supervertaler.Trados
             reportsControl.NavigateToSegmentRequested += OnNavigateToSegment;
             reportsControl.ClearResultsRequested += OnClearReports;
 
+            // Optionally host SuperSearch as a 4th tab in this panel. The
+            // SuperSearchController owns the control and all its logic; we just
+            // re-parent the shared control into a tab here. The standalone
+            // SuperSearchViewPart shows a placeholder when this mode is on.
+            if (_settings.SuperSearchInAssistantTab)
+            {
+                _control.Value.EnsureSuperSearchTab(SuperSearchController.Shared.Control);
+            }
+
             // Wire prompt logging
             LlmClient.PromptCompleted += OnPromptCompleted;
 
@@ -4622,6 +4631,23 @@ Always list the original source filename(s) in the `sources:` frontmatter field.
             {
                 _control.Value.SubmitMessage(expandedPrompt, displayPrompt, promptName);
             });
+        }
+
+        /// <summary>
+        /// Activates the Supervertaler Assistant panel and switches to the
+        /// SuperSearch tab. Used by <c>SuperSearchAction</c> (Alt+S) when
+        /// SuperSearch is hosted as a tab rather than its own ViewPart. No-op
+        /// if the tab isn't present (setting off, or unlicensed).
+        /// </summary>
+        public static void ActivateSuperSearchTab()
+        {
+            var instance = _currentInstance;
+            if (instance == null) return;
+
+            try { instance.Activate(); }
+            catch { /* Activate may not be available in all Trados versions */ }
+
+            instance.SafeInvoke(() => _control.Value.SwitchToSuperSearchTab());
         }
 
         // ─── Text transforms (local find/replace, no AI call) ─────────

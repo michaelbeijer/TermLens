@@ -55,6 +55,7 @@ namespace Supervertaler.Trados.Settings
         private CheckBox _chkAutoLoad;
         private CheckBox _chkCaseSensitive;
         private CheckBox _chkUsageStats;
+        private CheckBox _chkSuperSearchInTab;
         private NumericUpDown _nudFontSize;
         private ComboBox _cboUiScale;
         private ComboBox _cboShortcutStyle;
@@ -286,10 +287,52 @@ namespace Supervertaler.Trados.Settings
                 "Sends a single anonymous ping on startup (plugin version, OS, Trados version, locale).\n" +
                 "No personal data, translation content, or termbase info is ever collected.");
 
+            // ─── Panels section ─────────────────────────────────────
+            var sepPanels = new Label
+            {
+                Location = new Point(10, 140),
+                Height = 1,
+                Width = 500,
+                BorderStyle = BorderStyle.Fixed3D,
+                Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right
+            };
+
+            var lblPanels = new Label
+            {
+                Text = "Panels",
+                Location = new Point(10, 150),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(50, 50, 50)
+            };
+
+            _chkSuperSearchInTab = new CheckBox
+            {
+                Text = "Show SuperSearch as a tab in the Supervertaler Assistant panel",
+                Location = new Point(10, 176),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(60, 60, 60)
+            };
+
+            var lblSuperSearchNote = new Label
+            {
+                Text = "(restart required)",
+                Location = new Point(10, 198),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(140, 140, 140),
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Italic)
+            };
+
+            tips.SetToolTip(_chkSuperSearchInTab,
+                "When on, SuperSearch is hosted as a 4th tab inside the Supervertaler Assistant\n" +
+                "panel instead of its own dockable panel. Requires a Trados restart, and an\n" +
+                "Assistant licence (without one, SuperSearch stays in its own panel).");
+
             page.Controls.AddRange(new Control[]
             {
                 lblAppearance, lblUiScale, _cboUiScale, lblScaleNote,
-                sepPrivacy, lblPrivacy, _chkUsageStats
+                sepPrivacy, lblPrivacy, _chkUsageStats,
+                sepPanels, lblPanels, _chkSuperSearchInTab, lblSuperSearchNote
             });
         }
 
@@ -1156,6 +1199,7 @@ namespace Supervertaler.Trados.Settings
             _chkAutoLoad.Checked = _settings.AutoLoadOnStartup;
             _chkCaseSensitive.Checked = _settings.CaseSensitiveMatching;
             _chkUsageStats.Checked = _settings.UsageStatisticsEnabled;
+            _chkSuperSearchInTab.Checked = _settings.SuperSearchInAssistantTab;
             _nudFontSize.Value = Math.Max(_nudFontSize.Minimum, Math.Min(_nudFontSize.Maximum, (decimal)_settings.PanelFontSize));
             var curScaleText = ((int)Math.Round(_settings.UiScaleFactor * 100)) + "%";
             var scaleIdx = _cboUiScale.Items.IndexOf(curScaleText);
@@ -1668,6 +1712,7 @@ namespace Supervertaler.Trados.Settings
             _settings.AutoLoadOnStartup = _chkAutoLoad.Checked;
             _settings.CaseSensitiveMatching = _chkCaseSensitive.Checked;
             _settings.UsageStatisticsEnabled = _chkUsageStats.Checked;
+            _settings.SuperSearchInAssistantTab = _chkSuperSearchInTab.Checked;
             // Mark as asked so the opt-in dialog won't show again
             _settings.UsageStatisticsAsked = true;
             // Generate anonymous ID on first opt-in

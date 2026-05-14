@@ -47,11 +47,21 @@ namespace Supervertaler.Trados
                 }
                 catch { /* selection API may not be available in all contexts */ }
 
-                // Activate the SuperSearch ViewPart panel (makes it visible even when auto-hidden/unpinned)
+                // Activate the SuperSearch host (makes it visible even when
+                // auto-hidden/unpinned) — either its own ViewPart or the
+                // SuperSearch tab in the Supervertaler Assistant panel,
+                // depending on the SuperSearchInAssistantTab setting.
                 try
                 {
-                    var viewPart = SdlTradosStudio.Application.GetController<SuperSearchViewPart>();
-                    viewPart?.Activate();
+                    if (SuperSearchViewPart.IsHostedInAssistantTab())
+                    {
+                        AiAssistantViewPart.ActivateSuperSearchTab();
+                    }
+                    else
+                    {
+                        var viewPart = SdlTradosStudio.Application.GetController<SuperSearchViewPart>();
+                        viewPart?.Activate();
+                    }
                 }
                 catch { /* Activate may not be available in all Trados versions */ }
 

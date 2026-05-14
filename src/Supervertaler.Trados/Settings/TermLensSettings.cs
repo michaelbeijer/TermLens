@@ -137,6 +137,16 @@ namespace Supervertaler.Trados.Settings
         [DataMember(Name = "uiScaleFactor")]
         public float UiScaleFactor { get; set; } = 1.0f;
 
+        // ─── SuperSearch docking ──────────────────────────────────────
+        /// <summary>
+        /// When true, SuperSearch is hosted as a tab inside the Supervertaler
+        /// Assistant panel instead of its own dockable ViewPart. Requires a
+        /// Trados restart to take effect (the control can only have one host).
+        /// Default: false (standalone ViewPart).
+        /// </summary>
+        [DataMember(Name = "superSearchInAssistantTab")]
+        public bool SuperSearchInAssistantTab { get; set; } = false;
+
         // ─── Term shortcut style ────────────────────────────────────────
         /// <summary>
         /// How Alt+digit shortcuts work for terms beyond 9.

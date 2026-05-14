@@ -60,6 +60,10 @@ namespace Supervertaler.Trados.Controls
         // Reports tab
         private ReportsControl _reportsControl;
 
+        // SuperSearch tab (optional — added by EnsureSuperSearchTab when the
+        // SuperSearchInAssistantTab setting is on)
+        private TabPage _superSearchPage;
+
         // SuperMemory toolbar (inside Chat tab)
         private SuperMemoryToolbar _superMemoryToolbar;
 
@@ -759,6 +763,10 @@ namespace Supervertaler.Trados.Controls
                     topic = HelpSystem.Topics.AiProofreaderReports;
                     label = "Reports Help";
                     break;
+                case 3:
+                    topic = HelpSystem.Topics.SuperSearch;
+                    label = "SuperSearch Help";
+                    break;
                 default:
                     topic = HelpSystem.Topics.AiAssistantChat;
                     label = "Supervertaler Assistant Help";
@@ -802,6 +810,7 @@ namespace Supervertaler.Trados.Controls
                                     ? HelpSystem.Topics.AiProofreader
                                     : HelpSystem.Topics.BatchTranslate; break;
                     case 2: topic = HelpSystem.Topics.AiProofreaderReports; break;
+                    case 3: topic = HelpSystem.Topics.SuperSearch; break;
                     default: topic = HelpSystem.Topics.AiAssistantChat; break;
                 }
                 HelpSystem.OpenHelp(topic);
@@ -1988,6 +1997,33 @@ namespace Supervertaler.Trados.Controls
         public void SwitchToReportsTab()
         {
             _tabControl.SelectedIndex = 2;
+        }
+
+        // ─── SuperSearch tab (optional host) ───────────────────────
+
+        /// <summary>
+        /// Adds the SuperSearch control as a 4th tab, hosting the shared
+        /// <see cref="SuperSearchControl"/> instance. Idempotent — calling it
+        /// again is a no-op once the tab exists. Called by the ViewPart when
+        /// the <c>SuperSearchInAssistantTab</c> setting is on.
+        /// </summary>
+        public void EnsureSuperSearchTab(SuperSearchControl control)
+        {
+            if (_superSearchPage != null || control == null) return;
+
+            _superSearchPage = new TabPage("SuperSearch") { BackColor = Color.White };
+            control.Dock = DockStyle.Fill;
+            _superSearchPage.Controls.Add(control);
+            _tabControl.TabPages.Add(_superSearchPage);
+        }
+
+        /// <summary>
+        /// Switches to the SuperSearch tab, if it has been added.
+        /// </summary>
+        public void SwitchToSuperSearchTab()
+        {
+            if (_superSearchPage != null)
+                _tabControl.SelectedTab = _superSearchPage;
         }
 
         // ─── License gating ────────────────────────────────────────

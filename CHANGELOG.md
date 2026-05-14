@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.19.100] – 2026-05-14
+
+### Added (SuperSearch can be docked as a tab in the Supervertaler Assistant panel)
+
+- **New setting: Settings → General → Panels → "Show SuperSearch as a tab in the Supervertaler Assistant panel".** When enabled, SuperSearch is hosted as a 4th tab inside the Supervertaler Assistant panel (alongside Chat, Batch Operations, and Reports) instead of occupying its own dockable panel – handy for translators who want fewer floating panels. Off by default; the standalone panel remains the default experience.
+- Implementation: all of SuperSearch's search / replace / navigate logic was extracted out of `SuperSearchViewPart` into a new host-agnostic `SuperSearchController` (a process-wide singleton), so the same control instance can be hosted by either the standalone ViewPart or the Assistant tab. Both hosts share one control, so search results survive switching between tabs.
+- **Requires a Trados restart** to switch hosting modes – a WinForms control can only have one parent, so the host is decided at panel-creation time. The settings screen labels this "(restart required)".
+- **Gated on a Supervertaler Assistant licence.** The Assistant panel's upgrade overlay covers the whole panel when unlicensed, which would hide a SuperSearch tab too – so without a licence the toggle is ignored and SuperSearch stays in its own, fully functional panel. This protects SuperSearch's availability rather than restricting it: trial users always have SuperSearch in its original location.
+- **Alt+S** and the editor right-click **SuperSearch** action are now mode-aware: they activate whichever host is in use and, in tab mode, switch the Assistant panel to the SuperSearch tab. When SuperSearch is hosted in the tab, opening the standalone panel shows a short placeholder pointing to the new location (Trados always registers the standalone ViewPart from `plugin.xml`, so it can't be hidden outright).
+
+### Fixed (SuperSearch preview pane: text wasn't selectable or copyable – [Supervertaler-Workbench#202](https://github.com/Supervertaler/Supervertaler-Workbench/issues/202))
+
+- A user reported (via the Workbench issue tracker) that text in SuperSearch's results couldn't be selected or copied, so there was no way to copy a previous translation out of SuperSearch to reuse it. For patent and technical translators, SuperSearch is most valuable as a cross-file concordance – "how did I translate this phrase before?" – and the natural next step, copying the prior target verbatim, wasn't possible.
+- The fix targets the **preview pane** (the full source/target boxes below the results grid), not the results grid itself: the grid is a `DataGridView` with full-row selection, where individual cell text genuinely can't be selected, and the preview pane shows the complete untruncated text anyway. The preview boxes are read-only `RichTextBox` controls, which already supported mouse selection and Ctrl+C – but had no right-click menu and didn't respond to Ctrl+A.
+- Both preview boxes now have a right-click context menu with **Copy** (the current selection, or the whole box if nothing is selected), **Select All**, **Copy source**, and **Copy target**, plus **Ctrl+A** select-all support.
+
+
 ## [4.19.99] – 2026-05-13
 
 ### Changed (Workbench Chat: AI Settings dropdown + QuickLauncher menu)
