@@ -360,7 +360,9 @@ namespace Supervertaler.Trados.Core
             var sb = new StringBuilder();
             sb.AppendLine("---");
             sb.AppendLine("type: prompt");
-            sb.AppendLine("name: \"" + EscapeYamlString(prompt.Name) + "\"");
+            // `name:` is deliberately omitted — the filename is the
+            // authoritative display name.  Writing it would re-introduce
+            // the YAML-vs-filename drift the loader now prevents.
             if (!string.IsNullOrEmpty(prompt.Description))
                 sb.AppendLine("description: \"" + EscapeYamlString(prompt.Description) + "\"");
             if (!string.IsNullOrEmpty(prompt.Category))
@@ -889,9 +891,10 @@ namespace Supervertaler.Trados.Core
                 prompt.Content = text;
             }
 
-            // Fallback: use filename if no name in frontmatter
-            if (string.IsNullOrEmpty(prompt.Name))
-                prompt.Name = Path.GetFileNameWithoutExtension(filePath);
+            // The on-disk filename is the authoritative display name.
+            // Any YAML `name:` field is ignored on read so that renaming a
+            // .md file in Explorer immediately changes what the tree shows.
+            prompt.Name = Path.GetFileNameWithoutExtension(filePath);
 
             // Fallback: use folder name as domain if not specified in YAML
             if (string.IsNullOrEmpty(prompt.Category))
@@ -1009,7 +1012,11 @@ namespace Supervertaler.Trados.Core
                         prompt.Type = value;
                         break;
                     case "name":
-                        prompt.Name = value;
+                        // Tolerated for backward compatibility but ignored:
+                        // the on-disk filename is the authoritative display
+                        // name (set unconditionally in ParsePromptFile).
+                        // Eliminates the YAML-name vs filename drift that
+                        // confused users when renaming .md files in Explorer.
                         break;
                     case "description":
                         prompt.Description = value;

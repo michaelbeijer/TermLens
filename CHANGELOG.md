@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.19.109] – 2026-05-16
+
+### Changed (Prompt manager: filename is now the authoritative display name)
+
+- The prompt manager tree displayed the YAML `name:` field from each prompt file's frontmatter, not the filename on disk. Renaming a .md file in Explorer (without editing the YAML inside) left the tree showing the old name even after clicking Refresh, because the tree built itself from `prompt.Name` (which the loader read from YAML and only fell back to filename when YAML had no `name:`). Two sources of truth for what to call a prompt is a confusing UX trap.
+- The on-disk filename is now the single source of truth. `PromptLibrary.ParsePromptFile` unconditionally sets `prompt.Name = Path.GetFileNameWithoutExtension(filePath)`, ignoring any YAML `name:` field that may exist for backward compatibility with older files (`ParseYamlFrontmatter`'s `case "name"` is now a no-op). `PromptLibrary.SavePrompt` no longer writes `name:` to the YAML frontmatter at all.
+- Effect for users: rename `MyPrompt.md` to `Better Name.md` in Explorer, click Refresh, and the tree shows the new name immediately. No need to also edit the YAML inside the file.
+- Backward compatibility: existing prompt files with a YAML `name:` field still load fine – the field is silently ignored on read, and is dropped from the file the next time the prompt is saved through the UI. No mass migration runs. Existing in-app rename flows still work because `SavePrompt`'s "rename file when `prompt.Name` differs from the on-disk filename" logic is unchanged – `prompt.Name` is now set from the user's new name in the Edit dialog, and the file is renamed to match.
+- Shipped in parallel with Supervertaler Workbench v1.10.43 which makes the same change to its Python `UnifiedPromptLibrary` so both products stay in sync on the shared `prompt_library/` folder.
+
+
 ## [4.19.108] – 2026-05-15
 
 ### Changed (Usage-statistics dialog rewritten: informational, default-on)
